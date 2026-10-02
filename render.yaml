@@ -2,10 +2,6 @@
 # Render Postgres instance; set DATABASE_URL to its internal URL when Render
 # prompts for it. See "Deploy to Render" in the README.
 #
-# Render reads the Python version from .python-version (3.14, so its latest
-# 3.14 build). An exact PYTHON_VERSION that Render has no build for is
-# compiled from source.
-#
 # uv is pinned: the build runs with the service's secrets in its environment, so
 # it installs a known version, and uv then installs exactly what uv.lock lists.
 services:
@@ -31,3 +27,9 @@ services:
         generateValue: true
       - key: DJANGO_DEBUG
         value: "0"
+      # Major.minor only, so Render uses its latest prebuilt 3.14. An exact
+      # release it has no build for (e.g. 3.14.8) is compiled from source.
+      # Kept here rather than removed: a Blueprint sync leaves a removed key's
+      # old value on the service, and PYTHON_VERSION beats .python-version.
+      - key: PYTHON_VERSION
+        value: "3.14"
