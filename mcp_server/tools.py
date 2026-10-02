@@ -162,9 +162,11 @@ def _exercises() -> QuerySet[Exercise]:
     return Exercise.objects.prefetch_related("types", "muscles")
 
 
-def _workouts() -> QuerySet[Workout]:
+def _workouts(user: AbstractBaseUser) -> QuerySet[Workout]:
+    own = Q(sessions__user_id=user.pk)
     return Workout.objects.annotate(
-        times_done=Count("sessions"), last_done=Max("sessions__started_at")
+        times_done=Count("sessions", filter=own),
+        last_done=Max("sessions__started_at", filter=own),
     ).prefetch_related(
         Prefetch("items", WorkoutItem.objects.select_related("exercise")),
         "items__exercise__types",
@@ -190,10 +192,11 @@ def find_exercise(ref: Any, qs: QuerySet[Exercise] | None = None) -> Exercise:
     return exercise
 
 
-def find_workout(ref: Any) -> Workout:
+def find_workout(ref: Any, user: AbstractBaseUser) -> Workout:
     ref = str(ref).strip()
     key = _as_uuid(ref)
-    matches = list(_workouts().filter(uuid=key) if key else _workouts().filter(name__iexact=ref))
+    qs = _workouts(user)
+    matches = list(qs.filter(uuid=key) if key else qs.filter(name__iexact=ref))
     if not matches:
         raise ToolError(f"No workout matches {ref!r}. Use list_workouts to find it.")
     if len(matches) > 1:
@@ -369,7 +372,7 @@ def get_exercise(user: AbstractBaseUser, args: Args) -> Result:
     read_only=True,
 )
 def list_workouts(user: AbstractBaseUser, args: Args) -> Result:
-    qs = _workouts()
+    qs = _workouts(user)
     if not args.get("include_inactive"):
         qs = qs.filter(is_active=True)
     return {"workouts": [workout_summary(w) for w in qs]}
@@ -383,7 +386,7 @@ def list_workouts(user: AbstractBaseUser, args: Args) -> Result:
     read_only=True,
 )
 def get_workout(user: AbstractBaseUser, args: Args) -> Result:
-    return workout_json(find_workout(args["workout"]))
+    return workout_json(find_workout(args["workout"], user))
 
 
 @tool(
@@ -402,7 +405,7 @@ def get_workout(user: AbstractBaseUser, args: Args) -> Result:
 def list_sessions(user: AbstractBaseUser, args: Args) -> Result:
     qs = _sessions(user, args).select_related("workout").prefetch_related("entries")
     if args.get("workout"):
-        qs = qs.filter(workout=find_workout(args["workout"]))
+        qs = qs.filter(workout=find_workout(args["workout"], user))
     limit = int(args.get("limit") or 50)
     sessions = list(qs[:limit])
     return {"sessions": [session_json(s) for s in sessions], "truncated": qs.count() > limit}
@@ -574,7 +577,7 @@ def _items(raw: Any) -> list[tuple[Exercise, int]]:
     return out
 
 
-def _save_workout(workout: Workout, args: Args) -> Result:
+def _save_workout(workout: Workout, user: AbstractBaseUser, args: Args) -> Result:
     if "name" in args:
         workout.name = str(args["name"]).strip()
     if "description" in args:
@@ -599,7 +602,7 @@ def _save_workout(workout: Workout, args: Args) -> Result:
                 WorkoutItem(workout=workout, exercise=ex, order=i, duration_seconds=secs)
                 for i, (ex, secs) in enumerate(items)
             )
-    return workout_json(find_workout(workout.uuid))
+    return workout_json(find_workout(workout.uuid, user))
 
 
 @tool(
@@ -612,7 +615,7 @@ def _save_workout(workout: Workout, args: Args) -> Result:
 )
 def create_workout(user: AbstractBaseUser, args: Args) -> Result:
     _require(args, "name", "items")
-    return _save_workout(Workout(), args)
+    return _save_workout(Workout(), user, args)
 
 
 @tool(
@@ -624,4 +627,4 @@ def create_workout(user: AbstractBaseUser, args: Args) -> Result:
     read_only=False,
 )
 def update_workout(user: AbstractBaseUser, args: Args) -> Result:
-    return _save_workout(find_workout(args["workout"]), args)
+    return _save_workout(find_workout(args["workout"], user), user, args)

@@ -607,3 +607,47 @@ def test_summary_shares_time_between_types(client, token, hugo, library):
     )["structuredContent"]
     assert summary["seconds_by_type"] == {"strength": 40, "flexibility": 40}
     assert summary["seconds_by_muscle"] == {"Glutes": 81}
+
+
+def test_registration_update_keeps_the_redirect_allowlist(client, db):
+    reg = register(client, ["http://localhost:4567/callback"]).json()
+    headers = {"Authorization": f"Bearer {reg['registration_access_token']}"}
+    path = f"/oauth/register/{reg['client_id']}/"
+
+    def put(uris):
+        body = {"redirect_uris": uris, "token_endpoint_auth_method": "none"}
+        return client.put(path, json.dumps(body), "application/json", headers=headers)
+
+    assert put(["https://evil.example/callback"]).status_code == 400
+    assert Application.objects.get().redirect_uris == "http://localhost:4567/callback"
+    assert put([CALLBACK]).status_code == 200
+    assert Application.objects.get().redirect_uris == CALLBACK
+
+
+def test_consent_refuses_a_callback_off_the_allowlist(client, hugo):
+    app = Application.objects.create(
+        name="Sneaky",
+        client_type=Application.CLIENT_PUBLIC,
+        authorization_grant_type=Application.GRANT_AUTHORIZATION_CODE,
+        redirect_uris="https://evil.example/callback",
+    )
+    client.force_login(hugo)
+    response = client.get(
+        "/oauth/authorize/",
+        {
+            "response_type": "code",
+            "client_id": app.client_id,
+            "redirect_uri": "https://evil.example/callback",
+        },
+    )
+    assert response.status_code == 403
+
+
+def test_workout_counts_are_the_users_own(client, token, hugo, library, django_user_model):
+    other = django_user_model.objects.create_user("other")
+    log_session(other, library["legs"], dt.date(2026, 9, 3), [(library["squat"], 80)])
+    legs = call(client, token, "get_workout", workout="Legs")["structuredContent"]
+    assert (legs["times_done"], legs["last_done"]) == (0, None)
+    log_session(hugo, library["legs"], dt.date(2026, 9, 4), [(library["squat"], 80)])
+    listed = call(client, token, "list_workouts")["structuredContent"]["workouts"][0]
+    assert listed["times_done"] == 1

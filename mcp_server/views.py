@@ -59,7 +59,10 @@ def _unauthorised(request: HttpRequest, oauth2_error: dict[str, str] | None) -> 
     return response
 
 
-@csrf_exempt
+# CSRF protection is for cookie-authenticated browser requests. This endpoint
+# ignores cookies and authenticates only by the bearer token in the
+# Authorization header, which a cross-site form can't set.
+@csrf_exempt  # nosemgrep
 def mcp(request: HttpRequest) -> HttpResponse:
     if request.method != "POST":
         response = HttpResponse(status=405)

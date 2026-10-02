@@ -12,7 +12,7 @@ from typing import Any
 
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
-from django.http import HttpRequest, HttpResponseBase
+from django.http import HttpRequest, HttpResponse, HttpResponseBase, JsonResponse
 from django.urls import path
 from django.utils.csp import CSP
 from django.utils.decorators import method_decorator
@@ -39,6 +39,26 @@ class AllowedRedirectDCRPermission:
         )
 
 
+class RegistrationManagementView(oauth_views.DynamicClientRegistrationManagementView):
+    """RFC 7592 updates, held to the same redirect allowlist as registration.
+
+    django-oauth-toolkit only checks the registration token on PUT, so without
+    this a client could register a localhost callback and then swap in any URL.
+    """
+
+    def put(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
+        if not AllowedRedirectDCRPermission().has_permission(request):
+            return JsonResponse(
+                {
+                    "error": "invalid_redirect_uri",
+                    "error_description": "Redirect URIs must be Claude's callback or localhost.",
+                },
+                status=400,
+            )
+        response: HttpResponse = super().put(request, *args, **kwargs)
+        return response
+
+
 def _consent_csp() -> dict[str, Any]:
     # Approving redirects the browser to the client's callback, and browsers
     # apply form-action to redirects after a form post, so allow those hosts.
@@ -60,6 +80,11 @@ class ConsentView(oauth_views.AuthorizationView):
     def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponseBase:
         user = request.user
         if user.is_authenticated and not user.is_superuser:
+            raise PermissionDenied
+        # Belt and braces: whatever a client managed to register, the code is
+        # only ever sent to an allowlisted callback.
+        redirect_uri = request.GET.get("redirect_uri") or request.POST.get("redirect_uri")
+        if redirect_uri and not redirect_uri_allowed(redirect_uri):
             raise PermissionDenied
         response: HttpResponseBase = super().dispatch(request, *args, **kwargs)
         return response
@@ -95,7 +120,7 @@ urlpatterns = [
     ),
     path(
         "oauth/register/<str:client_id>/",
-        oauth_views.DynamicClientRegistrationManagementView.as_view(),
+        RegistrationManagementView.as_view(),
         name="dcr-register-management",
     ),
 ]
