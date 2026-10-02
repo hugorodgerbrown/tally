@@ -27,6 +27,9 @@ services:
         generateValue: true
       - key: DJANGO_DEBUG
         value: "0"
-      # The latest 3.14 release; .python-version says 3.14.
+      # Major.minor only, so Render uses its latest prebuilt 3.14. An exact
+      # release it has no build for (e.g. 3.14.8) is compiled from source.
+      # Kept here rather than removed: a Blueprint sync leaves a removed key's
+      # old value on the service, and PYTHON_VERSION beats .python-version.
       - key: PYTHON_VERSION
-        value: "3.14.8"
+        value: "3.14"
