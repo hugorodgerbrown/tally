@@ -1,4 +1,5 @@
 import json
+import uuid
 
 import pytest
 from django.urls import reverse
@@ -167,3 +168,142 @@ def test_duration_filter(seconds, text):
     from planner.templatetags.planner import duration
 
     assert duration(seconds) == text
+
+
+@pytest.mark.parametrize(
+    ("items", "error"),
+    [
+        ("not json", "could not be read"),
+        ("[]", "at least one exercise"),
+        (json.dumps([{"exercise": str(uuid.uuid4()), "dur": 40}]), "no longer exists"),
+    ],
+)
+def test_workout_rejects_bad_items(client_in, items, error):
+    response = client_in.post(
+        reverse("planner:workout_new"),
+        {"name": "Legs", "rest_seconds": 15, "rounds": 1, "round_rest_seconds": 90, "items": items},
+    )
+    assert response.status_code == 200
+    assert error in response.content.decode()
+    assert not Workout.objects.exists()
+
+
+def test_workout_rejects_out_of_range_duration(client_in, squat):
+    response = client_in.post(
+        reverse("planner:workout_new"),
+        {
+            "name": "Legs",
+            "rest_seconds": 15,
+            "rounds": 1,
+            "round_rest_seconds": 90,
+            "items": items_json((squat, 4)),
+        },
+    )
+    assert "between 5 and 3600 seconds" in response.content.decode()
+
+
+def test_edit_page_loads_existing_items(client_in, squat):
+    workout = Workout.objects.create(name="Legs")
+    WorkoutItem.objects.create(workout=workout, exercise=squat, order=0, duration_seconds=40)
+    response = client_in.get(reverse("planner:workout_edit", args=[workout.uuid]))
+    assert response.context["builder"]["items"] == [{"exercise": str(squat.uuid), "dur": 40}]
+
+
+def test_toggle_hides_and_shows_a_workout(client_in):
+    workout = Workout.objects.create(name="Legs")
+    url = reverse("planner:workout_toggle", args=[workout.uuid])
+    client_in.post(url)
+    workout.refresh_from_db()
+    assert workout.is_active is False
+    client_in.post(url)
+    workout.refresh_from_db()
+    assert workout.is_active is True
+
+
+def test_toggle_needs_post(client_in):
+    workout = Workout.objects.create(name="Legs")
+    response = client_in.get(reverse("planner:workout_toggle", args=[workout.uuid]))
+    assert response.status_code == 405
+
+
+def test_delete_workout_asks_then_deletes(client_in):
+    workout = Workout.objects.create(name="Legs")
+    url = reverse("planner:workout_delete", args=[workout.uuid])
+    assert "Legs" in client_in.get(url).content.decode()
+    response = client_in.post(url)
+    assert response["Location"] == reverse("planner:workouts")
+    assert not Workout.objects.exists()
+
+
+def test_unused_exercise_can_be_deleted(client_in, squat):
+    url = reverse("planner:exercise_delete", args=[squat.uuid])
+    assert client_in.get(url).status_code == 200
+    client_in.post(url)
+    assert not Exercise.objects.filter(pk=squat.pk).exists()
+
+
+def test_exercise_list_filters(client_in, squat, swing):
+    url = reverse("planner:exercises")
+    by_type = client_in.get(url, {"type": "aerobic"}).context["exercises"]
+    assert list(by_type) == [swing]
+    squat.muscles.add(MuscleGroup.objects.create(name="Quads"))
+    by_muscle = client_in.get(url, {"q": "quad"}).context["exercises"]
+    assert list(by_muscle) == [squat]
+
+
+def test_edit_exercise_from_the_form(client_in, squat):
+    url = reverse("planner:exercise_edit", args=[squat.uuid])
+    assert client_in.get(url).status_code == 200
+    response = client_in.post(
+        url, {"name": "Bulgarian split squat", "types": ["strength"], "default_duration": 50}
+    )
+    assert response["Location"] == reverse("planner:exercises")
+    squat.refresh_from_db()
+    assert squat.name == "Bulgarian split squat"
+    assert squat.one_sided is False
+
+
+def test_invalid_exercise_form_shows_errors(client_in):
+    response = client_in.post(reverse("planner:exercise_new"), {"name": "Plank"})
+    assert response.status_code == 200
+    assert "Pick at least one type." in response.content.decode()
+
+
+@pytest.mark.parametrize(("seconds", "text"), [(None, "0:00"), (5, "0:05"), (125.4, "2:05")])
+def test_mmss_filter(seconds, text):
+    from planner.templatetags.planner import mmss
+
+    assert mmss(seconds) == text
+
+
+def _workouts_with_items(count, exercises):
+    for n in range(count):
+        workout = Workout.objects.create(name=f"Workout {n}")
+        for order, ex in enumerate(exercises):
+            WorkoutItem.objects.create(
+                workout=workout, exercise=ex, order=order, duration_seconds=30
+            )
+
+
+# Query counts are fixed whatever the number of rows: a new N+1 query fails
+# these. Each includes the session and user lookups for the signed-in request.
+@pytest.mark.parametrize("workouts", [1, 10])
+def test_workout_list_query_count(client_in, squat, swing, django_assert_num_queries, workouts):
+    _workouts_with_items(workouts, [squat, swing])
+    with django_assert_num_queries(5):
+        client_in.get(reverse("planner:workouts"))
+
+
+@pytest.mark.parametrize("workouts", [1, 10])
+def test_exercise_list_query_count(client_in, squat, swing, django_assert_num_queries, workouts):
+    _workouts_with_items(workouts, [squat, swing])
+    with django_assert_num_queries(7):
+        client_in.get(reverse("planner:exercises"))
+
+
+@pytest.mark.parametrize("extra", [0, 10])
+def test_builder_query_count(client_in, squat, django_assert_num_queries, extra):
+    for n in range(extra):
+        Exercise.objects.create(name=f"Move {n}").types.add(ExerciseType.objects.first())
+    with django_assert_num_queries(9):
+        client_in.get(reverse("planner:workout_new"))

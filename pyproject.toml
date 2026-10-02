@@ -87,9 +87,18 @@ exclude = ["/migrations/", "^\\.venv/"]
 
 [[tool.mypy.overrides]]
 # Tests are typed loosely: fixtures and assertions say enough.
-module = ["*.tests", "*.tests.*", "conftest"]
+module = ["*.tests"]
 disallow_untyped_defs = false
 disallow_incomplete_defs = false
 
 [tool.django-stubs]
 django_settings_module = "config.settings"
+
+[tool.coverage.run]
+source = ["activity", "config", "library", "planner"]
+omit = ["*/migrations/*", "*/tests.py", "config/asgi.py", "config/wsgi.py", "config/settings.py"]
+
+[tool.coverage.report]
+fail_under = 95
+skip_empty = true
+exclude_also = ["if TYPE_CHECKING:"]
