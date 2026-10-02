@@ -40,7 +40,13 @@ if not DEBUG:
 
 # HSTS preload needs a registrable domain of our own; an onrender.com name
 # can't be preloaded.
-SILENCED_SYSTEM_CHECKS = ["security.W021"]
+SILENCED_SYSTEM_CHECKS = [
+    "security.W021",
+    # OAuth allows http redirect URIs because Claude Code and other local MCP
+    # clients sign in through a loopback port (RFC 8252). Registration only
+    # accepts http for localhost; see MCP_REDIRECT_URI_PATTERNS.
+    "oauth2_provider.W008",
+]
 
 # Content Security Policy. Scripts only from this site (no inline scripts).
 # Styles allow inline because templates set colours and widths per row; fonts
@@ -71,6 +77,9 @@ INSTALLED_APPS = [
     "library",
     "activity",
     "planner",
+    # Before oauth2_provider so its consent template wins.
+    "mcp_server",
+    "oauth2_provider",
 ]
 
 MIDDLEWARE = [
@@ -147,5 +156,44 @@ STORAGES = {
         else "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 }
+
+# OAuth 2.1 for the MCP server, so Claude can connect to /mcp as a connector.
+# Clients register themselves (RFC 7591), but only with a redirect URI on the
+# allowlist below, and only the superuser can approve one.
+OAUTH2_PROVIDER = {
+    "SCOPES": {"tally": "Read and change your exercises, workouts and sessions"},
+    "DEFAULT_SCOPES": ["tally"],
+    "ACCESS_TOKEN_EXPIRE_SECONDS": 60 * 60,
+    "REFRESH_TOKEN_EXPIRE_SECONDS": 60 * 60 * 24 * 90,
+    "ROTATE_REFRESH_TOKEN": True,
+    # A replayed refresh token revokes the whole family. No grace period: it
+    # can't be combined with hashed token storage.
+    "REFRESH_TOKEN_REUSE_PROTECTION": True,
+    "PKCE_REQUIRED": True,
+    "COMPLIANT_BCP_RFC9700_PKCE_METHOD": True,
+    "COMPLIANT_BCP_RFC9700_IMPLICIT_GRANT": True,
+    "COMPLIANT_BCP_RFC9700_PASSWORD_GRANT": True,
+    "COMPLIANT_BCP_RFC9700_ACCESS_TOKEN_TRANSPORT": True,
+    "COMPLIANT_BCP_RFC9700_AUTHZ_RESPONSE_ISS": True,
+    "COMPLIANT_BCP_RFC9700_TOKEN_STORAGE": True,
+    "OAUTH2_RESPONSE_TYPES_SUPPORTED": ["code"],
+    "OAUTH2_GRANT_TYPES_SUPPORTED": ["authorization_code", "refresh_token"],
+    "OAUTH2_TOKEN_ENDPOINT_AUTH_METHODS_SUPPORTED": [
+        "none",
+        "client_secret_post",
+        "client_secret_basic",
+    ],
+    "OAUTH2_PROTECTED_RESOURCE_NAME": "Tally",
+    "DCR_ENABLED": True,
+    "DCR_REGISTRATION_PERMISSION_CLASSES": ("mcp_server.oauth.AllowedRedirectDCRPermission",),
+}
+
+# Where an OAuth client may send the user back to: the Claude apps, and a
+# loopback port for Claude Code and other local clients.
+MCP_REDIRECT_URI_PATTERNS = [
+    r"^https://claude\.ai/api/mcp/auth_callback$",
+    r"^https://claude\.com/api/mcp/auth_callback$",
+    r"^http://(localhost|127\.0\.0\.1)(:\d+)?/[^?#]*$",
+]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

@@ -89,6 +89,31 @@ instance (`shared-db`); nothing in the Blueprint creates them.
    uv run --no-sync python manage.py loaddata tally.json
    ```
 
+## Connect Claude (MCP)
+
+Tally is also a remote MCP server at `/mcp`, so Claude can read the
+library and the log, and add or change exercises and workouts. Nothing can
+be deleted through it.
+
+- In Claude (web, desktop or phone): Settings → Connectors → Add custom
+  connector, with the URL `https://<your host>/mcp`. Claude registers
+  itself, sends you to Tally to sign in, and asks you to approve it.
+- In Claude Code: `claude mcp add --transport http tally https://<your host>/mcp`,
+  then `/mcp` to sign in.
+
+Tools: `list_types_and_muscles`, `list_exercises`, `get_exercise`,
+`list_workouts`, `get_workout`, `list_sessions`, `training_summary`,
+`create_exercise`, `update_exercise`, `create_workout`, `update_workout`.
+
+Sign-in is OAuth 2.1 with PKCE from
+[django-oauth-toolkit](https://django-oauth-toolkit.readthedocs.io/).
+Clients register themselves (RFC 7591), but only with a redirect URI that
+`MCP_REDIRECT_URI_PATTERNS` allows (Claude's callback, or a localhost port
+for local clients), and only the superuser can approve one. Access tokens
+last an hour and refresh for 90 days. Connected apps and their tokens are
+in `/admin/` under Django OAuth Toolkit; delete an application there to
+disconnect it.
+
 ## Checks
 
 `uv run tox` runs everything CI runs (except `sast`). One env at a time:
@@ -123,7 +148,9 @@ health check calls over plain HTTP), HSTS for a year, and secure session
 and CSRF cookies. Every response carries a Content-Security-Policy:
 scripts only from this site, styles from this site plus inline `style`
 attributes, fonts from Google Fonts. A new inline `<script>` or a script
-from another host will be blocked by the browser.
+from another host will be blocked by the browser. The MCP consent page
+also lets its form post on to Claude's callback (`form-action`), since
+browsers apply that rule to the redirect after approving.
 
 ## Design system
 
@@ -148,6 +175,8 @@ manifest PNGs (192, 512, maskable 512), the iOS `apple-touch-icon.png`
   draws the workout's make-up with the PWA's own `engine.js`, so the strip
   on screen is the sequence the phone plays. `library/timeline.py` is the
   same calculation in Python for the workout list.
+- `mcp_server/` is the MCP endpoint (`views.py`), its tools (`tools.py`)
+  and the OAuth routes and consent page (`oauth.py`).
 - `activity/` holds completed sessions and the PWA:
   - `api.py`: `GET /api/workouts/` and `POST /api/sessions/`
   - `static/activity/engine.js`: timeline and wall-clock timer

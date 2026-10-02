@@ -9,6 +9,7 @@ requires-python = ">=3.14"
 dependencies = [
     "dj-database-url>=3.1.2",
     "django>=6.1.1",
+    "django-oauth-toolkit>=3.4.1",
     "gunicorn>=26.2.0",
     "psycopg[binary]>=3.3.6",
     "whitenoise>=6.12.0",
@@ -91,11 +92,16 @@ module = ["*.tests"]
 disallow_untyped_defs = false
 disallow_incomplete_defs = false
 
+[[tool.mypy.overrides]]
+# django-oauth-toolkit ships no type hints.
+module = ["oauth2_provider.*"]
+ignore_missing_imports = true
+
 [tool.django-stubs]
 django_settings_module = "config.settings"
 
 [tool.coverage.run]
-source = ["activity", "config", "library", "planner"]
+source = ["activity", "config", "library", "mcp_server", "planner"]
 omit = ["*/migrations/*", "*/tests.py", "config/asgi.py", "config/wsgi.py", "config/settings.py"]
 
 [tool.coverage.report]
