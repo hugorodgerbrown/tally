@@ -19,7 +19,7 @@
         {% if not w.is_active %}<span class="tag-off">Hidden on phone</span>{% endif %}</div>
     </div>
     {% include "planner/_strip.html" with segments=r.segments size="mini" label="Interval sequence" %}
-    <span class="num">{{ r.total|mmss }}</span>
+    <span class="num">{{ r.total|duration }}</span>
     <span class="num">{{ w.times_done|default:"–" }}</span>
     <span class="num">{% if w.last_done %}{{ w.last_done|date:"j M" }}{% else %}Never{% endif %}</span>
     <div class="actions">

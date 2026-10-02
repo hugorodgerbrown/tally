@@ -5,7 +5,8 @@
   "use strict";
 
   const data = JSON.parse(document.getElementById("builder-data").textContent);
-  const { buildTimeline, totalSeconds, workingSeconds, breakdown } = window.Engine;
+  const { buildTimeline, totalSeconds, workingSeconds, breakdown, durationParts, durationText } = window.Engine;
+  const durationBig = (s) => durationParts(s).map(([v, u]) => `${v}<small>${u}</small>`).join(" ");
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
   const mmss = (s) => { s = Math.round(s); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
@@ -96,7 +97,7 @@
           <button class="icon-btn bare" type="button" data-remove aria-label="Remove ${esc(ex.name)}">${ICON.x}</button>
         </span></li>${restLine}`;
     }).join("") + (rounds > 1
-      ? `<li class="restline roundline">× ${rounds} rounds${roundRest ? `, ${mmss(roundRest)} break between rounds` : ""}</li>` : "");
+      ? `<li class="restline roundline">× ${rounds} rounds${roundRest ? `, ${durationText(roundRest)} break between rounds` : ""}</li>` : "");
   }
 
   const itemIndex = (el) => items.findIndex((i) => i.key === +el.closest(".item").dataset.key);
@@ -177,7 +178,7 @@
     const w = workoutShape();
     $("round-rest-field").style.opacity = w.rounds > 1 ? "1" : ".5";
     if (!w.items.length) {
-      $("mu-total").textContent = "0:00";
+      $("mu-total").innerHTML = durationBig(0);
       $("mu-end").textContent = "0:00";
       $("mu-kv").innerHTML = "<div><b>0</b>exercises</div>";
       $("mu-strip").innerHTML = "";
@@ -188,9 +189,9 @@
     }
     const t = buildTimeline(w);
     const total = totalSeconds(t);
-    $("mu-total").textContent = mmss(total);
+    $("mu-total").innerHTML = durationBig(total);
     $("mu-end").textContent = mmss(total);
-    $("mu-kv").innerHTML = `<div><b>${w.items.length}</b>exercise${w.items.length > 1 ? "s" : ""}</div><div><b>${mmss(workingSeconds(w))}</b>working</div><div><b>${w.rounds}</b>round${w.rounds > 1 ? "s" : ""}</div>`;
+    $("mu-kv").innerHTML = `<div><b>${w.items.length}</b>exercise${w.items.length > 1 ? "s" : ""}</div><div><b>${durationText(workingSeconds(w))}</b>working</div><div><b>${w.rounds}</b>round${w.rounds > 1 ? "s" : ""}</div>`;
     $("mu-strip").innerHTML = t.map((s) => `<span class="${s.type}" style="flex:${s.dur}" title="${esc(s.type === "work" ? w.items[s.ex].name + (s.side ? " · " + s.side.toLowerCase() : "") : s.type)} · ${s.dur} s"></span>`).join("");
     const log = w.items.map((i) => i.dur * (i.sides ? 2 : 1) * w.rounds);
     const { types: mix, muscles } = breakdown(w, log);

@@ -194,5 +194,19 @@
     secondsWorked() { return this.log.reduce((a, b) => a + b, 0); }
   }
 
-  window.Engine = { buildTimeline, totalSeconds, workingSeconds, model, breakdown, Timer, READY_SECONDS };
+  /* A length of time as [value, unit] pairs: 45 s, 7 min 50 s, 1 h 5 min.
+   * Used wherever a total is shown, so it never reads as a time of day. */
+  function durationParts(seconds) {
+    const s = Math.max(0, Math.round(seconds));
+    if (s < 60) return [[s, "s"]];
+    if (s < 3600) return [[Math.floor(s / 60), "min"], ...(s % 60 ? [[s % 60, "s"]] : [])];
+    const m = Math.round((s % 3600) / 60);
+    return [[Math.floor(s / 3600), "h"], ...(m ? [[m, "min"]] : [])];
+  }
+  const durationText = (seconds) => durationParts(seconds).map(([v, u]) => `${v} ${u}`).join(" ");
+
+  window.Engine = {
+    buildTimeline, totalSeconds, workingSeconds, model, breakdown, Timer, READY_SECONDS,
+    durationParts, durationText,
+  };
 })();

@@ -78,7 +78,8 @@ a { color: inherit; }
 .s-done .main { overflow-y: auto; padding-bottom: 4cqw; -webkit-overflow-scrolling: touch; }
 .s-done .eb { color: var(--done-hi); opacity: 1; }
 .s-done .sub { font-size: 3.2cqw; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; opacity: .6; margin-top: 1.5cqw; }
-.bigtime { font-size: 30cqw; font-weight: 850; font-stretch: 68%; line-height: .85; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.bigtime { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 4cqw; margin-block: 6cqw 7cqw; font-size: 24cqw; font-weight: 850; font-stretch: 68%; line-height: .85; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.bigtime small { font-size: 7cqw; font-weight: 700; font-stretch: 85%; letter-spacing: 0; margin-left: 1.2cqw; opacity: .6; }
 .stats { display: flex; gap: 6cqw; font-size: 3.6cqw; opacity: .85; }
 .stats b { display: block; font-size: 7cqw; font-weight: 800; font-stretch: 80%; }
 .tbar { display: flex; height: 3.4cqw; border-radius: 2cqw; overflow: hidden; gap: .6cqw; flex: none; }

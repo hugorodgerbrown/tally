@@ -156,3 +156,13 @@ def test_duplicate_workout(client_in, squat):
     client_in.post(reverse("planner:workout_duplicate", args=[workout.uuid]))
     copy = Workout.objects.get(name="Legs (copy)")
     assert copy.rounds == 2 and copy.items.count() == 1
+
+
+@pytest.mark.parametrize(
+    ("seconds", "text"),
+    [(45, "45 s"), (60, "1 min"), (470, "7 min 50 s"), (3600, "1 h"), (3930, "1 h 6 min")],
+)
+def test_duration_filter(seconds, text):
+    from planner.templatetags.planner import duration
+
+    assert duration(seconds) == text

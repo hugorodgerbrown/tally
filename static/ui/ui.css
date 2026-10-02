@@ -104,7 +104,7 @@ p { margin: 0; }
 .list .actions { display: flex; gap: 6px; justify-content: flex-end; }
 .list .actions form { margin: 0; }
 .list .row.off .nm, .list .row.off .strip { opacity: .5; }
-.wl > .row { grid-template-columns: minmax(200px, 1.2fr) minmax(200px, 2fr) 70px 60px 90px 150px; }
+.wl > .row { grid-template-columns: minmax(200px, 1.2fr) minmax(200px, 2fr) 100px 60px 90px 150px; }
 .xl > .row { grid-template-columns: minmax(180px, 1.2fr) minmax(120px, .8fr) minmax(160px, 1.4fr) 70px 80px 90px; }
 .empty { padding: 40px 20px; text-align: center; color: var(--muted); display: flex; flex-direction: column; gap: 12px; align-items: center; }
 .toolbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
@@ -133,6 +133,7 @@ p { margin: 0; }
 .bars s { position: absolute; inset: 0 auto 0 0; background: var(--ink); border-radius: inherit; }
 .bars em { font-style: normal; font-family: var(--f-mono); font-size: 12px; color: var(--muted); text-align: right; }
 .big { font-size: 56px; font-weight: 850; font-stretch: 68%; line-height: .9; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.big small { font-size: 20px; font-weight: 700; font-stretch: 85%; color: var(--muted); margin-left: 3px; letter-spacing: 0; }
 .kv { display: flex; gap: 22px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
 .kv b { display: block; color: var(--ink); font-size: 20px; font-weight: 800; font-stretch: 80%; font-variant-numeric: tabular-nums; }
 

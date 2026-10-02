@@ -2,7 +2,8 @@
 (function () {
   "use strict";
 
-  const { Timer, model, breakdown, buildTimeline, totalSeconds, workingSeconds } = window.Engine;
+  const { Timer, model, breakdown, buildTimeline, totalSeconds, durationParts, durationText } = window.Engine;
+  const durationBig = (s) => durationParts(s).map(([v, u]) => `<span>${v}<small>${u}</small></span>`).join("");
   const root = document.getElementById("app");
 
   let library = null;          // {types, workouts}
@@ -92,7 +93,7 @@
       const total = totalSeconds(buildTimeline(w));
       const types = [...new Set(w.items.flatMap((i) => i.types))];
       return `<li><a href="#/w/${w.id}"><span class="wn">${esc(w.name)}</span>
-        <span class="wm"><b>${fmtL(total)}</b> · ${w.items.length} exercises${w.rounds > 1 ? ` · ${w.rounds} rounds` : ""}</span>
+        <span class="wm"><b>${durationText(total)}</b> · ${w.items.length} exercises${w.rounds > 1 ? ` · ${w.rounds} rounds` : ""}</span>
         <span class="wt">${types.map((t) => `<s style="background:${typeColour(t)}" title="${esc(typeName(t))}"></s>`).join("")}</span></a></li>`;
     }).join("");
     const empty = library
@@ -109,11 +110,10 @@
     const list = w.items.map((it, i) => `<li><i>${i + 1}</i><span>${esc(it.name)}${it.sides ? " <small>each side</small>" : ""}<b>${it.types.map((t) => `<s style="background:${typeColour(t)}" title="${esc(typeName(t))}"></s>`).join("")}</b></span><em>${it.dur} s</em></li>`).join("");
     return `<div class="scr s-done s-sum"><div class="main" style="justify-content:flex-start;gap:3.4cqw">
       <a class="backlink" href="#/">${I.left}Workouts</a>
-      <div class="eb">Today's workout</div><div class="name" style="font-size:9cqw">${esc(w.name)}</div>
-      <div class="bigtime" style="font-size:24cqw">${fmtL(total)}</div>
-      <div class="stats"><div><b>${w.items.length}</b>exercises</div><div><b>${w.rounds}</b>${w.rounds > 1 ? "rounds" : "round"}</div><div><b>${fmtL(workingSeconds(w))}</b>working</div></div>
+      <div class="name" style="font-size:9cqw">${esc(w.name)}</div>
+      <div class="bigtime" aria-label="Total time ${durationText(total)}">${durationBig(total)}</div>
       <ol class="slist">${list}</ol>
-      <div class="sleg">${used.map((t) => `<span><s style="background:${typeColour(t)}"></s>${esc(typeName(t))}</span>`).join("")}<span>${w.rest ? `${w.rest} s rest between` : "No rest between"}${w.rounds > 1 ? ` · ${fmtL(w.roundRest)} between rounds` : ""}</span></div></div>
+      <div class="sleg">${used.map((t) => `<span><s style="background:${typeColour(t)}"></s>${esc(typeName(t))}</span>`).join("")}<span>${w.rest ? `${w.rest} s rest between` : "No rest between"}${w.rounds > 1 ? ` · ${w.rounds} rounds, ${durationText(w.roundRest)} between` : ""}</span></div></div>
       <button class="play" type="button" data-act="start">${I.play}Start workout</button></div>`;
   }
 
@@ -134,7 +134,7 @@
       : "Nothing worked yet, so nothing was logged";
     return `<div class="scr s-done"><div class="main" style="justify-content:flex-start;gap:3.6cqw">
       <div class="eb">${partial ? "Ended early" : "Workout complete"}</div><div class="name" style="font-size:8.5cqw">${esc(w.name)}</div>
-      <div class="stats"><div><b>${fmtL(worked)}</b>worked</div><div><b>${exDone}/${w.items.length}</b>exercises</div>${w.rounds > 1 ? `<div><b>${w.rounds}</b>rounds</div>` : ""}</div>
+      <div class="stats"><div><b>${durationText(worked)}</b>worked</div><div><b>${exDone}/${w.items.length}</b>exercises</div>${w.rounds > 1 ? `<div><b>${w.rounds}</b>rounds</div>` : ""}</div>
       <div class="sub">Where it went</div>
       <div class="tbar">${bar || '<span style="flex:1;opacity:.2;background:currentColor"></span>'}</div>
       <ul class="tleg">${legend}</ul>
