@@ -1,0 +1,16 @@
+{% load static %}{
+  "name": "Workouts",
+  "short_name": "Workouts",
+  "description": "Interval workouts, hands free.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#12142A",
+  "theme_color": "#12142A",
+  "icons": [
+    {"src": "{% static 'activity/icon-192.png' %}", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+    {"src": "{% static 'activity/icon-512.png' %}", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"},
+    {"src": "{% static 'activity/icon.svg' %}", "sizes": "any", "type": "image/svg+xml"}
+  ]
+}

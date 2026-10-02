@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+db.sqlite3
+staticfiles/
+.env
+.dev-credentials
+.DS_Store
+.claude/*
+!.claude/launch.json

@@ -1,0 +1,37 @@
+[project]
+name = "workouts"
+version = "0.1.0"
+description = "Interval workouts: Django backend and an offline activity-mode PWA"
+authors = [
+    { name = "Hugo Rodger-Brown", email = "hugo@rodger-brown.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "django>=6.1.1",
+    "whitenoise>=6.12.0",
+]
+
+
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "pytest-django>=4.14.0",
+    "ruff>=0.16.10",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+python_files = ["tests.py", "test_*.py"]
+filterwarnings = ["ignore:No directory at:UserWarning"]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+extend-exclude = ["*/migrations/*"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "DJ"]
