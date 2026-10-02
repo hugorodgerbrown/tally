@@ -79,7 +79,9 @@ def test_workouts_payload(client_in, workout):
     (w,) = data["workouts"]
     assert w["id"] == str(workout.uuid)
     assert w["name"] == "Legs"
-    assert w["rounds"] == 1 and w["roundRest"] == 120 and w["rest"] == 15
+    assert w["rounds"] == 1
+    assert w["roundRest"] == 120
+    assert w["rest"] == 15
     assert w["items"][0] == {
         "exerciseId": str(workout.items.get().exercise.uuid),
         "name": "Split squat",

@@ -3,6 +3,8 @@
 Safe to run more than once: existing exercises and workouts are left alone.
 """
 
+from typing import Any
+
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
@@ -48,7 +50,7 @@ class Command(BaseCommand):
     help = "Load starter exercises and a sample 'Morning mobility' workout."
 
     @transaction.atomic
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         types = {t.slug: t for t in ExerciseType.objects.all()}
         created = 0
         for name, type_slugs, muscles, one_sided, duration in EXERCISES:

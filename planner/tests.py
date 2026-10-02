@@ -155,7 +155,8 @@ def test_duplicate_workout(client_in, squat):
     WorkoutItem.objects.create(workout=workout, exercise=squat, order=0, duration_seconds=40)
     client_in.post(reverse("planner:workout_duplicate", args=[workout.uuid]))
     copy = Workout.objects.get(name="Legs (copy)")
-    assert copy.rounds == 2 and copy.items.count() == 1
+    assert copy.rounds == 2
+    assert copy.items.count() == 1
 
 
 @pytest.mark.parametrize(
