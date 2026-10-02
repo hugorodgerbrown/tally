@@ -11,22 +11,27 @@ p { margin: 0; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* ---------- Shell ---------- */
-.topbar { display: flex; align-items: center; gap: 28px; padding: 12px 24px; background: var(--night); color: #FFFFFF; position: sticky; top: 0; z-index: 10; }
-.brand { font-weight: 850; font-stretch: 72%; font-size: 22px; letter-spacing: -.01em; display: flex; align-items: center; gap: 10px; color: #FFFFFF; text-decoration: none; }
-.brand img { width: 26px; height: 26px; border-radius: 7px; display: block; }
-.nav { display: flex; gap: 4px; }
-.nav a { color: #C9CCE0; text-decoration: none; font-size: 14px; font-weight: 600; padding: 6px 12px; border-radius: var(--r-control); }
+/* The header follows the phone's activity home screen: the yellow TALLY
+ * wordmark on the left, the mode switch and Sign out on the right, so the
+ * top row is the same in both modes. Manage's sections sit below as tabs. */
+/* The builder's side panels stick 20px below this header (about 108px tall). */
+.topbar { background: var(--night); color: #FFFFFF; position: sticky; top: 0; z-index: 10; }
+.topbar > * { max-width: 1320px; margin: 0 auto; padding-inline: 32px; }
+.hrow { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-top: 18px; padding-bottom: 14px; }
+.eb { font-size: 15px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--ready); text-decoration: none; }
+.hctl { display: flex; align-items: center; gap: 12px; }
+.nav { display: flex; gap: 24px; }
+.nav a { color: #C9CCE0; text-decoration: none; font-size: 14px; font-weight: 700; padding: 6px 0 10px; border-bottom: 2px solid transparent; }
 .nav a:hover { color: #FFFFFF; }
-.nav a[aria-current="page"] { background: rgba(255, 255, 255, .1); color: #FFFFFF; }
-.topbar .spacer { flex: 1; }
+.nav a[aria-current="page"] { color: #FFFFFF; border-bottom-color: #FFFFFF; }
 /* Mode switch: the same control appears on the phone's home screen. */
-.modes { display: inline-flex; padding: 3px; border-radius: 99px; background: rgba(255, 255, 255, .1); font-size: 13px; font-weight: 700; }
-.modes > * { padding: 5px 14px; border-radius: 99px; text-decoration: none; color: #C9CCE0; }
-.modes a:hover { color: #FFFFFF; }
-.modes [aria-current] { background: #FFFFFF; color: var(--night); }
+.modes { display: inline-flex; padding: 3px; border-radius: 99px; background: rgba(255, 255, 255, .08); font-size: 13px; font-weight: 700; }
+.modes > * { padding: 5px 14px; border-radius: 99px; text-decoration: none; color: #FFFFFF; opacity: .7; }
+.modes a:hover { opacity: 1; }
+.modes [aria-current] { background: #FFFFFF; color: var(--night); opacity: 1; }
 .topbar form { margin: 0; }
-.topbar .signout { background: none; border: 0; color: #C9CCE0; font: inherit; font-size: 13.5px; cursor: pointer; padding: 6px 4px; }
-.topbar .signout:hover { color: #FFFFFF; }
+.topbar .signout { background: none; border: 0; color: #FFFFFF; opacity: .7; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; padding: 6px 4px; }
+.topbar .signout:hover { opacity: 1; }
 .topbar a:focus-visible, .topbar button:focus-visible { outline: 2px solid var(--ready); outline-offset: 2px; }
 
 .page { max-width: 1320px; margin: 0 auto; padding: 32px 32px 64px; display: flex; flex-direction: column; gap: 24px; }
@@ -139,7 +144,7 @@ p { margin: 0; }
 
 /* ---------- Builder ---------- */
 .builder { display: grid; grid-template-columns: 280px minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
-.lib { padding: 16px; display: flex; flex-direction: column; gap: 12px; position: sticky; top: 72px; max-height: calc(100vh - 92px); }
+.lib { padding: 16px; display: flex; flex-direction: column; gap: 12px; position: sticky; top: 128px; max-height: calc(100vh - 148px); }
 .lib ul { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1; min-height: 120px; }
 .lib li { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-top: 1px solid var(--line); font-size: 14px; }
 .lib li .nm { flex: 1; min-width: 0; }
@@ -161,7 +166,7 @@ p { margin: 0; }
 .restline.roundline { background: color-mix(in srgb, var(--round) 18%, var(--surface)); }
 .items-empty { padding: 48px 24px; text-align: center; color: var(--muted); display: flex; flex-direction: column; gap: 6px; }
 .items-empty b { color: var(--ink); font-size: 16px; }
-.makeup { padding: 18px; display: flex; flex-direction: column; gap: 14px; position: sticky; top: 72px; }
+.makeup { padding: 18px; display: flex; flex-direction: column; gap: 14px; position: sticky; top: 128px; }
 .makeup .sub { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
 .formfoot { display: flex; gap: 10px; justify-content: flex-end; align-items: center; padding: 14px 16px; }
 .formfoot .spacer { flex: 1; }
@@ -184,8 +189,10 @@ dialog h2 { font-size: 26px; font-weight: 800; font-stretch: 78%; }
   .makeup { grid-column: 1 / -1; position: static; order: -1; }
 }
 @media (max-width: 800px) {
-  .page { padding: 24px 16px 48px; }
-  .topbar { gap: 12px; padding: 10px 16px; flex-wrap: wrap; }
+  /* Phone gutters match activity mode (7% of the width), so the switch sits in the same place. */
+  .page { padding: 24px min(7vw, 32px) 48px; }
+  .topbar > * { padding-inline: min(7vw, 32px); }
+  .hrow { padding-top: min(6vw, 24px); padding-bottom: 10px; }
   .builder { grid-template-columns: 1fr; }
   .lib { position: static; max-height: none; }
   .lib ul { max-height: 320px; }

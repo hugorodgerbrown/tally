@@ -113,6 +113,18 @@ def test_list_pages_render(client_in, squat):
     assert "Split squat" in client_in.get(reverse("planner:exercises")).content.decode()
 
 
+@pytest.mark.parametrize(
+    ("name", "section"), [("planner:workouts", "Workouts"), ("planner:exercises", "Exercises")]
+)
+def test_header_matches_activity_mode(client_in, name, section):
+    """The top row holds the wordmark, the mode switch and Sign out, as on the phone."""
+    html = client_in.get(reverse(name)).content.decode()
+    top = html[html.index('<div class="hrow">') : html.index('<nav class="nav"')]
+    assert '<span aria-current="page">Manage</span>' in top
+    assert 'action="/logout/"' in top
+    assert f'aria-current="page">{section}</a>' in html
+
+
 def test_create_exercise_with_new_muscle(client_in):
     MuscleGroup.objects.create(name="Core")
     response = client_in.post(

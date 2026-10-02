@@ -78,13 +78,21 @@
     return `<div class="status ok">${I.check}All sessions synced</div>`;
   }
 
-  /* Switch to the desktop planner. It needs the server, so it is disabled offline. */
+  /* The top-right controls, the same as the planner's header: the mode
+   * switch, then Sign out. Manage and Sign out need the server, so they are
+   * disabled offline; once signed out, Sign out becomes Sign in. */
   function modeSwitch() {
-    const offline = window.Store.status() === "offline" || !navigator.onLine;
+    const s = window.Store.status();
+    const offline = s === "offline" || !navigator.onLine;
     const manage = offline
       ? '<span class="mode-off" aria-disabled="true" title="Manage needs a connection">Manage</span>'
       : '<a href="/workouts/">Manage</a>';
-    return `<nav class="modes" aria-label="Mode"><span aria-current="page">Activity</span>${manage}</nav>`;
+    const account = s === "signed-out"
+      ? '<a class="signout" href="/login/?next=/">Sign in</a>'
+      : offline
+        ? '<span class="signout off" aria-disabled="true" title="Signing out needs a connection">Sign out</span>'
+        : `<form method="post" action="/logout/"><input type="hidden" name="next" value="/login/?next=/"><input type="hidden" name="csrfmiddlewaretoken" value="${esc(window.Store.csrfToken())}"><button class="signout" type="submit">Sign out</button></form>`;
+    return `<div class="hctl"><nav class="modes" aria-label="Mode"><span aria-current="page">Activity</span>${manage}</nav>${account}</div>`;
   }
 
   function homeScreen() {
