@@ -26,11 +26,11 @@ p { margin: 0; }
 .nav a[aria-current="page"] { color: #FFFFFF; border-bottom-color: #FFFFFF; }
 /* Mode switch: the same control appears on the phone's home screen. */
 .modes { display: inline-flex; padding: 3px; border-radius: 99px; background: rgba(255, 255, 255, .08); font-size: 13px; font-weight: 700; }
-.modes > * { padding: 5px 14px; border-radius: 99px; text-decoration: none; color: #FFFFFF; opacity: .7; }
+.modes > * { padding: 5px 14px; border-radius: 99px; white-space: nowrap; text-decoration: none; color: #FFFFFF; opacity: .7; }
 .modes a:hover { opacity: 1; }
 .modes [aria-current] { background: #FFFFFF; color: var(--night); opacity: 1; }
 .topbar form { margin: 0; }
-.topbar .signout { background: none; border: 0; color: #FFFFFF; opacity: .7; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; padding: 6px 4px; }
+.topbar .signout { background: none; border: 0; color: #FFFFFF; opacity: .7; font: inherit; font-size: 13px; font-weight: 700; white-space: nowrap; cursor: pointer; padding: 6px 4px; }
 .topbar .signout:hover { opacity: 1; }
 .topbar a:focus-visible, .topbar button:focus-visible { outline: 2px solid var(--ready); outline-offset: 2px; }
 
@@ -202,5 +202,12 @@ dialog h2 { font-size: 26px; font-weight: 800; font-stretch: 78%; }
   .item { grid-template-columns: 20px 20px minmax(0, 1fr) 92px; }
   .item .sidecell { display: none; }
   .item .tools { grid-column: 3 / -1; }
+}
+/* The smallest phones: tighten the top row so it stays on one line. */
+@media (max-width: 360px) {
+  .hrow, .hctl { gap: 6px; }
+  .eb { letter-spacing: .1em; }
+  .modes > * { padding: 5px 10px; }
+  .topbar .signout { padding-inline: 2px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
