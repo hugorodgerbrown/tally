@@ -121,7 +121,7 @@ def sessions(request):
     try:
         payload = json.loads(request.body)
         items = payload["sessions"]
-    except (ValueError, KeyError, TypeError):
+    except ValueError, KeyError, TypeError:
         return JsonResponse({"error": "bad_request"}, status=400)
 
     parsed, saved, rejected = [], [], []

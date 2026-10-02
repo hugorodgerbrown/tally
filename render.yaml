@@ -27,6 +27,6 @@ services:
         generateValue: true
       - key: DJANGO_DEBUG
         value: "0"
-      # Matches .python-version.
+      # The latest 3.14 release; .python-version says 3.14.
       - key: PYTHON_VERSION
-        value: "3.13"
+        value: "3.14.8"
