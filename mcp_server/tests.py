@@ -8,7 +8,7 @@ from urllib.parse import parse_qs, urlparse
 
 import pytest
 from django.utils import timezone
-from oauth2_provider.models import AccessToken, Application
+from oauth2_provider.models import AccessToken, Application, set_token_value
 
 from activity.models import ActivitySession, SessionEntry
 from library.models import Exercise, ExerciseType, MuscleGroup, Workout, WorkoutItem
@@ -35,13 +35,13 @@ def token(hugo):
         authorization_grant_type=Application.GRANT_AUTHORIZATION_CODE,
         redirect_uris=CALLBACK,
     )
-    return AccessToken.objects.create(
-        user=hugo,
-        application=app,
-        token=secrets.token_urlsafe(32),
-        scope="tally",
-        expires=timezone.now() + dt.timedelta(hours=1),
-    ).token
+    raw = secrets.token_urlsafe(32)
+    token = AccessToken(
+        user=hugo, application=app, scope="tally", expires=timezone.now() + dt.timedelta(hours=1)
+    )
+    set_token_value(token, raw)
+    token.save()
+    return raw
 
 
 @pytest.fixture
@@ -103,7 +103,7 @@ def test_metadata_documents(client, db):
     server = client.get("/.well-known/oauth-authorization-server").json()
     assert server["issuer"] == "http://testserver"
     assert server["authorization_endpoint"] == "http://testserver/oauth/authorize/"
-    assert server["token_endpoint"] == "http://testserver/oauth/token/"
+    assert server["token_endpoint"] == "http://testserver/oauth/token/"  # noqa: S105
     assert server["registration_endpoint"] == "http://testserver/oauth/register/"
     assert server["code_challenge_methods_supported"] == ["S256"]
     assert server["grant_types_supported"] == ["authorization_code", "refresh_token"]
@@ -179,6 +179,7 @@ def test_full_connect_flow(client, hugo, library):
     assert f"{redirect.scheme}://{redirect.netloc}{redirect.path}" == CALLBACK
     query = parse_qs(redirect.query)
     assert query["state"] == ["xyz"]
+    assert query["iss"] == ["http://testserver"]
 
     client.logout()
     tokens = client.post(

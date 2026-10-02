@@ -79,7 +79,9 @@ def test_workouts_payload(client_in, workout):
     (w,) = data["workouts"]
     assert w["id"] == str(workout.uuid)
     assert w["name"] == "Legs"
-    assert w["rounds"] == 1 and w["roundRest"] == 120 and w["rest"] == 15
+    assert w["rounds"] == 1
+    assert w["roundRest"] == 120
+    assert w["rest"] == 15
     assert w["items"][0] == {
         "exerciseId": str(workout.items.get().exercise.uuid),
         "name": "Split squat",
@@ -139,3 +141,96 @@ def test_service_worker_lists_assets(client, db):
     response = client.get(reverse("activity:service_worker"))
     assert response["Service-Worker-Allowed"] == "/"
     assert b"/static/activity/app.js" in response.content
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"startedAt": "not a date"},
+        {"endedAt": None},
+        {"uuid": "nope"},
+        {"workoutName": None, "entries": [{"seconds": "x"}]},
+    ],
+)
+def test_session_with_bad_fields_rejected(client_in, workout, overrides):
+    result = post_sessions(client_in, [session_payload(workout, **overrides)]).json()
+    assert result["saved"] == []
+    assert len(result["rejected"]) == 1
+
+
+def test_non_dict_session_rejected(client_in, workout):
+    result = post_sessions(client_in, ["junk"]).json()
+    assert result["saved"] == []
+    assert [r["uuid"] for r in result["rejected"]] == [None]
+
+
+@pytest.mark.parametrize("body", ["not json", "{}", "[]"])
+def test_sessions_bad_request(client_in, body):
+    response = client_in.post(
+        reverse("activity:api_sessions"), data=body, content_type="application/json"
+    )
+    assert response.status_code == 400
+
+
+def test_zero_second_entries_are_dropped(client_in, workout):
+    payload = session_payload(workout, effort=7)
+    payload["entries"].append({"exerciseId": "", "name": "Skipped", "seconds": 0})
+    post_sessions(client_in, [payload])
+    session = ActivitySession.objects.get()
+    assert session.effort == 7
+    assert session.seconds_worked == 80
+    assert [e.exercise_name for e in session.entries.all()] == ["Split squat"]
+    assert str(session).startswith("Legs 2026-10-02")
+    assert str(session.entries.get()) == "Split squat: 80s"
+
+
+def test_inactive_and_empty_workouts_are_not_sent(client_in, workout):
+    Workout.objects.create(name="Empty")
+    Workout.objects.create(name="Hidden", is_active=False)
+    names = [w["name"] for w in client_in.get(reverse("activity:api_workouts")).json()["workouts"]]
+    assert names == ["Legs"]
+
+
+def test_app_shell_and_manifest(client_in):
+    assert client_in.get(reverse("activity:app")).status_code == 200
+    response = client_in.get(reverse("activity:manifest"))
+    assert response["Content-Type"] == "application/manifest+json"
+
+
+def test_assets_version_is_cached_outside_debug(settings):
+    from activity import views
+
+    settings.DEBUG = False
+    views._cached_hash_assets.cache_clear()
+    assert views.assets_version() == views._hash_assets()
+
+
+def test_missing_asset_is_a_configuration_error(monkeypatch):
+    from django.core.exceptions import ImproperlyConfigured
+
+    from activity import views
+
+    monkeypatch.setattr(views, "APP_ASSETS", ["activity/missing.js"])
+    with pytest.raises(ImproperlyConfigured):
+        views._hash_assets()
+
+
+# The API's query counts stay fixed as workouts and sessions grow.
+@pytest.mark.parametrize("copies", [1, 10])
+def test_workouts_api_query_count(client_in, workout, django_assert_num_queries, copies):
+    for n in range(copies):
+        w = Workout.objects.create(name=f"Copy {n}")
+        WorkoutItem.objects.create(
+            workout=w, exercise=workout.items.get().exercise, duration_seconds=30
+        )
+    with django_assert_num_queries(8):
+        client_in.get(reverse("activity:api_workouts"))
+
+
+@pytest.mark.parametrize("count", [1, 10])
+def test_sessions_api_query_count(client_in, workout, django_assert_num_queries, count):
+    sessions = [session_payload(workout) for _ in range(count)]
+    # 4 per request (session, user, workouts, exercises), then 7 per session
+    # for its transaction, upsert and entries. Batches from the phone are small.
+    with django_assert_num_queries(4 + 7 * count):
+        post_sessions(client_in, sessions)

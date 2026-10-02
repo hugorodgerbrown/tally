@@ -7,9 +7,12 @@ replaces the stored record.
 
 import json
 import uuid
+from collections.abc import Callable
+from typing import Any, cast
 
+from django.contrib.auth.models import User
 from django.db import transaction
-from django.http import JsonResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.utils.dateparse import parse_datetime
 from django.views.decorators.http import require_GET, require_POST
 
@@ -17,9 +20,11 @@ from library.models import Exercise, ExerciseType, Workout
 
 from .models import ActivitySession, SessionEntry
 
+type View = Callable[..., HttpResponse]
 
-def _login_required_json(view):
-    def wrapped(request, *args, **kwargs):
+
+def _login_required_json(view: View) -> View:
+    def wrapped(request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
         if not request.user.is_authenticated:
             return JsonResponse({"error": "not_authenticated"}, status=401)
         return view(request, *args, **kwargs)
@@ -27,7 +32,7 @@ def _login_required_json(view):
     return wrapped
 
 
-def serialize_workout(workout):
+def serialize_workout(workout: Workout) -> dict[str, Any]:
     return {
         "id": str(workout.uuid),
         "name": workout.name,
@@ -52,7 +57,7 @@ def serialize_workout(workout):
 
 @require_GET
 @_login_required_json
-def workouts(request):
+def workouts(request: HttpRequest) -> HttpResponse:
     qs = Workout.objects.filter(is_active=True).prefetch_related(
         "items__exercise__types", "items__exercise__muscles"
     )
@@ -71,16 +76,19 @@ class InvalidSession(ValueError):
     pass
 
 
-def _uuid_or_none(value):
+def _uuid_or_none(value: object) -> uuid.UUID | None:
     return None if value in (None, "") else uuid.UUID(str(value))
 
 
-def _parse_session(data):
+type ParsedSession = tuple[uuid.UUID, dict[str, Any], list[dict[str, Any]]]
+
+
+def _parse_session(data: Any) -> ParsedSession:
     try:
         session_uuid = uuid.UUID(str(data["uuid"]))
         started_at = parse_datetime(data["startedAt"])
         ended_at = parse_datetime(data["endedAt"])
-        entries = [
+        entries: list[dict[str, Any]] = [
             {
                 "exercise_uuid": _uuid_or_none(e.get("exerciseId")),
                 "exercise_name": str(e["name"])[:100],
@@ -112,7 +120,7 @@ def _parse_session(data):
 
 @require_POST
 @_login_required_json
-def sessions(request):
+def sessions(request: HttpRequest) -> HttpResponse:
     """Upsert a batch of sessions: ``{"sessions": [...]}``.
 
     Returns the UUIDs saved and those rejected as malformed, so the client
@@ -124,7 +132,9 @@ def sessions(request):
     except ValueError, KeyError, TypeError:
         return JsonResponse({"error": "bad_request"}, status=400)
 
-    parsed, saved, rejected = [], [], []
+    parsed: list[ParsedSession] = []
+    saved: list[str] = []
+    rejected: list[dict[str, str | None]] = []
     for data in items:
         try:
             parsed.append(_parse_session(data))
@@ -144,6 +154,7 @@ def sessions(request):
             uuid__in={e["exercise_uuid"] for _, _, es in parsed for e in es}
         ).values_list("uuid", "pk")
     )
+    user = cast(User, request.user)  # _login_required_json has checked
     for session_uuid, fields, entries in parsed:
         # Resolve the public UUIDs; rows deleted since the phone cached the
         # workout resolve to None and the names keep the log readable.
@@ -153,9 +164,9 @@ def sessions(request):
 
         with transaction.atomic():
             session, created = ActivitySession.objects.get_or_create(
-                uuid=session_uuid, defaults={**fields, "user": request.user}
+                uuid=session_uuid, defaults={**fields, "user": user}
             )
-            if session.user_id != request.user.pk:
+            if session.user_id != user.pk:
                 rejected.append({"uuid": str(session_uuid), "error": "not_owner"})
                 continue
             if not created:

@@ -5,6 +5,8 @@ from pathlib import Path
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.staticfiles import finders
+from django.core.exceptions import ImproperlyConfigured
+from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 from django.templatetags.static import static
 from django.views.decorators.cache import never_cache
@@ -28,7 +30,7 @@ APP_ASSETS = [
 APP_TEMPLATE = Path(__file__).parent / "templates" / "activity" / "app.html"
 
 
-def assets_version():
+def assets_version() -> str:
     """Hash of the shell and asset contents; a deploy changes the cache name.
 
     Recomputed on every request in development so edits reach the browser.
@@ -36,10 +38,13 @@ def assets_version():
     return _hash_assets() if settings.DEBUG else _cached_hash_assets()
 
 
-def _hash_assets():
+def _hash_assets() -> str:
     digest = hashlib.sha256(APP_TEMPLATE.read_bytes())
     for name in APP_ASSETS:
-        digest.update(Path(finders.find(name)).read_bytes())
+        path = finders.find(name)
+        if not isinstance(path, str):
+            raise ImproperlyConfigured(f"App asset {name} is missing from static files.")
+        digest.update(Path(path).read_bytes())
     return digest.hexdigest()[:12]
 
 
@@ -48,12 +53,12 @@ _cached_hash_assets = cache(_hash_assets)
 
 @ensure_csrf_cookie
 @login_required
-def app(request):
+def app(request: HttpRequest) -> HttpResponse:
     return render(request, "activity/app.html")
 
 
 @never_cache
-def service_worker(request):
+def service_worker(request: HttpRequest) -> HttpResponse:
     response = render(
         request,
         "activity/sw.js",
@@ -64,7 +69,7 @@ def service_worker(request):
     return response
 
 
-def manifest(request):
+def manifest(request: HttpRequest) -> HttpResponse:
     return render(
         request, "activity/manifest.webmanifest", content_type="application/manifest+json"
     )

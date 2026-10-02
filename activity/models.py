@@ -42,7 +42,7 @@ class ActivitySession(models.Model):
     class Meta:
         ordering = ["-started_at"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.workout_name} {self.started_at:%Y-%m-%d %H:%M}"
 
 
@@ -61,5 +61,5 @@ class SessionEntry(models.Model):
         ordering = ["order"]
         verbose_name_plural = "session entries"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.exercise_name}: {self.seconds_worked}s"

@@ -17,7 +17,7 @@ class ExerciseType(models.Model):
     class Meta:
         ordering = ["order", "name"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 
@@ -27,7 +27,7 @@ class MuscleGroup(models.Model):
     class Meta:
         ordering = ["name"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 
@@ -48,7 +48,7 @@ class Exercise(models.Model):
     class Meta:
         ordering = ["name"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 
@@ -73,7 +73,7 @@ class Workout(models.Model):
     class Meta:
         ordering = ["name"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 
@@ -89,5 +89,5 @@ class WorkoutItem(models.Model):
     class Meta:
         ordering = ["order", "id"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.exercise} ({self.duration_seconds}s)"

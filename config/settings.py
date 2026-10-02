@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 
 import dj_database_url
+from django.utils.csp import CSP
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -25,12 +26,45 @@ if RENDER_EXTERNAL_HOSTNAME := os.environ.get("RENDER_EXTERNAL_HOSTNAME"):
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
     CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_EXTERNAL_HOSTNAME}")
 
-# Render terminates TLS and forwards plain HTTP. No SECURE_SSL_REDIRECT: the
-# health check arrives over plain HTTP.
+# Render terminates TLS and forwards plain HTTP with X-Forwarded-Proto set.
+# Its health check calls /healthz over plain HTTP, so that path is not
+# redirected.
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_SSL_REDIRECT = True
+    SECURE_REDIRECT_EXEMPT = [r"^healthz$"]
+    SECURE_HSTS_SECONDS = 60 * 60 * 24 * 365
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+
+# HSTS preload needs a registrable domain of our own; an onrender.com name
+# can't be preloaded.
+SILENCED_SYSTEM_CHECKS = [
+    "security.W021",
+    # OAuth allows http redirect URIs because Claude Code and other local MCP
+    # clients sign in through a loopback port (RFC 8252). Registration only
+    # accepts http for localhost; see MCP_REDIRECT_URI_PATTERNS.
+    "oauth2_provider.W008",
+]
+
+# Content Security Policy. Scripts only from this site (no inline scripts).
+# Styles allow inline because templates set colours and widths per row; fonts
+# come from Google Fonts, which the service worker also fetches and caches.
+SECURE_CSP = {
+    "default-src": [CSP.SELF],
+    "script-src": [CSP.SELF],
+    "style-src": [CSP.SELF, CSP.UNSAFE_INLINE, "https://fonts.googleapis.com"],
+    "font-src": [CSP.SELF, "https://fonts.gstatic.com"],
+    "img-src": [CSP.SELF, "data:"],
+    "connect-src": [CSP.SELF, "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
+    "worker-src": [CSP.SELF],
+    "manifest-src": [CSP.SELF],
+    "object-src": [CSP.NONE],
+    "base-uri": [CSP.SELF],
+    "form-action": [CSP.SELF],
+    "frame-ancestors": [CSP.NONE],
+}
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -50,6 +84,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "django.middleware.csp.ContentSecurityPolicyMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -87,7 +122,7 @@ else:
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
-            "NAME": os.environ.get("DJANGO_DB_PATH", BASE_DIR / "db.sqlite3"),
+            "NAME": os.environ.get("DJANGO_DB_PATH", str(BASE_DIR / "db.sqlite3")),
         }
     }
 
@@ -131,10 +166,16 @@ OAUTH2_PROVIDER = {
     "ACCESS_TOKEN_EXPIRE_SECONDS": 60 * 60,
     "REFRESH_TOKEN_EXPIRE_SECONDS": 60 * 60 * 24 * 90,
     "ROTATE_REFRESH_TOKEN": True,
+    # A replayed refresh token revokes the whole family. No grace period: it
+    # can't be combined with hashed token storage.
+    "REFRESH_TOKEN_REUSE_PROTECTION": True,
     "PKCE_REQUIRED": True,
     "COMPLIANT_BCP_RFC9700_PKCE_METHOD": True,
     "COMPLIANT_BCP_RFC9700_IMPLICIT_GRANT": True,
     "COMPLIANT_BCP_RFC9700_PASSWORD_GRANT": True,
+    "COMPLIANT_BCP_RFC9700_ACCESS_TOKEN_TRANSPORT": True,
+    "COMPLIANT_BCP_RFC9700_AUTHZ_RESPONSE_ISS": True,
+    "COMPLIANT_BCP_RFC9700_TOKEN_STORAGE": True,
     "OAUTH2_RESPONSE_TYPES_SUPPORTED": ["code"],
     "OAUTH2_GRANT_TYPES_SUPPORTED": ["authorization_code", "refresh_token"],
     "OAUTH2_TOKEN_ENDPOINT_AUTH_METHODS_SUPPORTED": [

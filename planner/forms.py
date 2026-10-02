@@ -19,7 +19,7 @@ class WorkoutForm(forms.ModelForm):
         fields = ["name", "description", "rest_seconds", "rounds", "round_rest_seconds"]
         widgets = {"description": forms.Textarea(attrs={"rows": 2})}
 
-    def clean_items(self):
+    def clean_items(self) -> list[tuple[Exercise, int]]:
         try:
             raw = json.loads(self.cleaned_data["items"])
             wanted = [(uuid.UUID(str(i["exercise"])), int(i["dur"])) for i in raw]
@@ -64,19 +64,19 @@ class ExerciseForm(forms.ModelForm):
         }
         widgets = {"description": forms.Textarea(attrs={"rows": 3})}
 
-    def clean_name(self):
-        name = self.cleaned_data["name"].strip()
+    def clean_name(self) -> str:
+        name: str = self.cleaned_data["name"].strip()
         clash = Exercise.objects.filter(name__iexact=name).exclude(pk=self.instance.pk)
         if clash.exists():
             raise forms.ValidationError("An exercise with this name already exists.")
         return name
 
-    def clean_new_muscles(self):
+    def clean_new_muscles(self) -> list[str]:
         names = [n.strip() for n in self.cleaned_data["new_muscles"].split(",")]
         return [n[:1].upper() + n[1:] for n in names if n]
 
-    def save(self, commit=True):
-        exercise = super().save(commit=commit)
+    def save(self, commit: bool = True) -> Exercise:
+        exercise: Exercise = super().save(commit=commit)
         if commit:
             extra = []
             for name in self.cleaned_data["new_muscles"]:

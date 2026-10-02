@@ -18,14 +18,31 @@ dependencies = [
 
 
 [dependency-groups]
-dev = [
+test = [
     "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
     "pytest-django>=4.14.0",
+]
+lint = [
     "ruff>=0.16.10",
+]
+types = [
+    "django-stubs>=6.0.2",
+    "mypy>=2.3.0",
+    {include-group = "test"},
+]
+dev = [
+    "pre-commit>=4.6.1",
+    "tox>=4.52.1",
+    "tox-uv>=1.0",
+    {include-group = "test"},
+    {include-group = "lint"},
+    {include-group = "types"},
 ]
 
 [tool.uv]
 package = false
+default-groups = ["dev"]
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings"
@@ -38,9 +55,56 @@ line-length = 100
 extend-exclude = ["*/migrations/*"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "B", "UP", "DJ"]
+select = [
+    "E", "F", "I", "B", "UP", "DJ",
+    "S",    # flake8-bandit: security
+    "SIM",  # simplifications
+    "C4",   # comprehensions
+    "PT",   # pytest style
+    "PIE",
+    "RET",
+    "RUF",
+    "T20",  # stray print()
+    "DTZ",  # naive datetimes
+]
+# Django's Meta and admin options are mutable class attributes by design.
+ignore = ["RUF012"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/{tests,test_*,conftest}.py" = ["S101", "S106"]
+
+[tool.mypy]
+python_version = "3.14"
+plugins = ["mypy_django_plugin.main"]
+strict_optional = true
+warn_return_any = true
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_unreachable = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+exclude = ["/migrations/", "^\\.venv/"]
+
+[[tool.mypy.overrides]]
+# Tests are typed loosely: fixtures and assertions say enough.
+module = ["*.tests"]
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
 
 [[tool.mypy.overrides]]
 # django-oauth-toolkit ships no type hints.
 module = ["oauth2_provider.*"]
 ignore_missing_imports = true
+
+[tool.django-stubs]
+django_settings_module = "config.settings"
+
+[tool.coverage.run]
+source = ["activity", "config", "library", "mcp_server", "planner"]
+omit = ["*/migrations/*", "*/tests.py", "config/asgi.py", "config/wsgi.py", "config/settings.py"]
+
+[tool.coverage.report]
+fail_under = 95
+skip_empty = true
+exclude_also = ["if TYPE_CHECKING:"]

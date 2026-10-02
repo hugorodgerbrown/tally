@@ -1,10 +1,14 @@
 """The interval sequence a workout plays, mirroring the PWA's engine.js."""
 
+from collections.abc import Sequence
+
+from library.models import Workout, WorkoutItem
+
 READY_SECONDS = 5
 SWITCH_SECONDS = 5
 
 
-def segments(workout, items=None):
+def segments(workout: Workout, items: Sequence[WorkoutItem] | None = None) -> list[tuple[str, int]]:
     """Return [(kind, seconds)] for every step: ready, work, switch, rest, round."""
     items = list(workout.items.all()) if items is None else items
     out = [("ready", READY_SECONDS)]
@@ -20,5 +24,5 @@ def segments(workout, items=None):
     return out
 
 
-def total_seconds(workout, items=None):
+def total_seconds(workout: Workout, items: Sequence[WorkoutItem] | None = None) -> int:
     return sum(s for _, s in segments(workout, items))
