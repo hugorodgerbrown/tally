@@ -1,0 +1,32 @@
+# Render Blueprint: Tally as one web service. It uses a database on a (shared)
+# Render Postgres instance; set DATABASE_URL to its internal URL when Render
+# prompts for it. See "Deploy to Render" in the README.
+#
+# uv is pinned: the build runs with the service's secrets in its environment, so
+# it installs a known version, and uv then installs exactly what uv.lock lists.
+services:
+  - type: web
+    name: tally
+    runtime: python
+    region: frankfurt
+    plan: starter
+    buildCommand: >-
+      pip install uv==0.12.22 && uv sync --locked --no-dev &&
+      uv run --no-sync python manage.py collectstatic --noinput
+    # Runs before each deploy goes live; a failed migration stops the deploy.
+    preDeployCommand: uv run --no-sync python manage.py migrate --noinput
+    startCommand: uv run --no-sync gunicorn config.wsgi --bind 0.0.0.0:$PORT --access-logfile -
+    # Answers 200 without a sign-in or a database query.
+    healthCheckPath: /healthz
+    envVars:
+      # The instance's internal URL with Tally's own role and password, and
+      # /tally as the database name.
+      - key: DATABASE_URL
+        sync: false
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_DEBUG
+        value: "0"
+      # Matches .python-version.
+      - key: PYTHON_VERSION
+        value: "3.13"
