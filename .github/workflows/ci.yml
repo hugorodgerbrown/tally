@@ -26,6 +26,10 @@ jobs:
         env: [fmt, lint, types, checks, test, js, audit, sast]
     steps:
       - uses: actions/checkout@v7
+      # The tox envs run on 3.14 (base_python in tox.ini).
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
       - if: matrix.env == 'js'
         uses: actions/setup-node@v7
