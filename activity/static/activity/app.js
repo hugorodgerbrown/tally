@@ -90,7 +90,7 @@
       ? `<p class="empty">No workouts yet. Add one in the <a href="/admin/library/workout/">admin</a>.</p>`
       : `<p class="empty">Workouts appear here after the first sync. Connect to the internet and reopen the app.</p>`;
     return `<div class="scr s-done s-home"><div class="main" style="justify-content:flex-start;gap:5cqw">
-      <div class="eb">Activity</div><div class="name">Workouts</div>
+      <div class="eb">Tally</div><div class="name">Workouts</div>
       ${ws.length ? `<ul class="wlist">${list}</ul>` : empty}</div>${statusLine()}</div>`;
   }
 

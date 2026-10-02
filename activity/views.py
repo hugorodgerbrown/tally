@@ -18,9 +18,12 @@ APP_ASSETS = [
     "activity/app.js",
     "activity/store.js",
     "activity/engine.js",
-    "activity/icon.svg",
-    "activity/icon-192.png",
-    "activity/icon-512.png",
+    "icons/favicon.svg",
+    "icons/favicon.ico",
+    "icons/apple-touch-icon.png",
+    "icons/icon-192.png",
+    "icons/icon-512.png",
+    "icons/icon-maskable-512.png",
 ]
 APP_TEMPLATE = Path(__file__).parent / "templates" / "activity" / "app.html"
 

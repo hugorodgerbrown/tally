@@ -3,8 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Workouts{% endblock %}</title>
-  <link rel="icon" href="{% static 'activity/icon.svg' %}" type="image/svg+xml">
+  <title>{% block title %}Tally{% endblock %}</title>
+  <link rel="icon" href="{% static 'icons/favicon.svg' %}" type="image/svg+xml">
+  <link rel="icon" href="{% static 'icons/favicon.ico' %}" sizes="32x32">
+  <link rel="apple-touch-icon" href="{% static 'icons/apple-touch-icon.png' %}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..900&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -15,7 +17,7 @@
 <body>
   {% block body %}
   <header class="topbar">
-    <a class="brand" href="{% url 'planner:workouts' %}"><i></i>Workouts</a>
+    <a class="brand" href="{% url 'planner:workouts' %}"><img src="{% static 'icons/favicon.svg' %}" alt="" width="26" height="26">Tally</a>
     <nav class="nav" aria-label="Main">
       <a href="{% url 'planner:workouts' %}"{% if nav == "workouts" %} aria-current="page"{% endif %}>Workouts</a>
       <a href="{% url 'planner:exercises' %}"{% if nav == "exercises" %} aria-current="page"{% endif %}>Exercises</a>

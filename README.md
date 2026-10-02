@@ -1,4 +1,4 @@
-# Workouts
+# Tally
 
 Interval workouts built from a library of exercises, run hands-free on a
 phone. A Django backend stores exercises, workouts and completed sessions;
@@ -48,9 +48,15 @@ so offline mode needs a deployed HTTPS host (or a tunnel) on a real phone.
 
 Tokens live in `static/ui/tokens.css` and are shared by the planner and
 the phone; desktop components are in `static/ui/ui.css`. The reference
-sheet is the [Workouts Design System](https://claude.ai/artifact/VvqJo4QejZZrkbpmRwSdyP).
+sheet is the [Tally Design System](https://claude.ai/artifact/VvqJo4QejZZrkbpmRwSdyP).
 Phase colours (work, rest, switch, get ready, round break) mark time only;
 type colours mark exercise types only; durations are set in IBM Plex Mono.
+
+## Icons
+
+`static/icons/` holds the Tally icon set: `tally.svg` (master artwork),
+manifest PNGs (192, 512, maskable 512), the iOS `apple-touch-icon.png`
+(180 px), and `favicon.svg` / `favicon.ico` for browser tabs.
 
 ## Layout
 

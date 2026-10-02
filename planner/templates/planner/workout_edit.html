@@ -1,6 +1,6 @@
 {% extends "planner/base.html" %}
 {% load static %}
-{% block title %}{% if workout.pk %}{{ workout.name }}{% else %}New workout{% endif %} · Workouts{% endblock %}
+{% block title %}{% if workout.pk %}{{ workout.name }}{% else %}New workout{% endif %} · Tally{% endblock %}
 {% block content %}
 <div class="phead">
   <h1 id="title">{% if workout.pk %}{{ workout.name }}{% else %}New workout{% endif %}</h1>
