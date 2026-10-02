@@ -17,14 +17,17 @@
 <body>
   {% block body %}
   <header class="topbar">
-    <a class="brand" href="{% url 'planner:workouts' %}"><img src="{% static 'icons/favicon.svg' %}" alt="" width="26" height="26">Tally</a>
+    <div class="hrow">
+      <a class="eb" href="{% url 'planner:workouts' %}">Tally</a>
+      <div class="hctl">
+        <nav class="modes" aria-label="Mode"><a href="{% url 'activity:app' %}">Activity</a><span aria-current="page">Manage</span></nav>
+        <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="signout" type="submit">Sign out</button></form>
+      </div>
+    </div>
     <nav class="nav" aria-label="Main">
       <a href="{% url 'planner:workouts' %}"{% if nav == "workouts" %} aria-current="page"{% endif %}>Workouts</a>
       <a href="{% url 'planner:exercises' %}"{% if nav == "exercises" %} aria-current="page"{% endif %}>Exercises</a>
     </nav>
-    <span class="spacer"></span>
-    <nav class="modes" aria-label="Mode"><a href="{% url 'activity:app' %}">Activity</a><span aria-current="page">Manage</span></nav>
-    <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="signout" type="submit">Sign out</button></form>
   </header>
   <main class="page">
     {% if messages %}<ul class="messages">{% for m in messages %}<li>{{ m }}</li>{% endfor %}</ul>{% endif %}

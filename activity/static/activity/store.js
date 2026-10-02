@@ -118,7 +118,7 @@
   });
 
   window.Store = {
-    get, set, del, pending, loadWorkouts, saveSession, flush,
+    get, set, del, pending, loadWorkouts, saveSession, flush, csrfToken,
     onStatus: (fn) => listeners.add(fn),
     status: () => status,
   };
