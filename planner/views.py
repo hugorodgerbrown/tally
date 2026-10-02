@@ -1,10 +1,12 @@
 import json
+import uuid as uuid_lib
+from typing import Any
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
-from django.db.models import Count, Max, Prefetch, Q
-from django.http import JsonResponse
+from django.db.models import Count, Max, Prefetch, Q, QuerySet
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
@@ -14,7 +16,7 @@ from library.models import Exercise, ExerciseType, MuscleGroup, Workout, Workout
 from .forms import ExerciseForm, WorkoutForm
 
 
-def exercise_json(exercise):
+def exercise_json(exercise: Exercise) -> dict[str, Any]:
     return {
         "id": str(exercise.uuid),
         "name": exercise.name,
@@ -25,11 +27,11 @@ def exercise_json(exercise):
     }
 
 
-def _exercises():
+def _exercises() -> QuerySet[Exercise]:
     return Exercise.objects.prefetch_related("types", "muscles")
 
 
-def _wants_json(request):
+def _wants_json(request: HttpRequest) -> bool:
     return "application/json" in request.headers.get("Accept", "")
 
 
@@ -37,7 +39,7 @@ def _wants_json(request):
 
 
 @login_required
-def workout_list(request):
+def workout_list(request: HttpRequest) -> HttpResponse:
     workouts = (
         Workout.objects.annotate(
             times_done=Count("sessions"), last_done=Max("sessions__started_at")
@@ -66,7 +68,7 @@ def workout_list(request):
 
 
 @login_required
-def workout_edit(request, uuid=None):
+def workout_edit(request: HttpRequest, uuid: uuid_lib.UUID | None = None) -> HttpResponse:
     workout = get_object_or_404(Workout, uuid=uuid) if uuid else Workout()
     if request.method == "POST":
         form = WorkoutForm(request.POST, instance=workout)
@@ -116,7 +118,7 @@ def workout_edit(request, uuid=None):
 
 @login_required
 @require_POST
-def workout_duplicate(request, uuid):
+def workout_duplicate(request: HttpRequest, uuid: uuid_lib.UUID) -> HttpResponse:
     source = get_object_or_404(Workout, uuid=uuid)
     items = list(source.items.all())
     with transaction.atomic():
@@ -141,7 +143,7 @@ def workout_duplicate(request, uuid):
 
 @login_required
 @require_POST
-def workout_toggle(request, uuid):
+def workout_toggle(request: HttpRequest, uuid: uuid_lib.UUID) -> HttpResponse:
     workout = get_object_or_404(Workout, uuid=uuid)
     workout.is_active = not workout.is_active
     workout.save(update_fields=["is_active", "updated_at"])
@@ -151,7 +153,7 @@ def workout_toggle(request, uuid):
 
 
 @login_required
-def workout_delete(request, uuid):
+def workout_delete(request: HttpRequest, uuid: uuid_lib.UUID) -> HttpResponse:
     workout = get_object_or_404(Workout, uuid=uuid)
     if request.method == "POST":
         workout.delete()
@@ -174,7 +176,7 @@ def workout_delete(request, uuid):
 
 
 @login_required
-def exercise_list(request):
+def exercise_list(request: HttpRequest) -> HttpResponse:
     q = request.GET.get("q", "").strip()
     type_slug = request.GET.get("type", "")
     exercises = (
@@ -203,7 +205,7 @@ def exercise_list(request):
 
 
 @login_required
-def exercise_edit(request, uuid=None):
+def exercise_edit(request: HttpRequest, uuid: uuid_lib.UUID | None = None) -> HttpResponse:
     exercise = get_object_or_404(Exercise, uuid=uuid) if uuid else Exercise()
     form = ExerciseForm(request.POST or None, instance=exercise)
     if request.method == "POST":
@@ -224,7 +226,7 @@ def exercise_edit(request, uuid=None):
 
 
 @login_required
-def exercise_delete(request, uuid):
+def exercise_delete(request: HttpRequest, uuid: uuid_lib.UUID) -> HttpResponse:
     exercise = get_object_or_404(Exercise, uuid=uuid)
     used_in = Workout.objects.filter(items__exercise=exercise).distinct()
     if request.method == "POST" and not used_in:

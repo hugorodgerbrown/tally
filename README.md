@@ -11,8 +11,9 @@ a PWA runs the workout as a full-screen timer and works offline.
 | Python packaging | [uv](https://docs.astral.sh/uv/) (`pyproject.toml`, `uv.lock`) |
 | Backend | Django 6.1; SQLite locally, Postgres on Render |
 | Static files | WhiteNoise |
-| Tests | pytest + pytest-django |
-| Lint / format | Ruff |
+| Tests | pytest + pytest-django; Node's built-in runner for the timer engine |
+| Lint / format / types | Ruff, mypy + django-stubs |
+| Checks runner | tox (tox-uv), the same envs locally and in CI |
 | Front end | Plain JavaScript, no build step |
 | Offline | Service worker (app shell and assets) and IndexedDB (workouts and unsent sessions) |
 
@@ -32,12 +33,7 @@ uv run python manage.py runserver
 - Both sign in at `/login/`. There is no registration: the one account is
   the superuser made above. `/admin/` is still there for raw data.
 
-Tests and lint:
-
-```bash
-uv run pytest
-uv run ruff check . && uv run ruff format --check .
-```
+Tests and lint: see [Checks](#checks).
 
 To try it on a phone on the same network, run
 `uv run python manage.py runserver 0.0.0.0:8000` and set
@@ -92,6 +88,42 @@ instance (`shared-db`); nothing in the Blueprint creates them.
      --indent 2 -o tally.json
    uv run --no-sync python manage.py loaddata tally.json
    ```
+
+## Checks
+
+`uv run tox` runs everything CI runs (except `sast`). One env at a time:
+
+| Env | What it checks |
+| --- | --- |
+| `fmt` | Ruff formatting |
+| `lint` | Ruff lint, including bandit security rules (`S`) |
+| `types` | mypy with django-stubs; every function outside tests and migrations is typed |
+| `checks` | `check --deploy` with production settings (any warning fails), and missing migrations |
+| `test` | pytest with coverage; fails under 95% |
+| `js` | `tests/js/`: the timer engine (`engine.js`) on `node --test`, no npm |
+| `audit` | pip-audit on the production dependencies in `uv.lock` |
+| `sast` | semgrep's Django, Python and security-audit packs (downloads rules, so CI only by default) |
+
+For a quick loop, `uv run pytest` and `uv run ruff check .` still work on
+their own. `uv run pre-commit install` adds a git hook for Ruff, mypy,
+gitleaks and basic file hygiene.
+
+Performance is guarded by query-count tests: the planner pages and both
+API endpoints use a fixed number of queries however many workouts there
+are, so an N+1 query fails `test`.
+
+CI (`.github/workflows/ci.yml`) runs each env as its own job, plus a
+gitleaks secret scan, on every push to `main`, every pull request and
+every Monday. Dependabot opens weekly PRs for `uv.lock` and Actions.
+
+### Security settings
+
+With `DJANGO_DEBUG=0`: HTTPS redirect (except `/healthz`, which Render's
+health check calls over plain HTTP), HSTS for a year, and secure session
+and CSRF cookies. Every response carries a Content-Security-Policy:
+scripts only from this site, styles from this site plus inline `style`
+attributes, fonts from Google Fonts. A new inline `<script>` or a script
+from another host will be blocked by the browser.
 
 ## Design system
 

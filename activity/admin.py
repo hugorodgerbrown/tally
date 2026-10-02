@@ -6,7 +6,7 @@ from .models import ActivitySession, SessionEntry
 class SessionEntryInline(admin.TabularInline):
     model = SessionEntry
     extra = 0
-    fields = ["order", "exercise_name", "exercise", "seconds_worked"]
+    fields = ("order", "exercise_name", "exercise", "seconds_worked")
     readonly_fields = fields
 
 

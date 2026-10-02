@@ -8,3 +8,5 @@ staticfiles/
 .DS_Store
 .claude/*
 !.claude/launch.json
+.tox/
+.coverage

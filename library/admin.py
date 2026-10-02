@@ -1,4 +1,6 @@
 from django.contrib import admin
+from django.db.models import QuerySet
+from django.http import HttpRequest
 
 from .models import Exercise, ExerciseType, MuscleGroup, Workout, WorkoutItem
 
@@ -22,11 +24,11 @@ class ExerciseAdmin(admin.ModelAdmin):
     search_fields = ["name"]
     filter_horizontal = ["types", "muscles"]
 
-    def get_queryset(self, request):
+    def get_queryset(self, request: HttpRequest) -> QuerySet[Exercise]:
         return super().get_queryset(request).prefetch_related("types")
 
     @admin.display(description="Types")
-    def type_list(self, obj):
+    def type_list(self, obj: Exercise) -> str:
         return ", ".join(t.name for t in obj.types.all())
 
 
