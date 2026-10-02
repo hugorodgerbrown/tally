@@ -33,14 +33,14 @@ def session_payload(workout, **overrides):
     item = workout.items.get()
     data = {
         "uuid": str(uuid.uuid4()),
-        "workoutId": workout.pk,
+        "workoutId": str(workout.uuid),
         "workoutName": workout.name,
         "startedAt": "2026-10-02T07:00:00Z",
         "endedAt": "2026-10-02T07:02:00Z",
         "completed": True,
         "rounds": 1,
         "effort": None,
-        "entries": [{"exerciseId": item.exercise_id, "name": "Split squat", "seconds": 80}],
+        "entries": [{"exerciseId": str(item.exercise.uuid), "name": "Split squat", "seconds": 80}],
     }
     data.update(overrides)
     return data
@@ -77,10 +77,11 @@ def test_app_redirects_to_login(client, db):
 def test_workouts_payload(client_in, workout):
     data = client_in.get(reverse("activity:api_workouts")).json()
     (w,) = data["workouts"]
+    assert w["id"] == str(workout.uuid)
     assert w["name"] == "Legs"
     assert w["rounds"] == 1 and w["roundRest"] == 120 and w["rest"] == 15
     assert w["items"][0] == {
-        "exerciseId": workout.items.get().exercise_id,
+        "exerciseId": str(workout.items.get().exercise.uuid),
         "name": "Split squat",
         "dur": 40,
         "sides": True,
@@ -111,8 +112,8 @@ def test_malformed_session_rejected(client_in, workout):
 
 
 def test_session_survives_deleted_workout(client_in, workout):
-    payload = session_payload(workout, workoutId=9999)
-    payload["entries"][0]["exerciseId"] = 9999
+    payload = session_payload(workout, workoutId=str(uuid.uuid4()))
+    payload["entries"][0]["exerciseId"] = str(uuid.uuid4())
     assert post_sessions(client_in, [payload]).json()["saved"]
     session = ActivitySession.objects.get()
     assert session.workout is None

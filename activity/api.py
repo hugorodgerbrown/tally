@@ -29,7 +29,7 @@ def _login_required_json(view):
 
 def serialize_workout(workout):
     return {
-        "id": workout.pk,
+        "id": str(workout.uuid),
         "name": workout.name,
         "description": workout.description,
         "rest": workout.rest_seconds,
@@ -38,7 +38,7 @@ def serialize_workout(workout):
         "updatedAt": workout.updated_at.isoformat(),
         "items": [
             {
-                "exerciseId": item.exercise_id,
+                "exerciseId": str(item.exercise.uuid),
                 "name": item.exercise.name,
                 "dur": item.duration_seconds,
                 "sides": item.exercise.one_sided,
@@ -71,6 +71,10 @@ class InvalidSession(ValueError):
     pass
 
 
+def _uuid_or_none(value):
+    return None if value in (None, "") else uuid.UUID(str(value))
+
+
 def _parse_session(data):
     try:
         session_uuid = uuid.UUID(str(data["uuid"]))
@@ -78,7 +82,7 @@ def _parse_session(data):
         ended_at = parse_datetime(data["endedAt"])
         entries = [
             {
-                "exercise_id": e.get("exerciseId"),
+                "exercise_uuid": _uuid_or_none(e.get("exerciseId")),
                 "exercise_name": str(e["name"])[:100],
                 "seconds_worked": max(0, int(e["seconds"])),
             }
@@ -88,7 +92,7 @@ def _parse_session(data):
         effort = data.get("effort")
         effort = None if effort in (None, "") else int(effort)
         fields = {
-            "workout_id": data.get("workoutId"),
+            "workout_uuid": _uuid_or_none(data.get("workoutId")),
             "workout_name": str(data["workoutName"])[:100],
             "started_at": started_at,
             "ended_at": ended_at,
@@ -120,30 +124,32 @@ def sessions(request):
     except (ValueError, KeyError, TypeError):
         return JsonResponse({"error": "bad_request"}, status=400)
 
-    known_workouts = set()
-    known_exercises = set()
-    saved, rejected = [], []
+    parsed, saved, rejected = [], [], []
     for data in items:
         try:
-            session_uuid, fields, entries = _parse_session(data)
+            parsed.append(_parse_session(data))
         except InvalidSession as exc:
             rejected.append(
                 {"uuid": data.get("uuid") if isinstance(data, dict) else None, "error": str(exc)}
             )
             continue
-        # Drop references to rows deleted since the workout was cached.
-        if fields["workout_id"] is not None and fields["workout_id"] not in known_workouts:
-            if Workout.objects.filter(pk=fields["workout_id"]).exists():
-                known_workouts.add(fields["workout_id"])
-            else:
-                fields["workout_id"] = None
+
+    workout_ids = dict(
+        Workout.objects.filter(uuid__in={f["workout_uuid"] for _, f, _ in parsed}).values_list(
+            "uuid", "pk"
+        )
+    )
+    exercise_ids = dict(
+        Exercise.objects.filter(
+            uuid__in={e["exercise_uuid"] for _, _, es in parsed for e in es}
+        ).values_list("uuid", "pk")
+    )
+    for session_uuid, fields, entries in parsed:
+        # Resolve the public UUIDs; rows deleted since the phone cached the
+        # workout resolve to None and the names keep the log readable.
+        fields["workout_id"] = workout_ids.get(fields.pop("workout_uuid"))
         for e in entries:
-            pk = e["exercise_id"]
-            if pk is not None and pk not in known_exercises:
-                if Exercise.objects.filter(pk=pk).exists():
-                    known_exercises.add(pk)
-                else:
-                    e["exercise_id"] = None
+            e["exercise_id"] = exercise_ids.get(e.pop("exercise_uuid"))
 
         with transaction.atomic():
             session, created = ActivitySession.objects.get_or_create(

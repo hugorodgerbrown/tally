@@ -1,3 +1,5 @@
+import uuid
+
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
@@ -30,6 +32,7 @@ class MuscleGroup(models.Model):
 
 
 class Exercise(models.Model):
+    uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True)
     types = models.ManyToManyField(ExerciseType, related_name="exercises")
@@ -50,6 +53,7 @@ class Exercise(models.Model):
 
 
 class Workout(models.Model):
+    uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     rest_seconds = models.PositiveSmallIntegerField(

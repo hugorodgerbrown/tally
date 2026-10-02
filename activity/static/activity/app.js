@@ -186,7 +186,7 @@
       m.paused = t.paused;
       return paint(activityScreen(m, { hint: t.t[t.idx].type === "work" && t.idx === 1 }));
     }
-    const route = location.hash.match(/^#\/w\/(\d+)/);
+    const route = location.hash.match(/^#\/w\/([0-9a-f-]{36})/);
     if (route && library) {
       const w = library.workouts.find((x) => String(x.id) === route[1]);
       if (w) { openWorkout(w); return render(); }
