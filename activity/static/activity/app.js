@@ -71,7 +71,7 @@
   function statusLine() {
     const s = window.Store.status();
     const n = pendingCount;
-    if (s === "signed-out") return `<a class="status warn" href="/admin/login/?next=/">${I.cloud}Signed out. Sign in to sync${n ? ` ${n} session${n > 1 ? "s" : ""}` : ""}.</a>`;
+    if (s === "signed-out") return `<a class="status warn" href="/login/?next=/">${I.cloud}Signed out. Sign in to sync${n ? ` ${n} session${n > 1 ? "s" : ""}` : ""}.</a>`;
     if (n) return `<div class="status">${I.cloud}${n} session${n > 1 ? "s" : ""} waiting to sync${s === "offline" ? " (offline)" : ""}</div>`;
     if (s === "offline") return `<div class="status">${I.cloud}Offline. Workouts are stored on this phone.</div>`;
     return `<div class="status ok">${I.check}All sessions synced</div>`;

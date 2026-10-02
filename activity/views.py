@@ -13,6 +13,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 # Everything the app needs to run offline. The service worker precaches
 # these, plus the app shell at "/".
 APP_ASSETS = [
+    "ui/tokens.css",
     "activity/app.css",
     "activity/app.js",
     "activity/store.js",

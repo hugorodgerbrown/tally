@@ -79,7 +79,7 @@ class Workout(models.Model):
 
 class WorkoutItem(models.Model):
     workout = models.ForeignKey(Workout, on_delete=models.CASCADE, related_name="items")
-    exercise = models.ForeignKey(Exercise, on_delete=models.PROTECT, related_name="+")
+    exercise = models.ForeignKey(Exercise, on_delete=models.PROTECT, related_name="workout_items")
     order = models.PositiveSmallIntegerField(default=0)
     duration_seconds = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(5)],

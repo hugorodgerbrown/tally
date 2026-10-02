@@ -1,0 +1,52 @@
+/* Workouts design system: tokens.
+ * Shared by the desktop planner and the phone's activity mode.
+ * Reference: https://claude.ai/artifact/VvqJo4QejZZrkbpmRwSdyP */
+:root {
+  /* Interface: blue-biased neutrals */
+  --ground: #F2F3F7;
+  --surface: #FFFFFF;
+  --surface-2: #E9EBF2;
+  --ink: #14162B;
+  --muted: #5A5F78;
+  --line: #D9DCE7;
+  --accent: #1F3FD8;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #E3E8FF;
+  --danger: #B8321A;
+  --ok: #2F7A57;
+
+  /* Phases: the same in both themes, and on the phone */
+  --work: #1F3FD8;
+  --rest: #BFE3CF;
+  --ready: #F7C948;
+  --switch: #FF6A3D;
+  --round: #2F7A57;
+  --night: #12142A;
+
+  /* Exercise type defaults (each type's colour is stored with it) */
+  --t-strength: #F7C948;
+  --t-flexibility: #8FD3B0;
+  --t-aerobic: #FF8A65;
+  --t-anaerobic: #E57BB0;
+  --t-fitness: #8FA2FF;
+
+  --f-ui: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --r-control: 6px;
+  --r-panel: 10px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground: #0D0F1D; --surface: #151830; --surface-2: #1D2140; --ink: #E8EAF4; --muted: #9298B3;
+    --line: #2A2F4A; --accent: #8FA2FF; --accent-ink: #0D0F1D; --accent-soft: #232A55;
+    --danger: #FF8A70; --ok: #8FD3B0;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --ground: #0D0F1D; --surface: #151830; --surface-2: #1D2140; --ink: #E8EAF4; --muted: #9298B3;
+  --line: #2A2F4A; --accent: #8FA2FF; --accent-ink: #0D0F1D; --accent-soft: #232A55;
+  --danger: #FF8A70; --ok: #8FD3B0;
+  color-scheme: dark;
+}

@@ -71,7 +71,7 @@ def test_api_requires_login(client, db):
 def test_app_redirects_to_login(client, db):
     response = client.get(reverse("activity:app"))
     assert response.status_code == 302
-    assert "/admin/login/" in response["Location"]
+    assert response["Location"].startswith(reverse("login"))
 
 
 def test_workouts_payload(client_in, workout):

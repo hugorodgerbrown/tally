@@ -26,8 +26,11 @@ uv run python manage.py createsuperuser
 uv run python manage.py runserver
 ```
 
-- `http://localhost:8000/` is the app. It signs in through the admin login.
-- `http://localhost:8000/admin/` manages exercises and workouts.
+- `http://localhost:8000/workouts/` is the desktop planner: the workout
+  list, the builder and the exercise library.
+- `http://localhost:8000/` is the phone's activity mode.
+- Both sign in at `/login/`. There is no registration: the one account is
+  the superuser made above. `/admin/` is still there for raw data.
 
 Tests and lint:
 
@@ -41,11 +44,23 @@ To try it on a phone on the same network, run
 `DJANGO_ALLOWED_HOSTS`. Service workers only run on `localhost` or HTTPS,
 so offline mode needs a deployed HTTPS host (or a tunnel) on a real phone.
 
+## Design system
+
+Tokens live in `static/ui/tokens.css` and are shared by the planner and
+the phone; desktop components are in `static/ui/ui.css`. The reference
+sheet is the [Workouts Design System](https://claude.ai/artifact/VvqJo4QejZZrkbpmRwSdyP).
+Phase colours (work, rest, switch, get ready, round break) mark time only;
+type colours mark exercise types only; durations are set in IBM Plex Mono.
+
 ## Layout
 
 - `library/` holds exercise types, muscle groups, exercises, workouts and
   their ordered items. The five types (aerobic, anaerobic, strength,
   flexibility, fitness) are created by a data migration.
+- `planner/` is the desktop UI. The builder (`static/planner/builder.js`)
+  draws the workout's make-up with the PWA's own `engine.js`, so the strip
+  on screen is the sequence the phone plays. `library/timeline.py` is the
+  same calculation in Python for the workout list.
 - `activity/` holds completed sessions and the PWA:
   - `api.py`: `GET /api/workouts/` and `POST /api/sessions/`
   - `static/activity/engine.js`: timeline and wall-clock timer
@@ -86,7 +101,6 @@ type, muscles worked and an optional 1 to 10 effort score.
 
 ## Not built yet
 
-- The desktop workout builder. Use the Django admin for now.
 - Monthly reports. `ActivitySession` and `SessionEntry` record what they
   need: time per exercise, with the exercise's types and muscles in the
   library.

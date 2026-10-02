@@ -1,14 +1,14 @@
-/* Activity mode. Sizes are in cqw (percent of screen width) so the layout
+/* Activity mode. Phase colours and fonts come from ui/tokens.css.
+ * Sizes are in cqw (percent of screen width) so the layout
  * scales from a small phone to a tablet without breakpoints. */
 :root {
-  --work: #1F3FD8; --work-ink: #FFFFFF; --work-fill: rgba(0, 0, 22, .22);
-  --rest: #BFE3CF; --rest-ink: #0F2A1E; --rest-fill: rgba(15, 42, 30, .10);
-  --ready: #F7C948; --ready-ink: #2A1E00; --ready-fill: rgba(60, 40, 0, .12);
-  --switch: #FF6A3D; --switch-ink: #FFFFFF; --switch-fill: rgba(60, 0, 0, .16);
-  --round: #2F7A57; --round-ink: #FFFFFF; --round-fill: rgba(0, 30, 15, .22);
+  --work-ink: #FFFFFF; --work-fill: rgba(0, 0, 22, .22);
+  --rest-ink: #0F2A1E; --rest-fill: rgba(15, 42, 30, .10);
+  --ready-ink: #2A1E00; --ready-fill: rgba(60, 40, 0, .12);
+  --switch-ink: #FFFFFF; --switch-fill: rgba(60, 0, 0, .16);
+  --round-ink: #FFFFFF; --round-fill: rgba(0, 30, 15, .22);
   --paused: #2B2E3A; --paused-ink: #EEF0F6;
   --done: #12142A; --done-ink: #FFFFFF; --done-hi: #F7C948;
-  --f-ui: "Archivo", "Helvetica Neue", Arial, sans-serif;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }

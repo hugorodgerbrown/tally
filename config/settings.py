@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "library",
     "activity",
+    "planner",
 ]
 
 MIDDLEWARE = [
@@ -74,10 +75,11 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-# The PWA signs in through the admin login page and keeps the session for
-# a long time, so the app keeps working (and syncing) without re-entering
-# a password every fortnight.
-LOGIN_URL = "admin:login"
+# One account signs in to both the desktop planner and the PWA. The session
+# lasts a year so the phone keeps syncing without asking for the password.
+LOGIN_URL = "login"
+LOGIN_REDIRECT_URL = "planner:workouts"
+LOGOUT_REDIRECT_URL = "login"
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 365
 
 LANGUAGE_CODE = "en-gb"
@@ -87,6 +89,7 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_DIRS = [BASE_DIR / "static"]
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {
