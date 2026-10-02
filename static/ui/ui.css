@@ -19,8 +19,11 @@ p { margin: 0; }
 .nav a:hover { color: #FFFFFF; }
 .nav a[aria-current="page"] { background: rgba(255, 255, 255, .1); color: #FFFFFF; }
 .topbar .spacer { flex: 1; }
-.topbar .run { color: #FFFFFF; font-size: 13.5px; font-weight: 600; text-decoration: none; display: inline-flex; gap: 8px; align-items: center; border: 1px solid rgba(255, 255, 255, .25); border-radius: var(--r-control); padding: 6px 12px; }
-.topbar .run svg { width: 14px; height: 14px; }
+/* Mode switch: the same control appears on the phone's home screen. */
+.modes { display: inline-flex; padding: 3px; border-radius: 99px; background: rgba(255, 255, 255, .1); font-size: 13px; font-weight: 700; }
+.modes > * { padding: 5px 14px; border-radius: 99px; text-decoration: none; color: #C9CCE0; }
+.modes a:hover { color: #FFFFFF; }
+.modes [aria-current] { background: #FFFFFF; color: var(--night); }
 .topbar form { margin: 0; }
 .topbar .signout { background: none; border: 0; color: #C9CCE0; font: inherit; font-size: 13.5px; cursor: pointer; padding: 6px 4px; }
 .topbar .signout:hover { color: #FFFFFF; }

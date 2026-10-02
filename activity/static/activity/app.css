@@ -116,6 +116,12 @@ a { color: inherit; }
 .backlink { display: inline-flex; align-items: center; gap: 1cqw; font-size: 3.8cqw; font-weight: 600; text-decoration: none; opacity: .7; align-self: flex-start; }
 .backlink svg { width: 4.6cqw; height: 4.6cqw; }
 
+.hrow { display: flex; align-items: center; justify-content: space-between; gap: 4cqw; }
+.modes { display: inline-flex; padding: .8cqw; border-radius: 99px; background: rgba(255, 255, 255, .08); font-size: 3.4cqw; font-weight: 700; }
+.modes > * { padding: 1.4cqw 3.6cqw; border-radius: 99px; text-decoration: none; color: inherit; opacity: .7; }
+.modes [aria-current] { background: var(--done-ink); color: var(--done); opacity: 1; }
+.modes .mode-off { opacity: .3; }
+.modes a:focus-visible { outline: .6cqw solid var(--done-hi); outline-offset: .4cqw; }
 .wlist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3cqw; }
 .wlist a { display: grid; grid-template-columns: 1fr auto; gap: 1cqw 3cqw; padding: 4.4cqw 5cqw; border-radius: 4cqw; background: rgba(255, 255, 255, .07); text-decoration: none; }
 .wlist a:active { background: rgba(255, 255, 255, .14); }

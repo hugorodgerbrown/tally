@@ -77,6 +77,15 @@
     return `<div class="status ok">${I.check}All sessions synced</div>`;
   }
 
+  /* Switch to the desktop planner. It needs the server, so it is disabled offline. */
+  function modeSwitch() {
+    const offline = window.Store.status() === "offline" || !navigator.onLine;
+    const manage = offline
+      ? '<span class="mode-off" aria-disabled="true" title="Manage needs a connection">Manage</span>'
+      : '<a href="/workouts/">Manage</a>';
+    return `<nav class="modes" aria-label="Mode"><span aria-current="page">Activity</span>${manage}</nav>`;
+  }
+
   function homeScreen() {
     const ws = library ? library.workouts : [];
     const list = ws.map((w) => {
@@ -87,10 +96,10 @@
         <span class="wt">${types.map((t) => `<s style="background:${typeColour(t)}" title="${esc(typeName(t))}"></s>`).join("")}</span></a></li>`;
     }).join("");
     const empty = library
-      ? `<p class="empty">No workouts yet. Add one in the <a href="/admin/library/workout/">admin</a>.</p>`
+      ? `<p class="empty">No workouts yet. Build one in <a href="/workouts/new/">Manage</a>.</p>`
       : `<p class="empty">Workouts appear here after the first sync. Connect to the internet and reopen the app.</p>`;
     return `<div class="scr s-done s-home"><div class="main" style="justify-content:flex-start;gap:5cqw">
-      <div class="eb">Tally</div><div class="name">Workouts</div>
+      <div class="hrow"><div class="eb">Tally</div>${modeSwitch()}</div><div class="name">Workouts</div>
       ${ws.length ? `<ul class="wlist">${list}</ul>` : empty}</div>${statusLine()}</div>`;
   }
 
@@ -330,7 +339,14 @@
   window.Store.onStatus(() => { refreshPending(); });
 
   async function boot() {
-    if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {});
+    if ("serviceWorker" in navigator) {
+      // A new version took over: reload to use it, unless a workout is on screen.
+      const hadController = !!navigator.serviceWorker.controller;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (hadController && !run) location.reload();
+      });
+      navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {});
+    }
     if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
     const cached = await window.Store.get("library");
     if (cached) setLibrary(cached);

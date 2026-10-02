@@ -23,7 +23,7 @@
       <a href="{% url 'planner:exercises' %}"{% if nav == "exercises" %} aria-current="page"{% endif %}>Exercises</a>
     </nav>
     <span class="spacer"></span>
-    <a class="run" href="{% url 'activity:app' %}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12.5-7.5z" fill="currentColor"/></svg>Activity mode</a>
+    <nav class="modes" aria-label="Mode"><a href="{% url 'activity:app' %}">Activity</a><span aria-current="page">Manage</span></nav>
     <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="signout" type="submit">Sign out</button></form>
   </header>
   <main class="page">
