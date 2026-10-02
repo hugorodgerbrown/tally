@@ -43,6 +43,9 @@ INSTALLED_APPS = [
     "library",
     "activity",
     "planner",
+    # Before oauth2_provider so its consent template wins.
+    "mcp_server",
+    "oauth2_provider",
 ]
 
 MIDDLEWARE = [
@@ -118,5 +121,38 @@ STORAGES = {
         else "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 }
+
+# OAuth 2.1 for the MCP server, so Claude can connect to /mcp as a connector.
+# Clients register themselves (RFC 7591), but only with a redirect URI on the
+# allowlist below, and only the superuser can approve one.
+OAUTH2_PROVIDER = {
+    "SCOPES": {"tally": "Read and change your exercises, workouts and sessions"},
+    "DEFAULT_SCOPES": ["tally"],
+    "ACCESS_TOKEN_EXPIRE_SECONDS": 60 * 60,
+    "REFRESH_TOKEN_EXPIRE_SECONDS": 60 * 60 * 24 * 90,
+    "ROTATE_REFRESH_TOKEN": True,
+    "PKCE_REQUIRED": True,
+    "COMPLIANT_BCP_RFC9700_PKCE_METHOD": True,
+    "COMPLIANT_BCP_RFC9700_IMPLICIT_GRANT": True,
+    "COMPLIANT_BCP_RFC9700_PASSWORD_GRANT": True,
+    "OAUTH2_RESPONSE_TYPES_SUPPORTED": ["code"],
+    "OAUTH2_GRANT_TYPES_SUPPORTED": ["authorization_code", "refresh_token"],
+    "OAUTH2_TOKEN_ENDPOINT_AUTH_METHODS_SUPPORTED": [
+        "none",
+        "client_secret_post",
+        "client_secret_basic",
+    ],
+    "OAUTH2_PROTECTED_RESOURCE_NAME": "Tally",
+    "DCR_ENABLED": True,
+    "DCR_REGISTRATION_PERMISSION_CLASSES": ("mcp_server.oauth.AllowedRedirectDCRPermission",),
+}
+
+# Where an OAuth client may send the user back to: the Claude apps, and a
+# loopback port for Claude Code and other local clients.
+MCP_REDIRECT_URI_PATTERNS = [
+    r"^https://claude\.ai/api/mcp/auth_callback$",
+    r"^https://claude\.com/api/mcp/auth_callback$",
+    r"^http://(localhost|127\.0\.0\.1)(:\d+)?/[^?#]*$",
+]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

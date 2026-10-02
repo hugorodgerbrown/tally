@@ -3,6 +3,7 @@ from django.contrib.auth import views as auth_views
 from django.urls import include, path
 
 from config.views import healthz
+from mcp_server.views import mcp
 
 admin.site.site_header = "Tally"
 admin.site.site_title = "Tally"
@@ -10,6 +11,8 @@ admin.site.site_title = "Tally"
 urlpatterns = [
     path("healthz", healthz, name="healthz"),
     path("admin/", admin.site.urls),
+    path("mcp", mcp, name="mcp"),
+    path("", include("mcp_server.oauth")),
     path(
         "login/",
         auth_views.LoginView.as_view(
