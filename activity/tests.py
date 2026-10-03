@@ -241,6 +241,19 @@ def test_app_shell_and_manifest(client_in):
     assert response["Content-Type"] == "application/manifest+json"
 
 
+def test_manifest_meets_install_criteria(client):
+    """Chrome installs a PWA only with these fields; `id` keeps the installed
+    app the same app if start_url ever moves."""
+    data = json.loads(client.get(reverse("activity:manifest")).content)
+    assert data["id"] == "/"
+    assert data["name"] == "Tally"
+    assert data["short_name"] == "Tally"
+    assert data["start_url"] == "/"
+    assert data["display"] == "standalone"
+    sizes = {i["sizes"] for i in data["icons"] if i["purpose"] == "any"}
+    assert {"192x192", "512x512"} <= sizes
+
+
 def test_assets_version_is_cached_outside_debug(settings):
     from activity import views
 

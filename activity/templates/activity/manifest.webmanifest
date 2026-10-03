@@ -1,4 +1,5 @@
 {% load static %}{
+  "id": "/",
   "name": "Tally",
   "short_name": "Tally",
   "description": "Interval workouts, hands free.",
