@@ -33,6 +33,7 @@
     check: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     left: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     tv: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 20.5h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+    refresh: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3M19.5 4v4.5H15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     cloud: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .6-8 6 6 0 0 0-11.4 1.6A3.3 3.3 0 0 0 7 18z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>',
   };
 
@@ -151,7 +152,7 @@
     const empty = library
       ? `<p class="empty">No workouts yet. Build one in <a href="/workouts/new/">Manage</a>.</p>`
       : `<p class="empty">Workouts appear here after the first sync. Connect to the internet and reopen the app.</p>`;
-    return `<div class="scr s-done s-home"><div class="main" style="justify-content:flex-start;gap:5cqw">
+    return `<div class="scr s-done s-home"><div class="ptr" aria-hidden="true">${I.refresh}</div><div class="main" style="justify-content:flex-start;gap:5cqw">
       <div class="hrow"><div class="eb">Tally</div>${modeSwitch()}</div><div class="name">Workouts</div>
       ${ws.length ? `<ul class="wlist">${list}</ul>` : empty}</div>${statusLine()}</div>`;
   }
@@ -407,6 +408,94 @@
     render();
   });
 
+  /* ---------- refresh ----------
+   * An installed app has no browser reload, and iOS gives a standalone app
+   * no pull-to-refresh of its own (overscroll is off here anyway, so the
+   * timer screens never bounce). So the list refreshes itself whenever the
+   * app comes back to the front or back online, and pulling the list down
+   * refreshes it by hand. Nothing refreshes once a workout has started. */
+
+  let syncing = null;
+  function sync() {
+    syncing = syncing || (async () => {
+      try {
+        const fresh = await window.Store.loadWorkouts();
+        if (fresh) setLibrary(fresh);
+        await window.Store.flush();
+        await refreshPending();
+        // An open summary picks up edits; a workout gone from the list closes.
+        if (run && !run.timer.startedAt) {
+          const w = library && library.workouts.find((x) => x.id === run.w.id);
+          if (w) openWorkout(w);
+          else { run = null; location.hash = "#/"; }
+        }
+        if (!run || !run.timer.startedAt) render();
+      } finally {
+        syncing = null;
+      }
+    })();
+    return syncing;
+  }
+
+  const idle = () => !run || !run.timer.startedAt;
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && idle()) sync(); });
+  window.addEventListener("online", () => { if (idle()) sync(); });
+  window.addEventListener("pageshow", (e) => { if (e.persisted && idle()) sync(); });
+
+  /* Pull to refresh, on the workout list only: drag down from the top of
+   * the list past the threshold and let go. */
+  const PULL = 72;   // px to arm
+  const MAX = 110;   // px the list can be dragged
+  let pull = null;   // {y, dy, main, ind} during a drag
+
+  function pullBits() {
+    const scr = root.querySelector(".s-home");
+    return scr && { main: scr.querySelector(".main"), ind: scr.querySelector(".ptr") };
+  }
+
+  function showPull(bits, dy, state) {
+    const d = Math.min(MAX, dy);
+    bits.main.style.transform = d ? `translateY(${d}px)` : "";
+    bits.ind.style.opacity = state === "spin" ? 1 : Math.min(1, d / PULL);
+    bits.ind.style.transform = `translate(-50%, ${state === "spin" ? PULL * 0.6 : d * 0.6}px) rotate(${d * 3}deg)`;
+    bits.ind.classList.toggle("armed", d >= PULL || state === "spin");
+    bits.ind.classList.toggle("spin", state === "spin");
+  }
+
+  root.addEventListener("touchstart", (e) => {
+    if (run || syncing || e.touches.length !== 1) return;
+    const bits = pullBits();
+    if (!bits || bits.main.scrollTop > 0) return;
+    pull = { y: e.touches[0].clientY, dy: 0, ...bits };
+    pull.main.style.transition = pull.ind.style.transition = "none";
+  }, { passive: true });
+
+  root.addEventListener("touchmove", (e) => {
+    if (!pull) return;
+    // Damped, so the list lags the finger like a native pull.
+    pull.dy = Math.max(0, (e.touches[0].clientY - pull.y) * 0.55);
+    if (pull.dy > 0 && e.cancelable) e.preventDefault();
+    showPull(pull, pull.dy, "pull");
+  }, { passive: false });
+
+  async function endPull() {
+    if (!pull) return;
+    const p = pull;
+    pull = null;
+    p.main.style.transition = p.ind.style.transition = "";
+    if (p.dy < PULL) return showPull(p, 0, "pull");
+    showPull(p, PULL * 0.75, "spin");
+    if (navigator.vibrate) navigator.vibrate(8);
+    const shown = Date.now();
+    await sync();
+    // Long enough to see that something happened.
+    await new Promise((r) => setTimeout(r, Math.max(0, 500 - (Date.now() - shown))));
+    const bits = pullBits();
+    if (bits) showPull(bits, 0, "pull");
+  }
+  root.addEventListener("touchend", endPull);
+  root.addEventListener("touchcancel", endPull);
+
   /* ---------- boot ---------- */
 
   window.Store.onStatus(() => { refreshPending(); });
@@ -426,11 +515,7 @@
     if (cached) setLibrary(cached);
     render();
     await recoverCheckpoint();
-    const fresh = await window.Store.loadWorkouts();
-    if (fresh) setLibrary(fresh);
-    await window.Store.flush();
-    await refreshPending();
-    if (!run) render();
+    await sync();
   }
 
   function setLibrary(data) {
