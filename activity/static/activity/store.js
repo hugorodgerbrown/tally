@@ -6,7 +6,8 @@
  * Sessions stay in the outbox until the server confirms them. Uploads are
  * idempotent (the server upserts on uuid), so a retry after a dropped
  * response is harmless, and re-queueing a session to add an effort score
- * updates the stored copy.
+ * updates the stored copy. Discarding a session swaps its outbox entry for
+ * a tombstone, which deletes the server copy if it has already synced.
  */
 (function () {
   "use strict";
@@ -90,7 +91,10 @@
           headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken() },
           body: JSON.stringify({ sessions: items }),
         });
-        const done = [...res.saved, ...res.rejected.map((r) => r.uuid).filter(Boolean)];
+        // A rejected tombstone means a server too old to discard: keep it queued.
+        const tombstones = new Set(items.filter((i) => i.discarded).map((i) => i.uuid));
+        const rejected = res.rejected.map((r) => r.uuid).filter((u) => u && !tombstones.has(u));
+        const done = [...res.saved, ...(res.discarded || []), ...rejected];
         // Only clear the versions we sent; a newer edit made meanwhile stays queued.
         const sent = new Map(items.map((i) => [i.uuid, i.updatedAt]));
         const now = new Map((await pending()).map((i) => [i.uuid, i.updatedAt]));
@@ -110,6 +114,12 @@
     flush();
   }
 
+  /* Replaces any queued copy, so an unsynced session never uploads. */
+  async function discardSession(uuid) {
+    await queue({ uuid, discarded: true, updatedAt: Date.now() });
+    flush();
+  }
+
   window.addEventListener("online", () => flush());
   // The network can be up while the server is unreachable; keep retrying.
   setInterval(() => flush(), 60 * 1000);
@@ -118,7 +128,7 @@
   });
 
   window.Store = {
-    get, set, del, pending, loadWorkouts, saveSession, flush, csrfToken,
+    get, set, del, pending, loadWorkouts, saveSession, discardSession, flush, csrfToken,
     onStatus: (fn) => listeners.add(fn),
     status: () => status,
   };

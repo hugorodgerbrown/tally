@@ -18,7 +18,7 @@ from django.views.decorators.http import require_GET, require_POST
 
 from library.models import Exercise, ExerciseType, Workout
 
-from .models import ActivitySession, SessionEntry
+from .models import ActivitySession, DiscardedSession, SessionEntry
 
 type View = Callable[..., HttpResponse]
 
@@ -123,8 +123,12 @@ def _parse_session(data: Any) -> ParsedSession:
 def sessions(request: HttpRequest) -> HttpResponse:
     """Upsert a batch of sessions: ``{"sessions": [...]}``.
 
-    Returns the UUIDs saved and those rejected as malformed, so the client
-    can clear both from its outbox and only retry on network failure.
+    An item of ``{"uuid": ..., "discarded": true}`` deletes that session
+    instead and records the UUID, so a later upload of it is ignored.
+
+    Returns the UUIDs saved, discarded, and rejected as malformed, so the
+    client can clear all three from its outbox and only retry on network
+    failure.
     """
     try:
         payload = json.loads(request.body)
@@ -132,17 +136,35 @@ def sessions(request: HttpRequest) -> HttpResponse:
     except ValueError, KeyError, TypeError:
         return JsonResponse({"error": "bad_request"}, status=400)
 
+    user = cast(User, request.user)  # _login_required_json has checked
     parsed: list[ParsedSession] = []
     saved: list[str] = []
+    discarded: list[str] = []
     rejected: list[dict[str, str | None]] = []
     for data in items:
         try:
+            if isinstance(data, dict) and data.get("discarded") is True:
+                session_uuid = uuid.UUID(str(data["uuid"]))
+                with transaction.atomic():
+                    ActivitySession.objects.filter(uuid=session_uuid, user=user).delete()
+                    DiscardedSession.objects.get_or_create(uuid=session_uuid, user=user)
+                discarded.append(str(session_uuid))
+                continue
             parsed.append(_parse_session(data))
-        except InvalidSession as exc:
+        except (KeyError, ValueError) as exc:
             rejected.append(
                 {"uuid": data.get("uuid") if isinstance(data, dict) else None, "error": str(exc)}
             )
             continue
+
+    # Already discarded: acknowledge so the phone clears it, but don't store.
+    gone = set(
+        DiscardedSession.objects.filter(user=user, uuid__in=[u for u, _, _ in parsed]).values_list(
+            "uuid", flat=True
+        )
+    )
+    saved.extend(str(u) for u, _, _ in parsed if u in gone)
+    parsed = [p for p in parsed if p[0] not in gone]
 
     workout_ids = dict(
         Workout.objects.filter(uuid__in={f["workout_uuid"] for _, f, _ in parsed}).values_list(
@@ -154,7 +176,6 @@ def sessions(request: HttpRequest) -> HttpResponse:
             uuid__in={e["exercise_uuid"] for _, _, es in parsed for e in es}
         ).values_list("uuid", "pk")
     )
-    user = cast(User, request.user)  # _login_required_json has checked
     for session_uuid, fields, entries in parsed:
         # Resolve the public UUIDs; rows deleted since the phone cached the
         # workout resolve to None and the names keep the log readable.
@@ -179,4 +200,4 @@ def sessions(request: HttpRequest) -> HttpResponse:
             )
         saved.append(str(session_uuid))
 
-    return JsonResponse({"saved": saved, "rejected": rejected})
+    return JsonResponse({"saved": saved, "discarded": discarded, "rejected": rejected})
