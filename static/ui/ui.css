@@ -224,3 +224,7 @@ dialog h2 { font-size: 26px; font-weight: 800; font-stretch: 78%; }
   .topbar .signout { padding-inline: 2px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* Equipment icons: inline SVG in currentColor, sized to the text. */
+svg.eq { width: 1.15em; height: 1.15em; flex: none; vertical-align: -.2em; opacity: .75; }
+.tchip svg.eq { width: 16px; height: 16px; opacity: 1; vertical-align: 0; }

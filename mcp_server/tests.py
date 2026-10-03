@@ -511,6 +511,25 @@ def test_list_types_and_muscles(client, token, library):
     result = call(client, token, "list_types_and_muscles")["structuredContent"]
     assert "strength" in [t["slug"] for t in result["types"]]
     assert result["muscles"] == ["Glutes", "Hips"]
+    assert result["equipment"] == [
+        {"slug": "kettlebell", "name": "Kettlebell"},
+        {"slug": "dumbbell", "name": "Dumbbell"},
+    ]
+
+
+def test_tag_and_filter_by_equipment(client, token, library):
+    result = call(client, token, "update_exercise", exercise="Split squat", equipment="dumbbell")[
+        "structuredContent"
+    ]
+    assert result["equipment"] == "dumbbell"
+    found = call(client, token, "list_exercises", equipment="dumbbell")["structuredContent"]
+    assert [e["name"] for e in found["exercises"]] == ["Split squat"]
+    bodyweight = call(client, token, "list_exercises", equipment="")["structuredContent"]
+    assert "Split squat" not in [e["name"] for e in bodyweight["exercises"]]
+    workout = call(client, token, "get_workout", workout="Legs")["structuredContent"]
+    assert {i["exercise"]: i["equipment"] for i in workout["items"]}["Split squat"] == "dumbbell"
+    cleared = call(client, token, "update_exercise", exercise="Split squat", equipment="")
+    assert cleared["structuredContent"]["equipment"] == ""
 
 
 def test_list_exercises_by_query(client, token, library):
@@ -572,7 +591,11 @@ def test_update_exercise_all_fields(client, token, library):
 
 @pytest.mark.parametrize(
     ("args", "message"),
-    [({"name": " "}, "name is empty"), ({"muscles": "Hips"}, "muscles must be a list")],
+    [
+        ({"name": " "}, "name is empty"),
+        ({"muscles": "Hips"}, "muscles must be a list"),
+        ({"equipment": "barbell"}, "equipment must be one of kettlebell, dumbbell"),
+    ],
 )
 def test_update_exercise_errors(client, token, library, args, message):
     result = call(client, token, "update_exercise", exercise="90:90", **args)

@@ -14,6 +14,9 @@
   const lib = new Map(data.library.map((e) => [e.id, e]));
   const types = new Map(data.types.map((t) => [t.slug, t]));
   const colour = (slug) => (types.get(slug) || {}).colour || "#999";
+  // Server-drawn SVG for the exercise's kit; nothing for bodyweight.
+  const kit = new Map((data.equipment || []).map((e) => [e.slug, e.svg]));
+  const kitIcon = (slug) => kit.get(slug) || "";
   let nextKey = 1;
   let items = (typeof data.items === "string" ? JSON.parse(data.items || "[]") : data.items)
     .filter((i) => lib.has(i.exercise))
@@ -48,7 +51,7 @@
     const rows = data.library
       .filter((e) => !filterType || e.types.includes(filterType))
       .filter((e) => !q || e.name.toLowerCase().includes(q) || e.muscles.some((m) => m.toLowerCase().includes(q)))
-      .map((e) => `<li><span class="nm">${esc(e.name)}${e.sides ? ' <span class="side">per side</span>' : ""}<small>${used.has(e.id) ? "In this workout · " : ""}${esc(e.muscles.join(", ") || "No muscles set")}</small></span>${dots(e.types)}<button class="icon-btn" type="button" data-add="${e.id}" aria-label="Add ${esc(e.name)}">${ICON.plus}</button></li>`);
+      .map((e) => `<li><span class="nm">${esc(e.name)} ${kitIcon(e.equipment)}${e.sides ? ' <span class="side">per side</span>' : ""}<small>${used.has(e.id) ? "In this workout · " : ""}${esc(e.muscles.join(", ") || "No muscles set")}</small></span>${dots(e.types)}<button class="icon-btn" type="button" data-add="${e.id}" aria-label="Add ${esc(e.name)}">${ICON.plus}</button></li>`);
     $("lib-list").innerHTML = rows.join("") || '<li class="none">No exercises match. Use New exercise to add one.</li>';
   }
 
@@ -88,7 +91,7 @@
       return `<li class="item" data-key="${it.key}">
         <span class="grip" title="Drag to reorder" data-grip>${ICON.grip}</span>
         <span class="n">${i + 1}</span>
-        <span class="name"><span>${esc(ex.name)}</span>${dots(ex.types)}</span>
+        <span class="name"><span>${esc(ex.name)}</span>${kitIcon(ex.equipment)}${dots(ex.types)}</span>
         <span class="sidecell">${ex.sides ? '<span class="side" title="Runs left then right, with a 5 s switch">per side</span>' : ""}</span>
         <div class="dur sm"><input type="number" min="5" max="3600" value="${it.dur}" data-dur aria-label="Seconds for ${esc(ex.name)}${ex.sides ? " per side" : ""}"></div>
         <span class="tools">

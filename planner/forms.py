@@ -1,9 +1,10 @@
 import json
 import uuid
+from typing import Any, cast
 
 from django import forms
 
-from library.models import Exercise, ExerciseType, MuscleGroup, Workout
+from library.models import Equipment, Exercise, ExerciseType, MuscleGroup, Workout
 
 
 class WorkoutForm(forms.ModelForm):
@@ -57,12 +58,29 @@ class ExerciseForm(forms.ModelForm):
 
     class Meta:
         model = Exercise
-        fields = ["name", "types", "muscles", "one_sided", "default_duration", "description"]
+        fields = [
+            "name",
+            "types",
+            "muscles",
+            "equipment",
+            "one_sided",
+            "default_duration",
+            "description",
+        ]
         labels = {
+            "equipment": "Equipment",
             "one_sided": "Runs per side",
             "default_duration": "Default duration",
         }
-        widgets = {"description": forms.Textarea(attrs={"rows": 3})}
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 3}),
+            "equipment": forms.RadioSelect,
+        }
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        equipment = cast(forms.ChoiceField, self.fields["equipment"])
+        equipment.choices = [("", "None"), *Equipment.choices]
 
     def clean_name(self) -> str:
         name: str = self.cleaned_data["name"].strip()

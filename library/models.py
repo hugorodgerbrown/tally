@@ -31,6 +31,14 @@ class MuscleGroup(models.Model):
         return self.name
 
 
+class Equipment(models.TextChoices):
+    """Kit an exercise needs. Blank means bodyweight. Each choice has an icon
+    in library/equipment.py, so adding one means drawing one."""
+
+    KETTLEBELL = "kettlebell", "Kettlebell"
+    DUMBBELL = "dumbbell", "Dumbbell"
+
+
 class Exercise(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     name = models.CharField(max_length=100, unique=True)
@@ -43,6 +51,12 @@ class Exercise(models.Model):
     )
     default_duration = models.PositiveSmallIntegerField(
         default=40, help_text="Seconds (per side for one-sided moves)."
+    )
+    equipment = models.CharField(
+        max_length=20,
+        choices=Equipment.choices,
+        blank=True,
+        help_text="Leave blank for bodyweight.",
     )
 
     class Meta:

@@ -111,6 +111,7 @@ a { color: inherit; }
 .slist li > i { font-style: normal; font-variant-numeric: tabular-nums; opacity: .5; width: 3cqw; font-size: 3.3cqw; }
 .slist li span { flex: 1; min-width: 0; display: flex; align-items: center; gap: 1.6cqw; font-weight: 600; }
 .slist small { font-size: 2.9cqw; opacity: .55; font-weight: 500; }
+.slist svg.eq { width: 4.4cqw; height: 4.4cqw; flex: none; opacity: .8; }
 .slist b { display: inline-flex; gap: .8cqw; margin-left: auto; }
 .slist s, .sleg s, .wt s { display: inline-block; width: 2.2cqw; height: 2.2cqw; border-radius: 50%; }
 .slist em { font-style: normal; opacity: .65; font-variant-numeric: tabular-nums; width: 9cqw; text-align: right; }
@@ -256,6 +257,7 @@ kbd { font: inherit; font-weight: 800; padding: .05em .45em; border-radius: .3em
     .slist.long { display: grid; grid-template-rows: repeat(var(--rows), auto); grid-auto-flow: column; column-gap: 3cqw; font-size: 1.6cqw; }
     .slist li > i { width: 1.6cqw; font-size: 1.5cqw; }
     .slist small { font-size: 1.3cqw; }
+    .slist svg.eq { width: 2cqw; height: 2cqw; }
     .slist s, .sleg s { width: 1.1cqw; height: 1.1cqw; }
     .slist em { width: 4.5cqw; }
     .sleg { grid-column: 2; grid-row: 4; font-size: 1.4cqw; gap: .6cqw 1.6cqw; align-self: end; }

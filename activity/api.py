@@ -16,6 +16,7 @@ from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.utils.dateparse import parse_datetime
 from django.views.decorators.http import require_GET, require_POST
 
+from library.equipment import equipment_json
 from library.models import Exercise, ExerciseType, Workout
 
 from .models import ActivitySession, DiscardedSession, SessionEntry
@@ -47,6 +48,7 @@ def serialize_workout(workout: Workout) -> dict[str, Any]:
                 "name": item.exercise.name,
                 "dur": item.duration_seconds,
                 "sides": item.exercise.one_sided,
+                "equipment": item.exercise.equipment,
                 "types": [t.slug for t in item.exercise.types.all()],
                 "muscles": [m.name for m in item.exercise.muscles.all()],
             }
@@ -67,6 +69,7 @@ def workouts(request: HttpRequest) -> HttpResponse:
                 {"slug": t.slug, "name": t.name, "colour": t.colour}
                 for t in ExerciseType.objects.all()
             ],
+            "equipment": equipment_json(),
             "workouts": [serialize_workout(w) for w in qs if w.items.all()],
         }
     )
