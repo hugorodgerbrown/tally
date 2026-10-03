@@ -396,6 +396,8 @@ def test_create_exercise(client, token, library):
     exercise = Exercise.objects.get(uuid=uuid.UUID(result["id"]))
     assert exercise.default_duration == 45
     assert MuscleGroup.objects.filter(name="Hips").count() == 1
+    assert exercise.source == "claude"
+    assert result["made_by"] == "claude"
 
 
 @pytest.mark.parametrize(
@@ -439,6 +441,38 @@ def test_create_workout(client, token, library):
     ]
     assert result["rounds"] == 2
     assert result["is_active"] is True
+    # Made by Claude, and a one-off unless asked to save it.
+    assert result["made_by"] == "claude"
+    assert result["one_off"] is True
+    assert result["on_phone"] is True
+
+
+def test_create_saved_workout(client, token, library):
+    result = call(
+        client,
+        token,
+        "create_workout",
+        name="Regular",
+        one_off=False,
+        items=[{"exercise": "90:90"}],
+    )["structuredContent"]
+    assert result["one_off"] is False
+
+
+def test_old_one_offs_leave_the_list_until_kept(client, token, library):
+    Workout.objects.filter(name="Legs").update(
+        one_off=True, created_at=timezone.now() - dt.timedelta(days=8)
+    )
+    assert call(client, token, "list_workouts")["structuredContent"]["workouts"] == []
+    (old,) = call(client, token, "list_workouts", include_inactive=True)["structuredContent"][
+        "workouts"
+    ]
+    assert (old["one_off"], old["on_phone"]) == (True, False)
+    kept = call(client, token, "update_workout", workout="Legs", one_off=False)
+    assert kept["structuredContent"]["on_phone"] is True
+    assert [
+        w["name"] for w in call(client, token, "list_workouts")["structuredContent"]["workouts"]
+    ] == ["Legs"]
 
 
 @pytest.mark.parametrize(

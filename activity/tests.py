@@ -1,8 +1,10 @@
 import json
 import uuid
+from datetime import timedelta
 
 import pytest
 from django.urls import reverse
+from django.utils import timezone
 
 from activity.models import ActivitySession, DiscardedSession
 from library.models import Exercise, ExerciseType, Workout, WorkoutItem
@@ -308,3 +310,48 @@ def test_sessions_api_query_count(client_in, workout, django_assert_num_queries,
     # session for its transaction, upsert and entries. Batches are small.
     with django_assert_num_queries(5 + 7 * count):
         post_sessions(client_in, sessions)
+
+
+def test_one_offs_drop_off_the_phone_after_a_week(client_in, workout):
+    item = workout.items.get()
+    for name, days in [("Today", 0), ("Six days", 6), ("Eight days", 8)]:
+        w = Workout.objects.create(
+            name=name, one_off=True, created_at=timezone.now() - timedelta(days=days)
+        )
+        WorkoutItem.objects.create(workout=w, exercise=item.exercise, duration_seconds=30)
+    workout.created_at = timezone.now() - timedelta(days=30)
+    workout.save()
+    data = client_in.get(reverse("activity:api_workouts")).json()["workouts"]
+    assert client_in.get(reverse("activity:api_workouts")).json()["oneOffDays"] == 7
+    assert [(w["name"], w["oneOff"]) for w in data] == [
+        ("Legs", False),
+        ("Six days", True),
+        ("Today", True),
+    ]
+
+
+def test_keep_turns_a_one_off_into_a_saved_workout(client_in, workout):
+    workout.one_off = True
+    workout.created_at = timezone.now() - timedelta(days=30)
+    workout.save()
+    assert client_in.get(reverse("activity:api_workouts")).json()["workouts"] == []
+    before = workout.updated_at
+    url = reverse("activity:api_keep_workout", args=[workout.uuid])
+    assert client_in.post(url).json() == {"kept": str(workout.uuid)}
+    workout.refresh_from_db()
+    assert workout.one_off is False
+    assert workout.updated_at > before
+    (w,) = client_in.get(reverse("activity:api_workouts")).json()["workouts"]
+    assert w["oneOff"] is False
+
+
+def test_keep_unknown_workout(client_in, db):
+    url = reverse("activity:api_keep_workout", args=[uuid.uuid4()])
+    assert client_in.post(url).status_code == 404
+
+
+def test_keep_needs_login_and_post(client, client_in, workout):
+    url = reverse("activity:api_keep_workout", args=[workout.uuid])
+    assert client_in.get(url).status_code == 405
+    client.logout()
+    assert client.post(url).status_code == 401

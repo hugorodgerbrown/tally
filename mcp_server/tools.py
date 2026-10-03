@@ -22,13 +22,16 @@ from django.utils import timezone
 from activity.models import ActivitySession, SessionEntry
 from library import timeline
 from library.models import (
+    ONE_OFF_DAYS,
     Equipment,
     Exercise,
     ExerciseType,
     Movement,
     MuscleGroup,
+    Source,
     Workout,
     WorkoutItem,
+    WorkoutQuerySet,
 )
 
 MIN_SECONDS = 5
@@ -170,6 +173,12 @@ WORKOUT_FIELDS: dict[str, Any] = {
         "type": "boolean",
         "description": "Inactive workouts are hidden from the phone app.",
     },
+    "one_off": {
+        "type": "boolean",
+        "description": f"A workout made for one go, like '20 minutes of hips'. One-offs are "
+        f"listed on the phone for {ONE_OFF_DAYS} days after they're made, then only in "
+        "Manage. Set false to keep one as a saved workout.",
+    },
     "items": ITEMS,
 }
 
@@ -181,7 +190,7 @@ def _exercises() -> QuerySet[Exercise]:
     return Exercise.objects.prefetch_related("types", "muscles")
 
 
-def _workouts(user: AbstractBaseUser) -> QuerySet[Workout]:
+def _workouts(user: AbstractBaseUser) -> WorkoutQuerySet:
     own = Q(sessions__user_id=user.pk)
     return Workout.objects.annotate(
         times_done=Count("sessions", filter=own),
@@ -235,6 +244,7 @@ def exercise_json(exercise: Exercise) -> Result:
         "movement": exercise.movement,
         "one_sided": exercise.one_sided,
         "default_duration": exercise.default_duration,
+        "made_by": exercise.source or None,
     }
 
 
@@ -246,6 +256,10 @@ def workout_summary(workout: Workout) -> Result:
         "name": workout.name,
         "description": workout.description,
         "is_active": workout.is_active,
+        "one_off": workout.one_off,
+        "on_phone": workout.on_phone,
+        "made_by": workout.source or None,
+        "created_at": workout.created_at.isoformat(),
         "rounds": workout.rounds,
         "rest_seconds": workout.rest_seconds,
         "round_rest_seconds": workout.round_rest_seconds,
@@ -399,7 +413,8 @@ def get_exercise(user: AbstractBaseUser, args: Args) -> Result:
     {
         "include_inactive": {
             "type": "boolean",
-            "description": "Also list workouts hidden from the phone app. Default false.",
+            "description": "Also list workouts not on the phone app: hidden ones and "
+            f"one-offs more than {ONE_OFF_DAYS} days old. Default false.",
         }
     },
     [],
@@ -408,7 +423,7 @@ def get_exercise(user: AbstractBaseUser, args: Args) -> Result:
 def list_workouts(user: AbstractBaseUser, args: Args) -> Result:
     qs = _workouts(user)
     if not args.get("include_inactive"):
-        qs = qs.filter(is_active=True)
+        qs = qs.on_phone()
     return {"workouts": [workout_summary(w) for w in qs]}
 
 
@@ -597,7 +612,7 @@ def _full_clean(obj: Exercise | Workout) -> None:
 )
 def create_exercise(user: AbstractBaseUser, args: Args) -> Result:
     _require(args, "name", "types")
-    return _save_exercise(Exercise(), args)
+    return _save_exercise(Exercise(source=Source.CLAUDE), args)
 
 
 @tool(
@@ -641,6 +656,8 @@ def _save_workout(workout: Workout, user: AbstractBaseUser, args: Args) -> Resul
         workout.rounds = rounds
     if "is_active" in args:
         workout.is_active = bool(args["is_active"])
+    if "one_off" in args:
+        workout.one_off = bool(args["one_off"])
     items = _items(args["items"]) if "items" in args else None
     _full_clean(workout)
     with transaction.atomic():
@@ -657,20 +674,23 @@ def _save_workout(workout: Workout, user: AbstractBaseUser, args: Args) -> Resul
 @tool(
     "Create a workout",
     "Build a workout from library exercises. Defaults: 15 s rest between exercises, "
-    "1 round, 120 s between rounds, active. One-sided exercises run twice, once per side.",
+    "1 round, 120 s between rounds, active, and one_off true. Leave one_off true for a "
+    "workout to do now ('give me 20 minutes of X'); set it false only when Hugo asks to "
+    "save a workout he'll repeat. One-sided exercises run twice, once per side.",
     {"name": {"type": "string"}, **WORKOUT_FIELDS},
     ["name", "items"],
     read_only=False,
 )
 def create_workout(user: AbstractBaseUser, args: Args) -> Result:
     _require(args, "name", "items")
-    return _save_workout(Workout(), user, args)
+    return _save_workout(Workout(source=Source.CLAUDE, one_off=True), user, args)
 
 
 @tool(
     "Update a workout",
     "Change a workout. Only the fields given change; items, when given, replace the whole "
-    "exercise list, so send every exercise in order. Set is_active false to hide it.",
+    "exercise list, so send every exercise in order. Set is_active false to hide it, or "
+    "one_off false to keep a one-off as a saved workout.",
     {"workout": WORKOUT_REF, "name": {"type": "string"}, **WORKOUT_FIELDS},
     ["workout"],
     read_only=False,

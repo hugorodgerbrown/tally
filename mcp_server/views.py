@@ -28,8 +28,10 @@ INSTRUCTIONS = (
     "duration each, a rest between exercises, and a number of rounds. One-sided exercises "
     "run twice, once per side. Sessions are the log of workouts done on the phone, with "
     "time worked per exercise and an optional 1-10 effort rating. Times are in seconds "
-    "and dates are UK time. Nothing can be deleted through these tools; to retire a "
-    "workout, set is_active to false."
+    "and dates are UK time. Workouts are saved (repeated regularly) or one-offs (made for "
+    "one go, listed on the phone for 7 days). Every exercise and workout records who made "
+    "it: Claude, Manage or the starter library. Nothing can be deleted through these "
+    "tools; to retire a workout, set is_active to false."
 )
 
 PARSE_ERROR = -32700

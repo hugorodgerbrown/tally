@@ -145,6 +145,13 @@ a { color: inherit; }
 .wm { grid-column: 1; font-size: 3.6cqw; opacity: .7; font-variant-numeric: tabular-nums; }
 .wm b { font-weight: 700; }
 .wt { grid-column: 2; grid-row: 1 / 3; display: flex; gap: 1cqw; align-items: center; }
+.wlist .wsec { display: flex; justify-content: space-between; margin-top: 3cqw; font-size: 3.2cqw; letter-spacing: .12em; text-transform: uppercase; opacity: .6; }
+.wlist .wsec span { letter-spacing: .04em; text-transform: none; }
+.wlist .once { display: flex; align-items: stretch; gap: 2cqw; }
+.wlist .once a { flex: 1; min-width: 0; background: transparent; box-shadow: inset 0 0 0 .4cqw rgba(255, 255, 255, .22); }
+.wlist .keep { flex: none; font: inherit; font-size: 3.6cqw; font-weight: 700; color: inherit; padding: 0 4cqw; border-radius: 4cqw; border: 0; background: rgba(255, 255, 255, .1); cursor: pointer; max-width: 30cqw; }
+.wlist .keep:active { background: rgba(255, 255, 255, .2); }
+.wlist .keep:disabled { opacity: .6; }
 .empty { font-size: 4cqw; opacity: .75; line-height: 1.45; margin: 0; }
 .status { display: flex; align-items: center; gap: 2cqw; font-size: 3.4cqw; opacity: .7; text-decoration: none; }
 .status svg { width: 4.4cqw; height: 4.4cqw; flex: none; }

@@ -95,7 +95,10 @@ p { margin: 0; }
 .dots { display: inline-flex; gap: 4px; vertical-align: middle; }
 .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; }
 .side { font-family: var(--f-mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; white-space: nowrap; }
-.tag-off { font-family: var(--f-mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: var(--surface-2); border-radius: 4px; padding: 2px 6px; }
+.tag-src { font-family: var(--f-mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); background: var(--accent-soft); border-radius: 4px; padding: 2px 6px; white-space: nowrap; }
+.tchip .count { font-family: var(--f-mono); font-size: 11px; opacity: .65; }
+.hint { color: var(--muted); font-size: 14px; max-width: 70ch; margin: 0; }
+.tag-off { font-family: var(--f-mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: var(--surface-2); border-radius: 4px; padding: 2px 6px; white-space: nowrap; }
 
 /* ---------- Panels and lists ---------- */
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-panel); min-width: 0; }

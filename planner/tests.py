@@ -1,8 +1,10 @@
 import json
 import uuid
+from datetime import timedelta
 
 import pytest
 from django.urls import reverse
+from django.utils import timezone
 
 from library import timeline
 from library.models import Exercise, ExerciseType, MuscleGroup, Workout, WorkoutItem
@@ -381,7 +383,7 @@ def _workouts_with_items(count, exercises):
 @pytest.mark.parametrize("workouts", [1, 10])
 def test_workout_list_query_count(client_in, squat, swing, django_assert_num_queries, workouts):
     _workouts_with_items(workouts, [squat, swing])
-    with django_assert_num_queries(5):
+    with django_assert_num_queries(6):  # + the tab counts
         client_in.get(reverse("planner:workouts"))
 
 
@@ -398,3 +400,70 @@ def test_builder_query_count(client_in, squat, django_assert_num_queries, extra)
         Exercise.objects.create(name=f"Move {n}").types.add(ExerciseType.objects.first())
     with django_assert_num_queries(9):
         client_in.get(reverse("planner:workout_new"))
+
+
+@pytest.fixture
+def mix(squat):
+    """A saved workout, a one-off made by Claude a fortnight ago, and a hidden one."""
+    made = {
+        "Regular": {},
+        "Quick hips": {
+            "one_off": True,
+            "source": "claude",
+            "created_at": timezone.now() - timedelta(days=14),
+        },
+        "Old": {"is_active": False},
+    }
+    for name, fields in made.items():
+        w = Workout.objects.create(name=name, **fields)
+        WorkoutItem.objects.create(workout=w, exercise=squat, duration_seconds=30)
+
+
+@pytest.mark.parametrize(
+    ("show", "names"),
+    [
+        ("", ["Regular"]),
+        ("saved", ["Regular"]),
+        ("one-offs", ["Quick hips"]),
+        ("hidden", ["Old"]),
+        ("nonsense", ["Regular"]),
+    ],
+)
+def test_workout_tabs(client_in, mix, show, names):
+    response = client_in.get(reverse("planner:workouts"), {"show": show} if show else {})
+    assert [r["workout"].name for r in response.context["rows"]] == names
+    assert [(t["label"], t["count"]) for t in response.context["tabs"]] == [
+        ("Saved", 1),
+        ("One-offs", 1),
+        ("Hidden", 1),
+    ]
+
+
+def test_one_off_row_shows_maker_and_keep(client_in, mix):
+    html = client_in.get(reverse("planner:workouts"), {"show": "one-offs"}).content.decode()
+    assert "Off the phone" in html
+    assert 'class="tag-src"' in html
+    assert ">Keep</button>" in html
+
+
+def test_keep_in_manage(client_in, mix):
+    w = Workout.objects.get(name="Quick hips")
+    response = client_in.post(reverse("planner:workout_keep", args=[w.uuid]))
+    assert response.url == reverse("planner:workouts") + "?show=one-offs"
+    w.refresh_from_db()
+    assert w.one_off is False
+
+
+def test_made_in_manage(client_in, squat):
+    client_in.post(
+        reverse("planner:workout_new"),
+        {
+            "name": "Built",
+            "rest_seconds": 15,
+            "rounds": 1,
+            "round_rest_seconds": 120,
+            "items": items_json((squat, 30)),
+        },
+    )
+    w = Workout.objects.get(name="Built")
+    assert (w.source, w.one_off) == ("manage", False)

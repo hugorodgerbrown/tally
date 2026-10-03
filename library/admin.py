@@ -19,8 +19,16 @@ class MuscleGroupAdmin(admin.ModelAdmin):
 
 @admin.register(Exercise)
 class ExerciseAdmin(admin.ModelAdmin):
-    list_display = ["name", "equipment", "movement", "one_sided", "default_duration", "type_list"]
-    list_filter = ["types", "equipment", "movement", "one_sided", "muscles"]
+    list_display = [
+        "name",
+        "equipment",
+        "movement",
+        "one_sided",
+        "default_duration",
+        "type_list",
+        "source",
+    ]
+    list_filter = ["types", "equipment", "movement", "one_sided", "muscles", "source"]
     search_fields = ["name"]
     filter_horizontal = ["types", "muscles"]
 
@@ -41,8 +49,25 @@ class WorkoutItemInline(admin.TabularInline):
 
 @admin.register(Workout)
 class WorkoutAdmin(admin.ModelAdmin):
-    list_display = ["name", "rounds", "rest_seconds", "is_active", "updated_at"]
-    list_filter = ["is_active"]
+    list_display = [
+        "name",
+        "rounds",
+        "rest_seconds",
+        "is_active",
+        "one_off",
+        "source",
+        "created_at",
+    ]
+    list_filter = ["is_active", "one_off", "source"]
     search_fields = ["name"]
     inlines = [WorkoutItemInline]
-    fields = ["name", "description", "rest_seconds", "rounds", "round_rest_seconds", "is_active"]
+    fields = [
+        "name",
+        "description",
+        "rest_seconds",
+        "rounds",
+        "round_rest_seconds",
+        "is_active",
+        "one_off",
+        "source",
+    ]
