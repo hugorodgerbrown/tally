@@ -26,6 +26,7 @@ from library.models import (
     Equipment,
     Exercise,
     ExerciseType,
+    Movement,
     MuscleGroup,
     Source,
     Workout,
@@ -120,6 +121,12 @@ EXERCISE_FIELDS: dict[str, Any] = {
         "type": "string",
         "enum": ["", *Equipment.values],
         "description": "Kit the exercise needs; an empty string for bodyweight.",
+    },
+    "movement": {
+        "type": "string",
+        "enum": Movement.values,
+        "description": "dynamic for moves through reps (plyometric jumps included); "
+        "static for holds such as planks and stretches (isometric). Defaults to dynamic.",
     },
     "one_sided": {
         "type": "boolean",
@@ -234,6 +241,7 @@ def exercise_json(exercise: Exercise) -> Result:
         "types": [t.slug for t in exercise.types.all()],
         "muscles": [m.name for m in exercise.muscles.all()],
         "equipment": exercise.equipment,
+        "movement": exercise.movement,
         "one_sided": exercise.one_sided,
         "default_duration": exercise.default_duration,
         "made_by": exercise.source or None,
@@ -273,6 +281,7 @@ def workout_json(workout: Workout) -> Result:
                 "duration_seconds": item.duration_seconds,
                 "one_sided": item.exercise.one_sided,
                 "equipment": item.exercise.equipment,
+                "movement": item.exercise.movement,
                 "types": [t.slug for t in item.exercise.types.all()],
                 "muscles": [m.name for m in item.exercise.muscles.all()],
             }
@@ -331,7 +340,7 @@ def _sessions(user: AbstractBaseUser, args: Args) -> QuerySet[ActivitySession]:
 @tool(
     "List types and muscle groups",
     "The exercise types (slug and name), every muscle group in the library, and the "
-    "equipment choices. Use these values when filtering or tagging exercises.",
+    "equipment and movement choices. Use these values when filtering or tagging exercises.",
     {},
     [],
     read_only=True,
@@ -341,13 +350,14 @@ def list_types_and_muscles(user: AbstractBaseUser, args: Args) -> Result:
         "types": [{"slug": t.slug, "name": t.name} for t in ExerciseType.objects.all()],
         "muscles": list(MuscleGroup.objects.values_list("name", flat=True)),
         "equipment": [{"slug": e.value, "name": e.label} for e in Equipment],
+        "movements": [{"slug": m.value, "name": m.label} for m in Movement],
     }
 
 
 @tool(
     "List exercises",
-    "Exercises in the library, with their types, muscle groups, equipment, whether they "
-    "run per side, and default duration. Filters combine.",
+    "Exercises in the library, with their types, muscle groups, equipment, movement "
+    "(dynamic or static), whether they run per side, and default duration. Filters combine.",
     {
         "query": {"type": "string", "description": "Part of the name or description."},
         "type": {"type": "string", "description": "A type slug, e.g. flexibility."},
@@ -356,6 +366,7 @@ def list_types_and_muscles(user: AbstractBaseUser, args: Args) -> Result:
             "type": "string",
             "description": "An equipment slug, e.g. kettlebell; an empty string for bodyweight.",
         },
+        "movement": {"type": "string", "description": "dynamic or static."},
     },
     [],
     read_only=True,
@@ -370,6 +381,8 @@ def list_exercises(user: AbstractBaseUser, args: Args) -> Result:
         qs = qs.filter(muscles__name__iexact=muscle)
     if "equipment" in args:
         qs = qs.filter(equipment=str(args["equipment"]))
+    if movement := args.get("movement"):
+        qs = qs.filter(movement=movement)
     return {"exercises": [exercise_json(e) for e in qs.distinct()]}
 
 
@@ -450,7 +463,8 @@ def list_sessions(user: AbstractBaseUser, args: Args) -> Result:
 @tool(
     "Training summary",
     "Totals for a period: sessions, time worked, average effort, active days, and time "
-    "split by exercise type, by muscle group and by exercise. As on the phone's finish "
+    "split by exercise type, by muscle group, by movement (dynamic or static) and by "
+    "exercise. As on the phone's finish "
     "screen, an exercise's time is shared evenly between its types, but counts in full for "
     "each muscle it works, so the muscle split overlaps. Use it for monthly reviews and to "
     "see what has been neglected.",
@@ -469,11 +483,14 @@ def training_summary(user: AbstractBaseUser, args: Args) -> Result:
     by_type: dict[str, float] = defaultdict(float)
     by_muscle: dict[str, int] = defaultdict(int)
     by_exercise: dict[str, int] = defaultdict(int)
+    by_movement: dict[str, int] = defaultdict(int)
     for entry in entries:
         by_exercise[entry.exercise_name] += entry.seconds_worked
         if entry.exercise is None:
             by_type["unknown"] += entry.seconds_worked
+            by_movement["unknown"] += entry.seconds_worked
             continue
+        by_movement[entry.exercise.movement] += entry.seconds_worked
         types = entry.exercise.types.all()
         for t in types:
             by_type[t.slug] += entry.seconds_worked / len(types)
@@ -494,6 +511,7 @@ def training_summary(user: AbstractBaseUser, args: Args) -> Result:
         "average_effort": round(sum(efforts) / len(efforts), 1) if efforts else None,
         "seconds_by_type": ranked(by_type),
         "seconds_by_muscle": ranked(by_muscle),
+        "seconds_by_movement": ranked(by_movement),
         "seconds_by_exercise": ranked(by_exercise),
         "unused_types": sorted(
             set(ExerciseType.objects.values_list("slug", flat=True)) - set(by_type)
@@ -551,6 +569,10 @@ def _save_exercise(exercise: Exercise, args: Args) -> Result:
             choices = ", ".join(Equipment.values)
             raise ToolError(f"equipment must be one of {choices}, or empty for bodyweight.")
         exercise.equipment = equipment
+    if "movement" in args:
+        if args["movement"] not in Movement.values:
+            raise ToolError(f"movement must be one of {', '.join(Movement.values)}.")
+        exercise.movement = args["movement"]
     if "one_sided" in args:
         exercise.one_sided = bool(args["one_sided"])
     if "default_duration" in args:

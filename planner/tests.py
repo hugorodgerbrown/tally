@@ -291,6 +291,49 @@ def test_set_equipment_from_the_form(client_in, squat):
     assert squat.equipment == ""
 
 
+def test_set_movement_from_the_form(client_in, squat):
+    url = reverse("planner:exercise_edit", args=[squat.uuid])
+    page = client_in.get(url).content.decode()
+    assert '<input type="radio" name="movement" value="dynamic" checked>' in page
+    data = {"name": squat.name, "types": ["strength"], "default_duration": 40}
+    client_in.post(url, {**data, "movement": "static"})
+    squat.refresh_from_db()
+    assert squat.movement == "static"
+    # A form posted without the field (an older page) keeps what was set.
+    client_in.post(url, data)
+    squat.refresh_from_db()
+    assert squat.movement == "static"
+    client_in.post(url, {**data, "movement": "dynamic"})
+    squat.refresh_from_db()
+    assert squat.movement == "dynamic"
+
+
+def test_new_exercise_without_movement_is_dynamic(client_in):
+    client_in.post(
+        reverse("planner:exercise_new"),
+        {"name": "Lunge", "types": ["strength"], "default_duration": 40},
+    )
+    assert Exercise.objects.get(name="Lunge").movement == "dynamic"
+
+
+def test_unknown_movement_is_rejected(client_in, squat):
+    url = reverse("planner:exercise_edit", args=[squat.uuid])
+    data = {"name": squat.name, "types": ["strength"], "default_duration": 40}
+    response = client_in.post(url, {**data, "movement": "plyometric"})
+    assert response.status_code == 200
+    assert "plyometric is not one of the available choices" in response.content.decode()
+
+
+def test_static_tag_on_manage_pages(client_in, squat, swing):
+    squat.movement = "static"
+    squat.save()
+    listing = client_in.get(reverse("planner:exercises")).content.decode()
+    assert listing.count('title="Holds one position">static</span>') == 1
+    builder = client_in.get(reverse("planner:workout_new")).context["builder"]
+    by_name = {e["name"]: e["movement"] for e in builder["library"]}
+    assert by_name == {"Kettlebell swing": "dynamic", "Split squat": "static"}
+
+
 def test_unknown_equipment_is_rejected(client_in, squat):
     url = reverse("planner:exercise_edit", args=[squat.uuid])
     data = {"name": squat.name, "types": ["strength"], "default_duration": 40}

@@ -12,7 +12,7 @@ def created_from_updated(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("library", "0004_exercise_equipment"),
+        ("library", "0005_exercise_movement"),
     ]
 
     # Rows that already exist are added with a blank source ("not recorded"),

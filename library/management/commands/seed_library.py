@@ -37,6 +37,8 @@ EXERCISES = [
 
 EQUIPMENT = {"Kettlebell swing": "kettlebell", "Goblet squat": "kettlebell"}
 
+STATIC = {"Child's pose", "Downward dog", "Pigeon pose", "Plank", "Side plank"}
+
 MORNING_MOBILITY = [
     ("90/90 hip switch", 45),
     ("Cat-cow", 40),
@@ -62,6 +64,7 @@ class Command(BaseCommand):
                     "one_sided": one_sided,
                     "default_duration": duration,
                     "equipment": EQUIPMENT.get(name, ""),
+                    "movement": "static" if name in STATIC else "dynamic",
                     "source": Source.SEED,
                 },
             )

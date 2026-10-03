@@ -346,6 +346,8 @@ def log_session(user, workout, day, entries, effort=None, completed=True):
 
 def test_sessions_and_summary(client, token, hugo, library):
     squat, ninety, legs = library["squat"], library["ninety"], library["legs"]
+    ninety.movement = "static"
+    ninety.save()
     log_session(hugo, legs, dt.date(2026, 9, 3), [(squat, 80), (ninety, 60)], effort=6)
     log_session(hugo, legs, dt.date(2026, 9, 30), [(squat, 40)], effort=8, completed=False)
     log_session(hugo, legs, dt.date(2026, 10, 1), [(ninety, 60)])
@@ -362,6 +364,7 @@ def test_sessions_and_summary(client, token, hugo, library):
     assert summary["average_effort"] == 7.0
     assert summary["seconds_by_type"] == {"strength": 120, "flexibility": 60}
     assert summary["seconds_by_muscle"] == {"Glutes": 180, "Hips": 60}
+    assert summary["seconds_by_movement"] == {"dynamic": 120, "static": 60}
     assert "aerobic" in summary["unused_types"]
 
 
@@ -549,6 +552,23 @@ def test_list_types_and_muscles(client, token, library):
         {"slug": "kettlebell", "name": "Kettlebell"},
         {"slug": "dumbbell", "name": "Dumbbell"},
     ]
+    assert result["movements"] == [
+        {"slug": "dynamic", "name": "Dynamic"},
+        {"slug": "static", "name": "Static"},
+    ]
+
+
+def test_tag_and_filter_by_movement(client, token, library):
+    assert (
+        call(client, token, "get_exercise", exercise="90:90")["structuredContent"]["movement"]
+        == "dynamic"
+    )
+    result = call(client, token, "update_exercise", exercise="90:90", movement="static")
+    assert result["structuredContent"]["movement"] == "static"
+    found = call(client, token, "list_exercises", movement="static")["structuredContent"]
+    assert [e["name"] for e in found["exercises"]] == ["90:90"]
+    workout = call(client, token, "get_workout", workout="Legs")["structuredContent"]
+    assert {i["exercise"]: i["movement"] for i in workout["items"]}["Split squat"] == "dynamic"
 
 
 def test_tag_and_filter_by_equipment(client, token, library):
@@ -603,6 +623,7 @@ def test_summary_counts_deleted_exercises_as_unknown(client, token, hugo, librar
         client, token, "training_summary", start_date="2026-09-01", end_date="2026-09-30"
     )["structuredContent"]
     assert summary["seconds_by_type"] == {"unknown": 80}
+    assert summary["seconds_by_movement"] == {"unknown": 80}
     assert summary["seconds_by_exercise"] == {"Split squat": 80}
 
 
@@ -629,6 +650,7 @@ def test_update_exercise_all_fields(client, token, library):
         ({"name": " "}, "name is empty"),
         ({"muscles": "Hips"}, "muscles must be a list"),
         ({"equipment": "barbell"}, "equipment must be one of kettlebell, dumbbell"),
+        ({"movement": "plyometric"}, "movement must be one of dynamic, static"),
     ],
 )
 def test_update_exercise_errors(client, token, library, args, message):

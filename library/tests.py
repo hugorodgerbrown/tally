@@ -89,3 +89,15 @@ def test_seed_and_migration_tag_kettlebell_moves(db):
     migration.tag_by_name(apps, None)
     assert Exercise.objects.get(name="Dumbbell row").equipment == "dumbbell"
     assert Exercise.objects.get(name="Goblet squat").equipment == "kettlebell"
+
+
+def test_seed_and_migration_tag_holds_as_static(db):
+    call_command("seed_library", stdout=StringIO())
+    assert Exercise.objects.get(name="Plank").movement == "static"
+    assert Exercise.objects.get(name="Burpee").movement == "dynamic"
+    Exercise.objects.create(name="Butterfly stretch")
+    Exercise.objects.create(name="Bicep curl")
+    migration = import_module("library.migrations.0005_exercise_movement")
+    migration.tag_holds(apps, None)
+    assert Exercise.objects.get(name="Butterfly stretch").movement == "static"
+    assert Exercise.objects.get(name="Bicep curl").movement == "dynamic"

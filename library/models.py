@@ -54,6 +54,14 @@ class Source(models.TextChoices):
     SEED = "seed", "Starter library"
 
 
+class Movement(models.TextChoices):
+    """Whether the body moves through reps (dynamic) or holds a position
+    (static, also called isometric). Plyometric moves are dynamic."""
+
+    DYNAMIC = "dynamic", "Dynamic"
+    STATIC = "static", "Static"
+
+
 class Exercise(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     name = models.CharField(max_length=100, unique=True)
@@ -75,6 +83,12 @@ class Exercise(models.Model):
     )
     source = models.CharField(
         max_length=10, choices=Source.choices, default=Source.MANAGE, blank=True
+    )
+    movement = models.CharField(
+        max_length=10,
+        choices=Movement.choices,
+        default=Movement.DYNAMIC,
+        help_text="Dynamic moves through reps; static holds a position.",
     )
 
     class Meta:
