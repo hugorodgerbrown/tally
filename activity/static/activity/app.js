@@ -12,6 +12,7 @@
   let interval = null;
   let wakeLock = null;
   let audio = null;
+  let tv = false;              // TV mode: full screen, sized for across the room
 
   /* ---------- helpers ---------- */
 
@@ -31,6 +32,7 @@
     swap: '<svg class="bigicon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h15m0 0-4-4m4 4-4 4M20 16H5m0 0 4-4m-4 4 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     check: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     left: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    tv: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 20.5h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
     cloud: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .6-8 6 6 0 0 0-11.4 1.6A3.3 3.3 0 0 0 7 18z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>',
   };
 
@@ -55,9 +57,10 @@
     try { if ("wakeLock" in navigator && !wakeLock) wakeLock = await navigator.wakeLock.request("screen"); } catch (e) { /* not supported or denied */ }
     if (wakeLock) wakeLock.addEventListener("release", () => (wakeLock = null), { once: true });
   }
-  function releaseAwake() { try { wakeLock && wakeLock.release(); } catch (e) { /* ignore */ } wakeLock = null; }
+  function releaseAwake() { if (tv) return; try { wakeLock && wakeLock.release(); } catch (e) { /* ignore */ } wakeLock = null; }
 
   document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && tv) keepAwake();
     if (document.visibilityState === "visible" && run && !run.timer.finished) {
       keepAwake();
       if (audio && audio.state === "suspended") audio.resume();
@@ -66,6 +69,47 @@
       checkpoint();
     }
   });
+
+  /* ---------- TV mode ----------
+   * For casting to a TV: the page goes full screen, the layout is sized to
+   * be read from across the room, the screen stays awake and the cursor
+   * hides. It is driven from the keyboard of the laptop doing the casting.
+   * Leaving full screen (Esc) leaves TV mode. ?tv=1 turns the layout on
+   * without full screen, for a browser that is already full screen. */
+
+  const canFullscreen = () => !!(document.fullscreenEnabled && document.documentElement.requestFullscreen);
+
+  async function setTv(on) {
+    tv = on;
+    document.documentElement.classList.toggle("tv", on);
+    armIdle();
+    if (on) {
+      keepAwake();
+      if (canFullscreen() && !document.fullscreenElement) {
+        try { await document.documentElement.requestFullscreen({ navigationUI: "hide" }); } catch (e) { /* stays in the TV layout, windowed */ }
+      }
+    } else {
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+      if (!run || !run.timer.startedAt || run.timer.finished) releaseAwake();
+    }
+    lastHtml = "";
+    render();
+  }
+
+  document.addEventListener("fullscreenchange", () => {
+    if (!document.fullscreenElement && tv) setTv(false);
+  });
+
+  // The cursor hides after a moment still, counted from entering TV mode too.
+  let idleTimer = null;
+  function armIdle() {
+    document.documentElement.classList.remove("idle");
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => tv && document.documentElement.classList.add("idle"), 2500);
+  }
+  document.addEventListener("pointermove", armIdle);
+
+  const tvButton = () => `<button class="tvbtn" type="button" data-act="tv" aria-pressed="${tv}" title="${tv ? "Leave TV mode (Esc)" : "TV mode: full screen for casting (F)"}">${I.tv}TV</button>`;
 
   /* ---------- screens ---------- */
 
@@ -117,10 +161,10 @@
     const used = [...new Set(w.items.flatMap((i) => i.types))];
     const list = w.items.map((it, i) => `<li><i>${i + 1}</i><span>${esc(it.name)}${it.sides ? " <small>each side</small>" : ""}<b>${it.types.map((t) => `<s style="background:${typeColour(t)}" title="${esc(typeName(t))}"></s>`).join("")}</b></span><em>${it.dur} s</em></li>`).join("");
     return `<div class="scr s-done s-sum"><div class="main" style="justify-content:flex-start;gap:3.4cqw">
-      <a class="backlink" href="#/">${I.left}Workouts</a>
+      <div class="hrow"><a class="backlink" href="#/">${I.left}Workouts</a>${tvButton()}</div>
       <div class="name" style="font-size:9cqw">${esc(w.name)}</div>
       <div class="bigtime" aria-label="Total time ${durationText(total)}">${durationBig(total)}</div>
-      <ol class="slist">${list}</ol>
+      <ol class="slist${w.items.length > 10 ? " long" : ""}" style="--rows:${Math.ceil(w.items.length / 2)}">${list}</ol>
       <div class="sleg">${used.map((t) => `<span><s style="background:${typeColour(t)}"></s>${esc(typeName(t))}</span>`).join("")}<span>${w.rest ? `${w.rest} s rest between` : "No rest between"}${w.rounds > 1 ? ` · ${w.rounds} rounds, ${durationText(w.roundRest)} between` : ""}</span></div></div>
       <button class="play" type="button" data-act="start">${I.play}Start workout</button></div>`;
   }
@@ -185,7 +229,7 @@
           <div class="name">${esc(m.name)}</div><div class="d">${m.updur} s${m.side ? " · " + m.side.toLowerCase() + " side first" : ""}</div></div></div>`;
     }
     const eb = { work: "Work", ready: "Get ready", switch: "Switch sides" }[m.phase];
-    const hint = o.hint ? '<div class="hint">Tap anywhere to pause</div>' : "";
+    const hint = o.hint ? `<div class="hint">${tv ? "<kbd>Space</kbd> pauses · <kbd>←</kbd> <kbd>→</kbd> back and skip" : "Tap anywhere to pause"}</div>` : "";
     const icon = m.phase === "switch" ? I.swap : "";
     return `<div class="scr s-${m.phase}${fin}">${fill}${top}
       <div class="main">${icon}<div class="eb">${eb}</div><div class="name">${esc(m.name)}</div>${chip}<div class="lclock"><div class="${cc}">${c}</div></div></div>
@@ -308,6 +352,7 @@
   root.addEventListener("click", (e) => {
     const b = e.target.closest("[data-act]");
     const act = b && b.dataset.act;
+    if (act === "tv") return setTv(!tv);
     if (!run) return;
     const t = run.timer;
     if (act === "start") return start();
@@ -330,9 +375,19 @@
     render();
   });
 
+  /* Keys, for a laptop casting to a TV: Space pauses, the arrows go back
+   * and skip, F toggles TV mode. */
   document.addEventListener("keydown", (e) => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if ((e.key === "f" || e.key === "F") && !e.repeat) { e.preventDefault(); return setTv(!tv); }
     if (!run || !run.timer.startedAt || run.timer.finished) return;
-    if (e.key === " ") { e.preventDefault(); run.timer.paused ? run.timer.resume() : run.timer.pause(); render(); }
+    const t = run.timer;
+    if (e.key === " ") { e.preventDefault(); t.paused ? t.resume() : t.pause(); }
+    else if (e.key === "ArrowRight") { e.preventDefault(); t.skip(); }
+    else if (e.key === "ArrowLeft") { e.preventDefault(); t.back(); }
+    else return;
+    checkpoint();
+    render();
   });
 
   window.addEventListener("popstate", () => {
@@ -354,6 +409,7 @@
   window.Store.onStatus(() => { refreshPending(); });
 
   async function boot() {
+    if (new URLSearchParams(location.search).get("tv") === "1") { tv = true; document.documentElement.classList.add("tv"); keepAwake(); armIdle(); }
     if ("serviceWorker" in navigator) {
       // A new version took over: reload to use it, unless a workout is on screen.
       const hadController = !!navigator.serviceWorker.controller;
