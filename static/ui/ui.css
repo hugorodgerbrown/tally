@@ -183,6 +183,19 @@ dialog h2 { font-size: 26px; font-weight: 800; font-stretch: 78%; }
 .auth .brand { color: var(--ink); font-size: 30px; }
 .auth .brand img { width: 34px; height: 34px; border-radius: 9px; }
 
+/* ---------- Homepage ---------- */
+.home { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; background: var(--night); color: #fff; text-align: center; }
+.home-card { width: min(420px, 100%); display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.home-icon { border-radius: 22px; }
+.home h1 { font-size: 56px; font-weight: 900; font-stretch: 78%; letter-spacing: .14em; text-transform: uppercase; color: var(--ready); line-height: 1; }
+.home-tag { font-size: 18px; color: rgba(255, 255, 255, .78); }
+.home-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 14px; }
+.home-actions .btn { padding: 12px 20px; font-size: 15px; }
+.home-actions .btn-accent { background: #1F3FD8; color: #fff; }
+.home-actions .btn-quiet { color: #fff; border-color: rgba(255, 255, 255, .28); }
+.home-actions .btn-quiet:hover { background: rgba(255, 255, 255, .08); }
+.home-hint { margin-top: 18px; font-size: 13px; color: rgba(255, 255, 255, .55); max-width: 32ch; }
+
 /* ---------- Narrow screens ---------- */
 @media (max-width: 1100px) {
   .builder { grid-template-columns: 260px minmax(0, 1fr); }

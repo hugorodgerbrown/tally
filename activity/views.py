@@ -13,7 +13,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import ensure_csrf_cookie
 
 # Everything the app needs to run offline. The service worker precaches
-# these, plus the app shell at "/".
+# these, plus the app shell at /activity/.
 APP_ASSETS = [
     "ui/tokens.css",
     "activity/app.css",
@@ -52,21 +52,29 @@ _cached_hash_assets = cache(_hash_assets)
 
 
 @ensure_csrf_cookie
-@login_required
+@login_required(login_url="activity:login")
 def app(request: HttpRequest) -> HttpResponse:
     return render(request, "activity/app.html")
 
 
 @never_cache
 def service_worker(request: HttpRequest) -> HttpResponse:
-    response = render(
+    return render(
         request,
         "activity/sw.js",
         {"version": assets_version(), "assets": [static(a) for a in APP_ASSETS]},
         content_type="text/javascript",
     )
-    response["Service-Worker-Allowed"] = "/"
-    return response
+
+
+@never_cache
+def retired_service_worker(request: HttpRequest) -> HttpResponse:
+    """Replaces the worker that used to control the whole site from /sw.js.
+
+    Browsers that installed the old one fetch this as its update; it clears
+    the old caches and unregisters itself.
+    """
+    return render(request, "activity/sw-retired.js", content_type="text/javascript")
 
 
 def manifest(request: HttpRequest) -> HttpResponse:

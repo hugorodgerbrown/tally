@@ -1,9 +1,10 @@
 {% load static %}{
+  "id": "/activity/",
   "name": "Tally",
   "short_name": "Tally",
   "description": "Interval workouts, hands free.",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "/activity/",
+  "scope": "/activity/",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#12142A",
