@@ -168,9 +168,9 @@ a { color: inherit; }
     .nl { font-size: 1.6cqw; }
     .hint { font-size: 1.7cqw; bottom: calc(env(safe-area-inset-bottom, 0px) + 9cqw); }
     .bigicon { width: 8cqw; height: 8cqw; }
-    .clock { font-size: 30cqw; margin: 0; }
-    .clock.mm { font-size: 22cqw; }
-    .clock.sm { font-size: 14cqw; }
+    .clock { font-size: min(30cqw, 64vh); margin: 0; }
+    .clock.mm { font-size: min(22cqw, 48vh); }
+    .clock.sm { font-size: min(14cqw, 34vh); }
     .upnext { padding: 2.4cqw; border-radius: 2.4cqw; gap: 1cqw; }
     .upnext .name { font-size: 4.2cqw; }
     .upnext .d { font-size: 2cqw; }
@@ -182,9 +182,16 @@ a { color: inherit; }
     .pbtn { font-size: 1.8cqw; padding: 1.8cqw 0 1.4cqw; border-radius: 2cqw; gap: .7cqw; }
     .pbtn svg { width: 3cqw; height: 3cqw; }
   }
-  .s-work .main, .s-ready .main, .s-switch .main { display: grid; grid-template-columns: 1fr auto; align-content: center; column-gap: 4cqw; }
-  .s-work .main > :not(.lclock), .s-ready .main > :not(.lclock), .s-switch .main > :not(.lclock) { grid-column: 1; justify-self: start; }
+  .s-work .main, .s-ready .main, .s-switch .main, .s-paused .main { display: grid; grid-template-columns: 1fr auto; align-content: center; column-gap: 4cqw; }
+  .s-work .main > :not(.lclock), .s-ready .main > :not(.lclock), .s-switch .main > :not(.lclock), .s-paused .main > :not(.lclock) { grid-column: 1; justify-self: start; }
   .lclock { grid-column: 2; grid-row: 1 / span 4; align-self: center; }
+  /* Rest and round break: the countdown on the left, what's next on the right. */
+  .s-rest, .s-round {
+    display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto 1fr; column-gap: 5cqw;
+    .top { grid-column: 1 / -1; }
+    .main { grid-column: 1; min-height: 0; }
+    .upnext { grid-column: 2; align-self: center; }
+  }
 }
 /* TV mode (html.tv): a landscape screen read from across the room. Margins
  * leave room for TV overscan; the countdown is sized to the screen height;
@@ -243,12 +250,7 @@ kbd { font: inherit; font-weight: 800; padding: .05em .45em; border-radius: .3em
     .play { grid-column: 1; grid-row: 4; font-size: 2.4cqw; padding: 1.8cqw 0; gap: 1.2cqw; }
     .play svg { width: 2.4cqw; height: 2.4cqw; }
   }
-  /* Rest and round break: the countdown on the left, what's next on the right. */
   .tv .s-rest, .tv .s-round {
-    display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto 1fr; column-gap: 5cqw;
-    .top { grid-column: 1 / -1; }
-    .main { grid-column: 1; }
-    .upnext { grid-column: 2; align-self: center; }
     .clock { font-size: min(36cqw, 64vh); }
     .clock.mm { font-size: min(24cqw, 48vh); }
   }

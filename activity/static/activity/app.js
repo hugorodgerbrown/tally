@@ -216,7 +216,7 @@
 
     if (m.paused) {
       return `<div class="scr s-paused">${top}
-        <div class="main"><div class="eb">Paused</div><div class="name">${esc(m.name)}</div>${chip}<div class="clock sm">${c}</div></div>
+        <div class="main"><div class="eb">Paused</div><div class="name">${esc(m.name)}</div>${chip}<div class="lclock"><div class="clock sm">${c}</div></div></div>
         <div class="pctl"><button class="resume" type="button" data-act="resume" aria-label="Resume">${I.play}</button>
         <div class="prow"><button class="pbtn" type="button" data-act="back">${I.back}Back</button><button class="pbtn" type="button" data-act="skip">${I.skip}Skip</button><button class="pbtn end" type="button" data-act="end">${I.end}End</button></div></div></div>`;
     }
