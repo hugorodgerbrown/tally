@@ -28,5 +28,6 @@ urlpatterns = [
     path("manifest.webmanifest", views.manifest, name="manifest"),
     path("sw.js", views.retired_service_worker, name="retired_service_worker"),
     path("api/workouts/", api.workouts, name="api_workouts"),
+    path("api/workouts/<uuid:workout_id>/keep/", api.keep_workout, name="api_keep_workout"),
     path("api/sessions/", api.sessions, name="api_sessions"),
 ]

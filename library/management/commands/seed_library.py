@@ -8,7 +8,7 @@ from typing import Any
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-from library.models import Exercise, ExerciseType, MuscleGroup, Workout, WorkoutItem
+from library.models import Exercise, ExerciseType, MuscleGroup, Source, Workout, WorkoutItem
 
 # name, types, muscles, one_sided, default seconds
 EXERCISES = [
@@ -62,6 +62,7 @@ class Command(BaseCommand):
                     "one_sided": one_sided,
                     "default_duration": duration,
                     "equipment": EQUIPMENT.get(name, ""),
+                    "source": Source.SEED,
                 },
             )
             if not is_new:
@@ -71,7 +72,9 @@ class Command(BaseCommand):
             exercise.muscles.set([MuscleGroup.objects.get_or_create(name=m)[0] for m in muscles])
         self.stdout.write(f"{created} exercises created")
 
-        workout, is_new = Workout.objects.get_or_create(name="Morning mobility")
+        workout, is_new = Workout.objects.get_or_create(
+            name="Morning mobility", defaults={"source": Source.SEED}
+        )
         if is_new:
             for order, (name, seconds) in enumerate(MORNING_MOBILITY):
                 WorkoutItem.objects.create(

@@ -120,6 +120,19 @@
     flush();
   }
 
+  /* Turn a one-off into a saved workout. Needs the server; throws offline. */
+  async function keepWorkout(id) {
+    try {
+      await api(`/api/workouts/${encodeURIComponent(id)}/keep/`, {
+        method: "POST",
+        headers: { "X-CSRFToken": csrfToken() },
+      });
+    } catch (e) {
+      if (e.message !== "signed-out") setStatus("offline");
+      throw e;
+    }
+  }
+
   window.addEventListener("online", () => flush());
   // The network can be up while the server is unreachable; keep retrying.
   setInterval(() => flush(), 60 * 1000);
@@ -128,7 +141,7 @@
   });
 
   window.Store = {
-    get, set, del, pending, loadWorkouts, saveSession, discardSession, flush, csrfToken,
+    get, set, del, pending, loadWorkouts, saveSession, discardSession, keepWorkout, flush, csrfToken,
     onStatus: (fn) => listeners.add(fn),
     status: () => status,
   };

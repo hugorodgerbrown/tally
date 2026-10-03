@@ -21,7 +21,7 @@
   <div class="row head"><span class="lbl">Exercise</span><span class="lbl">Types</span><span class="lbl">Muscles</span><span class="lbl" style="text-align:right">Default</span><span class="lbl" style="text-align:right">Workouts</span><span></span></div>
   {% for e in exercises %}
   <div class="row">
-    <div><a class="nm" href="{% url 'planner:exercise_edit' e.uuid %}">{{ e.name }}</a>{% if e.equipment %} {% equipment_icon e.equipment %}{% endif %}{% if e.one_sided %} <span class="side">per side</span>{% endif %}</div>
+    <div><a class="nm" href="{% url 'planner:exercise_edit' e.uuid %}">{{ e.name }}</a>{% if e.equipment %} {% equipment_icon e.equipment %}{% endif %}{% if e.one_sided %} <span class="side">per side</span>{% endif %}{% if e.source == "claude" %} <span class="tag-src" title="Made by Claude through the connector">Claude</span>{% endif %}</div>
     <div class="sub">{% for t in e.types.all %}<span style="white-space:nowrap"><span class="dots"><i style="background:{{ t.colour }}"></i></span> {{ t.name }}</span>{% if not forloop.last %}<br>{% endif %}{% endfor %}</div>
     <div class="sub">{{ e.muscles.all|join:", "|default:"–" }}</div>
     <span class="num">{{ e.default_duration }} s</span>

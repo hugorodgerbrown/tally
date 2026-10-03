@@ -41,6 +41,8 @@ def serialize_workout(workout: Workout) -> dict[str, Any]:
         "rest": workout.rest_seconds,
         "rounds": workout.rounds,
         "roundRest": workout.round_rest_seconds,
+        "oneOff": workout.one_off,
+        "createdAt": workout.created_at.isoformat(),
         "updatedAt": workout.updated_at.isoformat(),
         "items": [
             {
@@ -60,7 +62,7 @@ def serialize_workout(workout: Workout) -> dict[str, Any]:
 @require_GET
 @_login_required_json
 def workouts(request: HttpRequest) -> HttpResponse:
-    qs = Workout.objects.filter(is_active=True).prefetch_related(
+    qs = Workout.objects.on_phone().prefetch_related(
         "items__exercise__types", "items__exercise__muscles"
     )
     return JsonResponse(
@@ -73,6 +75,18 @@ def workouts(request: HttpRequest) -> HttpResponse:
             "workouts": [serialize_workout(w) for w in qs if w.items.all()],
         }
     )
+
+
+@require_POST
+@_login_required_json
+def keep_workout(request: HttpRequest, workout_id: uuid.UUID) -> HttpResponse:
+    """Turn a one-off into a saved workout, from the phone's Keep button."""
+    workout = Workout.objects.filter(uuid=workout_id).first()
+    if workout is None:
+        return JsonResponse({"error": "not_found"}, status=404)
+    workout.one_off = False
+    workout.save(update_fields=["one_off", "updated_at"])
+    return JsonResponse({"kept": str(workout_id)})
 
 
 class InvalidSession(ValueError):

@@ -1,7 +1,13 @@
 import uuid
+from datetime import timedelta
 
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.db.models import Q
+from django.utils import timezone
+
+# How long a one-off workout stays on the phone after it is made.
+ONE_OFF_DAYS = 7
 
 
 class ExerciseType(models.Model):
@@ -39,6 +45,15 @@ class Equipment(models.TextChoices):
     DUMBBELL = "dumbbell", "Dumbbell"
 
 
+class Source(models.TextChoices):
+    """Where an exercise or workout was made. Blank on ones made before
+    this was recorded."""
+
+    MANAGE = "manage", "Manage"
+    CLAUDE = "claude", "Claude"
+    SEED = "seed", "Starter library"
+
+
 class Exercise(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     name = models.CharField(max_length=100, unique=True)
@@ -58,12 +73,23 @@ class Exercise(models.Model):
         blank=True,
         help_text="Leave blank for bodyweight.",
     )
+    source = models.CharField(
+        max_length=10, choices=Source.choices, default=Source.MANAGE, blank=True
+    )
 
     class Meta:
         ordering = ["name"]
 
     def __str__(self) -> str:
         return self.name
+
+
+class WorkoutQuerySet(models.QuerySet["Workout"]):
+    def on_phone(self) -> WorkoutQuerySet:
+        """Active workouts the phone lists: every saved one, and one-offs
+        made in the last ONE_OFF_DAYS days."""
+        cutoff = timezone.now() - timedelta(days=ONE_OFF_DAYS)
+        return self.filter(Q(one_off=False) | Q(created_at__gte=cutoff), is_active=True)
 
 
 class Workout(models.Model):
@@ -82,13 +108,30 @@ class Workout(models.Model):
     is_active = models.BooleanField(
         default=True, help_text="Inactive workouts are hidden from the app."
     )
+    one_off = models.BooleanField(
+        default=False,
+        help_text=f"Made for one go. Listed on the phone for {ONE_OFF_DAYS} days, then "
+        "only in Manage until kept.",
+    )
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    source = models.CharField(
+        max_length=10, choices=Source.choices, default=Source.MANAGE, blank=True
+    )
     updated_at = models.DateTimeField(auto_now=True)
+
+    objects = WorkoutQuerySet.as_manager()
 
     class Meta:
         ordering = ["name"]
 
     def __str__(self) -> str:
         return self.name
+
+    @property
+    def on_phone(self) -> bool:
+        if not self.is_active:
+            return False
+        return not self.one_off or self.created_at >= timezone.now() - timedelta(days=ONE_OFF_DAYS)
 
 
 class WorkoutItem(models.Model):
