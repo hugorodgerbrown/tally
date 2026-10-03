@@ -150,6 +150,17 @@ a { color: inherit; }
 .status.ok svg { color: var(--done-hi); }
 .status.warn { color: var(--done-hi); opacity: 1; }
 
+/* Pull to refresh on the workout list. The indicator waits above the top
+ * edge; app.js moves it down with the drag and spins it while syncing. */
+.s-home > .ptr { position: absolute; top: calc(env(safe-area-inset-top, 0px) - 10cqw); left: 50%; z-index: 2; width: 10cqw; height: 10cqw; display: grid; place-items: center;
+  border-radius: 50%; background: color-mix(in srgb, var(--done-ink) 12%, var(--done)); color: var(--done-ink); box-shadow: 0 1cqw 3cqw rgba(0, 0, 0, .35); opacity: 0; transform: translate(-50%, 0);
+  transition: transform .3s cubic-bezier(.2, .8, .2, 1), opacity .3s; pointer-events: none; }
+.s-home > .ptr svg { width: 5.4cqw; height: 5.4cqw; transition: color .15s; }
+.s-home > .ptr.armed svg { color: var(--done-hi); }
+.s-home > .ptr.spin svg { animation: ptr-spin .8s linear infinite; }
+.s-home > .main { transition: transform .3s cubic-bezier(.2, .8, .2, 1); }
+@keyframes ptr-spin { to { transform: rotate(360deg); } }
+
 /* Landscape: name on the left, countdown on the right. The list screens
  * (home, summary, finish) keep their phone layout in a centred column. */
 @media (orientation: landscape) {
@@ -257,4 +268,4 @@ kbd { font: inherit; font-weight: 800; padding: .05em .45em; border-radius: .3em
   }
 }
 
-@media (prefers-reduced-motion: reduce) { .final .clock { animation: none; } .scr { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .final .clock { animation: none; } .scr { transition: none; } .s-home > .ptr.spin svg { animation-duration: 2.4s; } }
