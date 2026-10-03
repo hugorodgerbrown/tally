@@ -137,6 +137,41 @@ def test_cannot_overwrite_another_users_session(client_in, workout, django_user_
     assert result["rejected"] == [{"uuid": payload["uuid"], "error": "not_owner"}]
 
 
+def test_discard_deletes_a_synced_session(client_in, workout):
+    payload = session_payload(workout)
+    post_sessions(client_in, [payload])
+    result = post_sessions(client_in, [{"uuid": payload["uuid"], "discarded": True}]).json()
+    assert result == {"saved": [], "discarded": [payload["uuid"]], "rejected": []}
+    assert not ActivitySession.objects.exists()
+
+
+def test_discard_of_an_unsynced_session_is_a_no_op(client_in, workout):
+    gone = str(uuid.uuid4())
+    keep = session_payload(workout)
+    result = post_sessions(client_in, [{"uuid": gone, "discarded": True}, keep]).json()
+    assert result["discarded"] == [gone]
+    assert result["saved"] == [keep["uuid"]]
+    assert ActivitySession.objects.count() == 1
+
+
+def test_cannot_discard_another_users_session(client_in, workout, django_user_model):
+    other = django_user_model.objects.create_user("other")
+    theirs = ActivitySession.objects.create(
+        user=other,
+        workout_name="x",
+        started_at="2026-10-01T07:00:00Z",
+        ended_at="2026-10-01T07:01:00Z",
+        completed=True,
+    )
+    post_sessions(client_in, [{"uuid": str(theirs.uuid), "discarded": True}])
+    assert ActivitySession.objects.filter(pk=theirs.pk).exists()
+
+
+def test_discard_with_bad_uuid_rejected(client_in, workout):
+    result = post_sessions(client_in, [{"uuid": "nope", "discarded": True}]).json()
+    assert result["rejected"][0]["uuid"] == "nope"
+
+
 def test_service_worker_lists_assets(client, db):
     response = client.get(reverse("activity:service_worker"))
     assert response["Service-Worker-Allowed"] == "/"

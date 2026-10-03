@@ -137,9 +137,15 @@
     const bar = types.map(([k, v]) => `<span style="flex:${v};background:${typeColour(k)}"></span>`).join("");
     const legend = types.map(([k, v]) => `<li><i style="background:${typeColour(k)}"></i><span>${esc(typeName(k))}</span><em>${fmtL(v)}</em></li>`).join("");
     const mrows = ml.map(([k, v]) => `<li><span>${esc(k)}</span><b><s style="width:${((v / mmax) * 100).toFixed(0)}%"></s></b><em>${fmtL(v)}</em></li>`).join("");
-    const saved = run.saved
-      ? `${I.check}Saved to your log${partial ? " (time actually worked)" : ""}`
-      : "Nothing worked yet, so nothing was logged";
+    const saved = run.confirmDiscard
+      ? "Discard this session? It won't be logged."
+      : run.saved
+        ? `${I.check}Saved to your log${partial ? " (time actually worked)" : ""}`
+        : "Nothing worked yet, so nothing was logged";
+    // Discard asks first, in place: the line above becomes the question.
+    const buttons = run.confirmDiscard
+      ? '<button class="dbtn" type="button" data-act="discard-no">Keep</button><button class="dbtn danger" type="button" data-act="discard-yes">Discard</button>'
+      : `${run.saved ? '<button class="dbtn quiet" type="button" data-act="discard">Discard</button>' : ""}<button class="dbtn pri" type="button" data-act="close">Done</button>`;
     return `<div class="scr s-done"><div class="main" style="justify-content:flex-start;gap:3.6cqw">
       <div class="eb">${partial ? "Ended early" : "Workout complete"}</div><div class="name" style="font-size:8.5cqw">${esc(w.name)}</div>
       <div class="stats"><div><b>${durationText(worked)}</b>worked</div><div><b>${exDone}/${w.items.length}</b>exercises</div>${w.rounds > 1 ? `<div><b>${w.rounds}</b>rounds</div>` : ""}</div>
@@ -150,8 +156,8 @@
       <ul class="mus">${mrows || '<li style="display:block;opacity:.6">Nothing logged</li>'}</ul>
       ${run.saved ? `<div class="sub">How hard was it? <span style="text-transform:none;letter-spacing:0;font-weight:600">(optional)</span></div>
       <div class="rate" role="group" aria-label="Effort from 1 to 10">${Array.from({ length: 10 }, (_, k) => `<button type="button" data-act="rate" data-v="${k + 1}" aria-pressed="${rating === k + 1}" class="${rating && k + 1 <= rating ? "on" : ""}">${k + 1}</button>`).join("")}</div>` : ""}
-      <div class="saved">${saved}</div></div>
-      <div class="drow"><button class="dbtn" type="button" data-act="repeat">Repeat</button><button class="dbtn pri" type="button" data-act="close">Done</button></div></div>`;
+      <div class="saved${run.confirmDiscard ? " ask" : ""}" role="status">${saved}</div></div>
+      <div class="drow">${buttons}</div></div>`;
   }
 
   function activityScreen(m, o) {
@@ -293,7 +299,7 @@
   }
 
   async function refreshPending() {
-    pendingCount = (await window.Store.pending()).length;
+    pendingCount = (await window.Store.pending()).filter((s) => !s.discarded).length;
     if (!run) render();
   }
 
@@ -306,7 +312,8 @@
     const t = run.timer;
     if (act === "start") return start();
     if (act === "close") return close();
-    if (act === "repeat") { const w = run.w; close(); location.hash = "#/w/" + w.id; return; }
+    if (act === "discard" || act === "discard-no") { run.confirmDiscard = act === "discard"; return render(); }
+    if (act === "discard-yes") { window.Store.discardSession(run.uuid).then(refreshPending); return close(); }
     if (act === "rate") {
       const v = +b.dataset.v;
       run.rating = run.rating === v ? null : v;
