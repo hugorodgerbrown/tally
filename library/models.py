@@ -39,6 +39,14 @@ class Equipment(models.TextChoices):
     DUMBBELL = "dumbbell", "Dumbbell"
 
 
+class Movement(models.TextChoices):
+    """Whether the body moves through reps (dynamic) or holds a position
+    (static, also called isometric). Plyometric moves are dynamic."""
+
+    DYNAMIC = "dynamic", "Dynamic"
+    STATIC = "static", "Static"
+
+
 class Exercise(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     name = models.CharField(max_length=100, unique=True)
@@ -57,6 +65,12 @@ class Exercise(models.Model):
         choices=Equipment.choices,
         blank=True,
         help_text="Leave blank for bodyweight.",
+    )
+    movement = models.CharField(
+        max_length=10,
+        choices=Movement.choices,
+        default=Movement.DYNAMIC,
+        help_text="Dynamic moves through reps; static holds a position.",
     )
 
     class Meta:

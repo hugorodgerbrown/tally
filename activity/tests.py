@@ -93,6 +93,7 @@ def test_workouts_payload(client_in, workout):
         "dur": 40,
         "sides": True,
         "equipment": "",
+        "movement": "dynamic",
         "types": ["strength"],
         "muscles": [],
     }

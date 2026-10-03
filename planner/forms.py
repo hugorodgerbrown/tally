@@ -4,7 +4,7 @@ from typing import Any, cast
 
 from django import forms
 
-from library.models import Equipment, Exercise, ExerciseType, MuscleGroup, Workout
+from library.models import Equipment, Exercise, ExerciseType, Movement, MuscleGroup, Workout
 
 
 class WorkoutForm(forms.ModelForm):
@@ -62,6 +62,7 @@ class ExerciseForm(forms.ModelForm):
             "name",
             "types",
             "muscles",
+            "movement",
             "equipment",
             "one_sided",
             "default_duration",
@@ -69,18 +70,26 @@ class ExerciseForm(forms.ModelForm):
         ]
         labels = {
             "equipment": "Equipment",
+            "movement": "Movement",
             "one_sided": "Runs per side",
             "default_duration": "Default duration",
         }
         widgets = {
             "description": forms.Textarea(attrs={"rows": 3}),
             "equipment": forms.RadioSelect,
+            "movement": forms.RadioSelect,
         }
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         equipment = cast(forms.ChoiceField, self.fields["equipment"])
         equipment.choices = [("", "None"), *Equipment.choices]
+        # Older clients (and the builder's quick-add before this field) post
+        # nothing: treat that as the default rather than an error.
+        self.fields["movement"].required = False
+
+    def clean_movement(self) -> str:
+        return self.cleaned_data.get("movement") or Movement.DYNAMIC
 
     def clean_name(self) -> str:
         name: str = self.cleaned_data["name"].strip()
