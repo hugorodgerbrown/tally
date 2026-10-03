@@ -17,7 +17,7 @@ from django.utils.dateparse import parse_datetime
 from django.views.decorators.http import require_GET, require_POST
 
 from library.equipment import equipment_json
-from library.models import Exercise, ExerciseType, Workout
+from library.models import ONE_OFF_DAYS, Exercise, ExerciseType, Workout
 
 from .models import ActivitySession, DiscardedSession, SessionEntry
 
@@ -72,6 +72,7 @@ def workouts(request: HttpRequest) -> HttpResponse:
                 for t in ExerciseType.objects.all()
             ],
             "equipment": equipment_json(),
+            "oneOffDays": ONE_OFF_DAYS,
             "workouts": [serialize_workout(w) for w in qs if w.items.all()],
         }
     )

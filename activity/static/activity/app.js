@@ -165,12 +165,20 @@
     return `<li class="once">${link}<button class="keep" type="button" data-act="keep" data-id="${esc(w.id)}" title="Save this workout so it stays on the list"${keeping === w.id ? " disabled" : ""}>${label}</button></li>`;
   }
 
+  /* The server drops one-offs after a week, but offline the phone shows its
+   * stored copy, so it applies the same cutoff itself. */
+  function onPhone(w) {
+    if (!w.oneOff || !w.createdAt) return true;
+    const days = (library && library.oneOffDays) || 7;
+    return Date.now() - new Date(w.createdAt).getTime() < days * 864e5;
+  }
+
   function homeScreen() {
-    const ws = library ? library.workouts : [];
+    const ws = library ? library.workouts.filter(onPhone) : [];
     const saved = ws.filter((w) => !w.oneOff);
     const once = ws.filter((w) => w.oneOff).sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
     const list = saved.map(workoutRow).join("")
-      + (once.length ? `<li class="wsec">One-offs<span>last 7 days</span></li>${once.map(workoutRow).join("")}` : "");
+      + (once.length ? `<li class="wsec">One-offs<span>last ${(library && library.oneOffDays) || 7} days</span></li>${once.map(workoutRow).join("")}` : "");
     const empty = library
       ? `<p class="empty">No workouts yet. Build one in <a href="/workouts/new/">Manage</a>.</p>`
       : `<p class="empty">Workouts appear here after the first sync. Connect to the internet and reopen the app.</p>`;

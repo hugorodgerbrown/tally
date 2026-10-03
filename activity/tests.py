@@ -321,6 +321,7 @@ def test_one_offs_drop_off_the_phone_after_a_week(client_in, workout):
     workout.created_at = timezone.now() - timedelta(days=30)
     workout.save()
     data = client_in.get(reverse("activity:api_workouts")).json()["workouts"]
+    assert client_in.get(reverse("activity:api_workouts")).json()["oneOffDays"] == 7
     assert [(w["name"], w["oneOff"]) for w in data] == [
         ("Legs", False),
         ("Six days", True),
