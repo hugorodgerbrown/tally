@@ -23,6 +23,7 @@ def exercise_json(exercise: Exercise) -> dict[str, Any]:
         "name": exercise.name,
         "sides": exercise.one_sided,
         "equipment": exercise.equipment,
+        "movement": exercise.movement,
         "dur": exercise.default_duration,
         "types": [t.slug for t in exercise.types.all()],
         "muscles": [m.name for m in exercise.muscles.all()],

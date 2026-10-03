@@ -19,8 +19,8 @@ class MuscleGroupAdmin(admin.ModelAdmin):
 
 @admin.register(Exercise)
 class ExerciseAdmin(admin.ModelAdmin):
-    list_display = ["name", "equipment", "one_sided", "default_duration", "type_list"]
-    list_filter = ["types", "equipment", "one_sided", "muscles"]
+    list_display = ["name", "equipment", "movement", "one_sided", "default_duration", "type_list"]
+    list_filter = ["types", "equipment", "movement", "one_sided", "muscles"]
     search_fields = ["name"]
     filter_horizontal = ["types", "muscles"]
 

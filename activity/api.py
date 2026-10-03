@@ -49,6 +49,7 @@ def serialize_workout(workout: Workout) -> dict[str, Any]:
                 "dur": item.duration_seconds,
                 "sides": item.exercise.one_sided,
                 "equipment": item.exercise.equipment,
+                "movement": item.exercise.movement,
                 "types": [t.slug for t in item.exercise.types.all()],
                 "muscles": [m.name for m in item.exercise.muscles.all()],
             }

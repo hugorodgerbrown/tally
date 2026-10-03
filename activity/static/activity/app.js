@@ -161,7 +161,7 @@
   function summaryScreen(w) {
     const total = totalSeconds(buildTimeline(w));
     const used = [...new Set(w.items.flatMap((i) => i.types))];
-    const list = w.items.map((it, i) => `<li><i>${i + 1}</i><span>${esc(it.name)}${kitIcons[it.equipment] || ""}${it.sides ? " <small>each side</small>" : ""}<b>${it.types.map((t) => `<s style="background:${typeColour(t)}" title="${esc(typeName(t))}"></s>`).join("")}</b></span><em>${it.dur} s</em></li>`).join("");
+    const list = w.items.map((it, i) => `<li><i>${i + 1}</i><span>${esc(it.name)}${kitIcons[it.equipment] || ""}${it.movement === "static" ? " <small>static</small>" : ""}${it.sides ? " <small>each side</small>" : ""}<b>${it.types.map((t) => `<s style="background:${typeColour(t)}" title="${esc(typeName(t))}"></s>`).join("")}</b></span><em>${it.dur} s</em></li>`).join("");
     return `<div class="scr s-done s-sum"><div class="main" style="justify-content:flex-start;gap:3.4cqw">
       <div class="hrow"><a class="backlink" href="#/">${I.left}Workouts</a>${tvButton()}</div>
       <div class="name" style="font-size:9cqw">${esc(w.name)}</div>
