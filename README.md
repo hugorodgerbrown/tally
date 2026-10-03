@@ -27,11 +27,16 @@ uv run python manage.py createsuperuser
 uv run python manage.py runserver
 ```
 
+- `http://localhost:8000/` is a public homepage linking to both modes.
 - `http://localhost:8000/workouts/` is the desktop planner: the workout
   list, the builder and the exercise library.
-- `http://localhost:8000/` is the phone's activity mode.
-- Both sign in at `/login/`. There is no registration: the one account is
-  the superuser made above. `/admin/` is still there for raw data.
+- `http://localhost:8000/activity/` is the phone's activity mode, and the
+  only part that installs as an app: the manifest's scope is `/activity/`,
+  so Manage opens in the browser.
+- The planner signs in at `/login/` and activity mode at `/activity/login/`,
+  so sign-in stays inside the installed app. There is no registration: the
+  one account is the superuser made above. `/admin/` is still there for raw
+  data.
 
 Tests and lint: see [Checks](#checks).
 
@@ -184,6 +189,8 @@ manifest PNGs (192, 512, maskable 512), the iOS `apple-touch-icon.png`
   - `static/activity/app.js`: the screens
   - `templates/activity/sw.js`: the service worker, rendered by Django so it
     knows the static file URLs and changes its cache name when they change
+  - `templates/activity/sw-retired.js`: served at the old `/sw.js` so phones
+    that had the site-wide worker drop it
 
 ## How the activity mode behaves
 

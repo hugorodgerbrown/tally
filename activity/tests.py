@@ -71,7 +71,12 @@ def test_api_requires_login(client, db):
 def test_app_redirects_to_login(client, db):
     response = client.get(reverse("activity:app"))
     assert response.status_code == 302
-    assert response["Location"].startswith(reverse("login"))
+    assert response["Location"].startswith(reverse("activity:login"))
+
+
+def test_activity_login_returns_to_activity(client, user):
+    response = client.post(reverse("activity:login"), {"username": user.username, "password": "pw"})
+    assert response["Location"] == reverse("activity:app")
 
 
 def test_workouts_payload(client_in, workout):
@@ -183,8 +188,14 @@ def test_discard_with_bad_uuid_rejected(client_in, workout):
 
 def test_service_worker_lists_assets(client, db):
     response = client.get(reverse("activity:service_worker"))
-    assert response["Service-Worker-Allowed"] == "/"
+    assert reverse("activity:service_worker") == "/activity/sw.js"
     assert b"/static/activity/app.js" in response.content
+
+
+def test_old_service_worker_retires_itself(client, db):
+    response = client.get("/sw.js")
+    assert response["Content-Type"] == "text/javascript"
+    assert b"registration.unregister()" in response.content
 
 
 @pytest.mark.parametrize(
@@ -239,6 +250,18 @@ def test_app_shell_and_manifest(client_in):
     assert client_in.get(reverse("activity:app")).status_code == 200
     response = client_in.get(reverse("activity:manifest"))
     assert response["Content-Type"] == "application/manifest+json"
+
+
+def test_manifest_scopes_the_app_to_activity(client):
+    """Only Activity is the installed app; Manage opens in the browser."""
+    data = json.loads(client.get(reverse("activity:manifest")).content)
+    assert data["id"] == "/"  # unchanged, so existing installs update in place
+    assert reverse("activity:manifest") == "/manifest.webmanifest"
+    assert data["start_url"] == "/activity/"
+    assert data["scope"] == "/activity/"
+    assert data["display"] == "standalone"
+    sizes = {i["sizes"] for i in data["icons"] if i["purpose"] == "any"}
+    assert {"192x192", "512x512"} <= sizes
 
 
 def test_assets_version_is_cached_outside_debug(settings):

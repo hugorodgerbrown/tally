@@ -72,7 +72,7 @@
   function statusLine() {
     const s = window.Store.status();
     const n = pendingCount;
-    if (s === "signed-out") return `<a class="status warn" href="/login/?next=/">${I.cloud}Signed out. Sign in to sync${n ? ` ${n} session${n > 1 ? "s" : ""}` : ""}.</a>`;
+    if (s === "signed-out") return `<a class="status warn" href="/activity/login/">${I.cloud}Signed out. Sign in to sync${n ? ` ${n} session${n > 1 ? "s" : ""}` : ""}.</a>`;
     if (n) return `<div class="status">${I.cloud}${n} session${n > 1 ? "s" : ""} waiting to sync${s === "offline" ? " (offline)" : ""}</div>`;
     if (s === "offline") return `<div class="status">${I.cloud}Offline. Workouts are stored on this phone.</div>`;
     return `<div class="status ok">${I.check}All sessions synced</div>`;
@@ -88,10 +88,10 @@
       ? '<span class="mode-off" aria-disabled="true" title="Manage needs a connection">Manage</span>'
       : '<a href="/workouts/">Manage</a>';
     const account = s === "signed-out"
-      ? '<a class="signout" href="/login/?next=/">Sign in</a>'
+      ? '<a class="signout" href="/activity/login/">Sign in</a>'
       : offline
         ? '<span class="signout off" aria-disabled="true" title="Signing out needs a connection">Sign out</span>'
-        : `<form method="post" action="/logout/"><input type="hidden" name="next" value="/login/?next=/"><input type="hidden" name="csrfmiddlewaretoken" value="${esc(window.Store.csrfToken())}"><button class="signout" type="submit">Sign out</button></form>`;
+        : `<form method="post" action="/activity/logout/"><input type="hidden" name="next" value="/activity/login/"><input type="hidden" name="csrfmiddlewaretoken" value="${esc(window.Store.csrfToken())}"><button class="signout" type="submit">Sign out</button></form>`;
     return `<div class="hctl"><nav class="modes" aria-label="Mode"><span aria-current="page">Activity</span>${manage}</nav>${account}</div>`;
   }
 
@@ -360,7 +360,7 @@
       navigator.serviceWorker.addEventListener("controllerchange", () => {
         if (hadController && !run) location.reload();
       });
-      navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {});
+      navigator.serviceWorker.register("/activity/sw.js", { scope: "/activity/" }).catch(() => {});
     }
     if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
     const cached = await window.Store.get("library");

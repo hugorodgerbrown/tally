@@ -22,3 +22,11 @@ def test_https_redirect_spares_the_health_check(client):
     response = client.get(reverse("login"))
     assert response.status_code == 301
     assert response["Location"].startswith("https://")
+
+
+def test_homepage_is_public_and_not_the_app(client):
+    # No db fixture: the homepage needs no sign-in or query.
+    response = client.get(reverse("home"))
+    assert response.status_code == 200
+    assert reverse("activity:app").encode() in response.content
+    assert b'rel="manifest"' not in response.content

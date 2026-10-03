@@ -1,8 +1,8 @@
 /* Service worker. Rendered by Django so asset URLs match the deployed
  * static files; the cache name changes whenever an asset changes. */
-const CACHE = "workouts-{{ version }}";
-const FONTS = "workouts-fonts";
-const SHELL = "/";
+const CACHE = "tally-{{ version }}";
+const FONTS = "tally-fonts";
+const SHELL = "/activity/";
 const ASSETS = [{% for a in assets %}"{{ a|escapejs }}"{% if not forloop.last %}, {% endif %}{% endfor %}];
 
 self.addEventListener("install", (event) => {
