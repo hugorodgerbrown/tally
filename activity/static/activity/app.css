@@ -50,6 +50,7 @@ a { color: inherit; }
 .clock { font-size: 58cqw; font-weight: 850; font-stretch: 68%; line-height: .82; font-variant-numeric: tabular-nums; letter-spacing: -.03em; margin-left: -1.5cqw; margin-top: 2cqw; }
 .clock.mm { font-size: 42cqw; }
 .clock.sm { font-size: 30cqw; }
+.clock .pad { visibility: hidden; }
 .final .clock { animation: pulse 1s steps(1) infinite; }
 @keyframes pulse { 0% { opacity: 1; } 55% { opacity: .55; } }
 .next { display: flex; align-items: baseline; gap: 3cqw; border-top: .4cqw solid color-mix(in srgb, currentColor 30%, transparent); padding-top: 3.4cqw; font-size: 4.6cqw; }
