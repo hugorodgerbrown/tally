@@ -255,7 +255,8 @@ def test_app_shell_and_manifest(client_in):
 def test_manifest_scopes_the_app_to_activity(client):
     """Only Activity is the installed app; Manage opens in the browser."""
     data = json.loads(client.get(reverse("activity:manifest")).content)
-    assert data["id"] == "/activity/"
+    assert data["id"] == "/"  # unchanged, so existing installs update in place
+    assert reverse("activity:manifest") == "/manifest.webmanifest"
     assert data["start_url"] == "/activity/"
     assert data["scope"] == "/activity/"
     assert data["display"] == "standalone"

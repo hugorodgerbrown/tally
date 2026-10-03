@@ -1,5 +1,5 @@
 {% load static %}{
-  "id": "/activity/",
+  "id": "/",
   "name": "Tally",
   "short_name": "Tally",
   "description": "Interval workouts, hands free.",

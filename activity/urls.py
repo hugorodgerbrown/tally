@@ -12,7 +12,6 @@ app_name = "activity"
 urlpatterns = [
     path("activity/", views.app, name="app"),
     path("activity/sw.js", views.service_worker, name="service_worker"),
-    path("activity/manifest.webmanifest", views.manifest, name="manifest"),
     path(
         "activity/login/",
         auth_views.LoginView.as_view(
@@ -23,6 +22,10 @@ urlpatterns = [
         name="login",
     ),
     path("activity/logout/", auth_views.LogoutView.as_view(), name="logout"),
+    # The manifest keeps its original URL and id ("/") so phones that installed
+    # Tally before the move update in place: Chrome matches an installed app by
+    # id and picks up the new start_url and scope.
+    path("manifest.webmanifest", views.manifest, name="manifest"),
     path("sw.js", views.retired_service_worker, name="retired_service_worker"),
     path("api/workouts/", api.workouts, name="api_workouts"),
     path("api/sessions/", api.sessions, name="api_sessions"),
