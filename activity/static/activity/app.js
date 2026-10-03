@@ -208,15 +208,18 @@
     const top = `<div class="top"><div class="segs">${m.segs.map((g) => (g.k === "dot" ? `<span class="rdot ${g.st}"></span>` : `<span class="seg"><span style="width:${(g.f * 100).toFixed(1)}%"></span></span>`)).join("")}</div>
       <div class="meta"><span>${m.rounds > 1 ? `Round ${m.round}/${m.rounds} · ` : ""}${m.exNum} of ${m.exTotal}</span><span>${fmtLeft(m.left)} left</span></div></div>`;
     const chip = m.side ? `<span class="chip">${m.side} side <i>${Array.from({ length: m.sn }, (_, k) => `<b class="${k === m.si ? "on" : ""}"></b>`).join("")}</i></span>` : "";
-    const c = fmt(m.rem);
-    const cc = c.length > 2 ? "clock mm" : "clock";
+    const c0 = fmt(m.rem);
+    const cc = c0.length > 2 ? "clock mm" : "clock";
+    // From 9 down, a hidden leading 0 keeps the width of two digits, so
+    // nothing shifts when an interval of 10 s or more drops from 10 to 9.
+    const c = c0.length === 1 && m.dur >= 10 ? `<span class="pad" aria-hidden="true">0</span>${c0}` : c0;
     const next = `<div class="next"><span class="nl">Next</span><span class="nn">${esc(m.next.name)}</span><span class="nd">${m.next.dur ? m.next.dur + " s" : ""}</span></div>`;
     const fin = m.rem <= 3 && m.rem > 0 && !m.paused ? " final" : "";
     const fill = `<div class="fill" style="height:${m.pct.toFixed(2)}%"></div>`;
 
     if (m.paused) {
       return `<div class="scr s-paused">${top}
-        <div class="main"><div class="eb">Paused</div><div class="name">${esc(m.name)}</div>${chip}<div class="clock sm">${c}</div></div>
+        <div class="main"><div class="eb">Paused</div><div class="name">${esc(m.name)}</div>${chip}<div class="lclock"><div class="clock sm">${c}</div></div></div>
         <div class="pctl"><button class="resume" type="button" data-act="resume" aria-label="Resume">${I.play}</button>
         <div class="prow"><button class="pbtn" type="button" data-act="back">${I.back}Back</button><button class="pbtn" type="button" data-act="skip">${I.skip}Skip</button><button class="pbtn end" type="button" data-act="end">${I.end}End</button></div></div></div>`;
     }
