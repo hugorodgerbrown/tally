@@ -4,10 +4,12 @@ from django.db import migrations, models
 
 
 def tag_by_name(apps, schema_editor):
-    """Exercises named after their kit (Kettlebell swing) get it set."""
+    """Exercises named after their kit (Kettlebell swing) get it set, as does
+    the seeded Goblet squat, which the seeder no longer touches once it exists."""
     Exercise = apps.get_model("library", "Exercise")
     for slug in ("kettlebell", "dumbbell"):
         Exercise.objects.filter(name__icontains=slug, equipment="").update(equipment=slug)
+    Exercise.objects.filter(name="Goblet squat", equipment="").update(equipment="kettlebell")
 
 
 class Migration(migrations.Migration):

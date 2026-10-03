@@ -84,6 +84,8 @@ def test_seed_and_migration_tag_kettlebell_moves(db):
     assert Exercise.objects.get(name="Kettlebell swing").equipment == "kettlebell"
     assert Exercise.objects.get(name="Plank").equipment == ""
     Exercise.objects.create(name="Dumbbell row")
+    Exercise.objects.filter(name="Goblet squat").update(equipment="")  # seeded before this change
     migration = import_module("library.migrations.0004_exercise_equipment")
     migration.tag_by_name(apps, None)
     assert Exercise.objects.get(name="Dumbbell row").equipment == "dumbbell"
+    assert Exercise.objects.get(name="Goblet squat").equipment == "kettlebell"
