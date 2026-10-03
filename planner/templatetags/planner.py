@@ -1,4 +1,7 @@
 from django import template
+from django.utils.safestring import SafeString
+
+from library.equipment import icon_svg
 
 register = template.Library()
 
@@ -20,3 +23,9 @@ def duration(seconds: float | None) -> str:
         return f"{s // 60} min" + (f" {s % 60} s" if s % 60 else "")
     m = round((s % 3600) / 60)
     return f"{s // 3600} h" + (f" {m} min" if m else "")
+
+
+@register.simple_tag
+def equipment_icon(slug: str) -> SafeString:
+    """The equipment's icon as inline SVG; nothing for bodyweight."""
+    return icon_svg(slug)

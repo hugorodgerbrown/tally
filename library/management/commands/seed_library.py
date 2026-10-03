@@ -35,6 +35,8 @@ EXERCISES = [
     ("High knees", ["aerobic", "anaerobic"], ["Hip flexors", "Quads", "Calves"], False, 30),
 ]
 
+EQUIPMENT = {"Kettlebell swing": "kettlebell", "Goblet squat": "kettlebell"}
+
 MORNING_MOBILITY = [
     ("90/90 hip switch", 45),
     ("Cat-cow", 40),
@@ -55,7 +57,12 @@ class Command(BaseCommand):
         created = 0
         for name, type_slugs, muscles, one_sided, duration in EXERCISES:
             exercise, is_new = Exercise.objects.get_or_create(
-                name=name, defaults={"one_sided": one_sided, "default_duration": duration}
+                name=name,
+                defaults={
+                    "one_sided": one_sided,
+                    "default_duration": duration,
+                    "equipment": EQUIPMENT.get(name, ""),
+                },
             )
             if not is_new:
                 continue

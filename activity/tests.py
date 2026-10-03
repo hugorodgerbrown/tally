@@ -92,9 +92,15 @@ def test_workouts_payload(client_in, workout):
         "name": "Split squat",
         "dur": 40,
         "sides": True,
+        "equipment": "",
         "types": ["strength"],
         "muscles": [],
     }
+    # Icons travel with the library, like type colours, so the phone works offline.
+    kit = {e["slug"]: e for e in data["equipment"]}
+    assert set(kit) == {"kettlebell", "dumbbell"}
+    assert kit["kettlebell"]["svg"].startswith('<svg class="eq"')
+    assert 'aria-label="Kettlebell"' in kit["kettlebell"]["svg"]
 
 
 def test_session_upsert_is_idempotent(client_in, workout, user):

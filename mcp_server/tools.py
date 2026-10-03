@@ -21,7 +21,14 @@ from django.utils import timezone
 
 from activity.models import ActivitySession, SessionEntry
 from library import timeline
-from library.models import Exercise, ExerciseType, MuscleGroup, Workout, WorkoutItem
+from library.models import (
+    Equipment,
+    Exercise,
+    ExerciseType,
+    MuscleGroup,
+    Workout,
+    WorkoutItem,
+)
 
 MIN_SECONDS = 5
 MAX_SECONDS = 3600
@@ -106,6 +113,11 @@ EXERCISE_FIELDS: dict[str, Any] = {
     "description": {"type": "string", "description": "How to do it; shown in the planner."},
     "types": TYPE_SLUGS,
     "muscles": MUSCLES,
+    "equipment": {
+        "type": "string",
+        "enum": ["", *Equipment.values],
+        "description": "Kit the exercise needs; an empty string for bodyweight.",
+    },
     "one_sided": {
         "type": "boolean",
         "description": "True for moves done per side; they run as two intervals, left then right.",
@@ -212,6 +224,7 @@ def exercise_json(exercise: Exercise) -> Result:
         "description": exercise.description,
         "types": [t.slug for t in exercise.types.all()],
         "muscles": [m.name for m in exercise.muscles.all()],
+        "equipment": exercise.equipment,
         "one_sided": exercise.one_sided,
         "default_duration": exercise.default_duration,
     }
@@ -245,6 +258,7 @@ def workout_json(workout: Workout) -> Result:
                 "exercise": item.exercise.name,
                 "duration_seconds": item.duration_seconds,
                 "one_sided": item.exercise.one_sided,
+                "equipment": item.exercise.equipment,
                 "types": [t.slug for t in item.exercise.types.all()],
                 "muscles": [m.name for m in item.exercise.muscles.all()],
             }
@@ -302,8 +316,8 @@ def _sessions(user: AbstractBaseUser, args: Args) -> QuerySet[ActivitySession]:
 
 @tool(
     "List types and muscle groups",
-    "The exercise types (slug and name) and every muscle group in the library. "
-    "Use these values when filtering or tagging exercises.",
+    "The exercise types (slug and name), every muscle group in the library, and the "
+    "equipment choices. Use these values when filtering or tagging exercises.",
     {},
     [],
     read_only=True,
@@ -312,17 +326,22 @@ def list_types_and_muscles(user: AbstractBaseUser, args: Args) -> Result:
     return {
         "types": [{"slug": t.slug, "name": t.name} for t in ExerciseType.objects.all()],
         "muscles": list(MuscleGroup.objects.values_list("name", flat=True)),
+        "equipment": [{"slug": e.value, "name": e.label} for e in Equipment],
     }
 
 
 @tool(
     "List exercises",
-    "Exercises in the library, with their types, muscle groups, whether they run per side, "
-    "and default duration. Filters combine.",
+    "Exercises in the library, with their types, muscle groups, equipment, whether they "
+    "run per side, and default duration. Filters combine.",
     {
         "query": {"type": "string", "description": "Part of the name or description."},
         "type": {"type": "string", "description": "A type slug, e.g. flexibility."},
         "muscle": {"type": "string", "description": "A muscle group name, any case."},
+        "equipment": {
+            "type": "string",
+            "description": "An equipment slug, e.g. kettlebell; an empty string for bodyweight.",
+        },
     },
     [],
     read_only=True,
@@ -335,6 +354,8 @@ def list_exercises(user: AbstractBaseUser, args: Args) -> Result:
         qs = qs.filter(types__slug=type_slug)
     if muscle := args.get("muscle"):
         qs = qs.filter(muscles__name__iexact=muscle)
+    if "equipment" in args:
+        qs = qs.filter(equipment=str(args["equipment"]))
     return {"exercises": [exercise_json(e) for e in qs.distinct()]}
 
 
@@ -509,6 +530,12 @@ def _save_exercise(exercise: Exercise, args: Args) -> Result:
         exercise.name = name
     if "description" in args:
         exercise.description = str(args["description"])
+    if "equipment" in args:
+        equipment = args["equipment"] or ""
+        if equipment and equipment not in Equipment.values:
+            choices = ", ".join(Equipment.values)
+            raise ToolError(f"equipment must be one of {choices}, or empty for bodyweight.")
+        exercise.equipment = equipment
     if "one_sided" in args:
         exercise.one_sided = bool(args["one_sided"])
     if "default_duration" in args:

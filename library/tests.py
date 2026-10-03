@@ -1,12 +1,15 @@
+from importlib import import_module
 from io import StringIO
 
 import pytest
+from django.apps import apps
 from django.contrib.admin.sites import site
 from django.core.management import call_command
 from django.test import RequestFactory
 
 from library import timeline
 from library.admin import ExerciseAdmin
+from library.equipment import icon_svg
 from library.models import Exercise, ExerciseType, MuscleGroup, Workout, WorkoutItem
 
 
@@ -63,3 +66,26 @@ def test_exercise_admin_lists_types(lunge, admin_user):
     request.user = admin_user
     row = admin.get_queryset(request).get(pk=lunge.pk)
     assert admin.type_list(row) == "Strength"
+
+
+def test_icon_for_bodyweight_is_empty():
+    assert icon_svg("") == ""
+    assert icon_svg("barbell") == ""
+
+
+def test_icon_is_labelled():
+    svg = icon_svg("kettlebell")
+    assert svg.startswith('<svg class="eq" viewBox="0 0 24 24" role="img" aria-label="Kettlebell">')
+    assert "<title>Kettlebell</title>" in svg
+
+
+def test_seed_and_migration_tag_kettlebell_moves(db):
+    call_command("seed_library", stdout=StringIO())
+    assert Exercise.objects.get(name="Kettlebell swing").equipment == "kettlebell"
+    assert Exercise.objects.get(name="Plank").equipment == ""
+    Exercise.objects.create(name="Dumbbell row")
+    Exercise.objects.filter(name="Goblet squat").update(equipment="")  # seeded before this change
+    migration = import_module("library.migrations.0004_exercise_equipment")
+    migration.tag_by_name(apps, None)
+    assert Exercise.objects.get(name="Dumbbell row").equipment == "dumbbell"
+    assert Exercise.objects.get(name="Goblet squat").equipment == "kettlebell"

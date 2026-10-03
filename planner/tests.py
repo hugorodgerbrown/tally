@@ -275,6 +275,42 @@ def test_edit_exercise_from_the_form(client_in, squat):
     assert squat.one_sided is False
 
 
+def test_set_equipment_from_the_form(client_in, squat):
+    url = reverse("planner:exercise_edit", args=[squat.uuid])
+    page = client_in.get(url).content.decode()
+    assert '<input type="radio" name="equipment" value="" checked>' in page
+    assert 'aria-label="Dumbbell"' in page
+    data = {"name": squat.name, "types": ["strength"], "default_duration": 40}
+    client_in.post(url, {**data, "equipment": "dumbbell"})
+    squat.refresh_from_db()
+    assert squat.equipment == "dumbbell"
+    client_in.post(url, {**data, "equipment": ""})
+    squat.refresh_from_db()
+    assert squat.equipment == ""
+
+
+def test_unknown_equipment_is_rejected(client_in, squat):
+    url = reverse("planner:exercise_edit", args=[squat.uuid])
+    data = {"name": squat.name, "types": ["strength"], "default_duration": 40}
+    response = client_in.post(url, {**data, "equipment": "barbell"})
+    assert response.status_code == 200
+    squat.refresh_from_db()
+    assert squat.equipment == ""
+
+
+def test_equipment_icons_on_manage_pages(client_in, squat, swing):
+    swing.equipment = "kettlebell"
+    swing.save()
+    listing = client_in.get(reverse("planner:exercises")).content.decode()
+    assert listing.count('<svg class="eq"') == 1
+    assert 'aria-label="Kettlebell"' in listing
+    builder = client_in.get(reverse("planner:workout_new")).context["builder"]
+    by_name = {e["name"]: e for e in builder["library"]}
+    assert by_name["Kettlebell swing"]["equipment"] == "kettlebell"
+    assert by_name["Split squat"]["equipment"] == ""
+    assert [e["slug"] for e in builder["equipment"]] == ["kettlebell", "dumbbell"]
+
+
 def test_invalid_exercise_form_shows_errors(client_in):
     response = client_in.post(reverse("planner:exercise_new"), {"name": "Plank"})
     assert response.status_code == 200

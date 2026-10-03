@@ -11,6 +11,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from library import timeline
+from library.equipment import equipment_json
 from library.models import Exercise, ExerciseType, MuscleGroup, Workout, WorkoutItem
 
 from .forms import ExerciseForm, WorkoutForm
@@ -21,6 +22,7 @@ def exercise_json(exercise: Exercise) -> dict[str, Any]:
         "id": str(exercise.uuid),
         "name": exercise.name,
         "sides": exercise.one_sided,
+        "equipment": exercise.equipment,
         "dur": exercise.default_duration,
         "types": [t.slug for t in exercise.types.all()],
         "muscles": [m.name for m in exercise.muscles.all()],
@@ -110,6 +112,7 @@ def workout_edit(request: HttpRequest, uuid: uuid_lib.UUID | None = None) -> Htt
                 for t in ExerciseType.objects.all()
             ],
             "muscles": list(MuscleGroup.objects.values_list("name", flat=True)),
+            "equipment": equipment_json(),
         },
         "exercise_form": ExerciseForm(auto_id="ex_%s"),
     }
