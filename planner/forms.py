@@ -84,12 +84,12 @@ class ExerciseForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         equipment = cast(forms.ChoiceField, self.fields["equipment"])
         equipment.choices = [("", "None"), *Equipment.choices]
-        # Older clients (and the builder's quick-add before this field) post
-        # nothing: treat that as the default rather than an error.
+        # Older pages post nothing: keep what the exercise already has (the
+        # model default, dynamic, for a new one) rather than an error.
         self.fields["movement"].required = False
 
     def clean_movement(self) -> str:
-        return self.cleaned_data.get("movement") or Movement.DYNAMIC
+        return self.cleaned_data.get("movement") or self.instance.movement or Movement.DYNAMIC
 
     def clean_name(self) -> str:
         name: str = self.cleaned_data["name"].strip()

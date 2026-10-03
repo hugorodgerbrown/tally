@@ -297,10 +297,21 @@ def test_set_movement_from_the_form(client_in, squat):
     client_in.post(url, {**data, "movement": "static"})
     squat.refresh_from_db()
     assert squat.movement == "static"
-    # A form posted without the field (an older page) keeps the default.
+    # A form posted without the field (an older page) keeps what was set.
     client_in.post(url, data)
     squat.refresh_from_db()
+    assert squat.movement == "static"
+    client_in.post(url, {**data, "movement": "dynamic"})
+    squat.refresh_from_db()
     assert squat.movement == "dynamic"
+
+
+def test_new_exercise_without_movement_is_dynamic(client_in):
+    client_in.post(
+        reverse("planner:exercise_new"),
+        {"name": "Lunge", "types": ["strength"], "default_duration": 40},
+    )
+    assert Exercise.objects.get(name="Lunge").movement == "dynamic"
 
 
 def test_unknown_movement_is_rejected(client_in, squat):
