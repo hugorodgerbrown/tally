@@ -82,6 +82,7 @@
   async function setTv(on) {
     tv = on;
     document.documentElement.classList.toggle("tv", on);
+    armIdle();
     if (on) {
       keepAwake();
       if (canFullscreen() && !document.fullscreenElement) {
@@ -99,12 +100,14 @@
     if (!document.fullscreenElement && tv) setTv(false);
   });
 
+  // The cursor hides after a moment still, counted from entering TV mode too.
   let idleTimer = null;
-  document.addEventListener("pointermove", () => {
+  function armIdle() {
     document.documentElement.classList.remove("idle");
     clearTimeout(idleTimer);
     idleTimer = setTimeout(() => tv && document.documentElement.classList.add("idle"), 2500);
-  });
+  }
+  document.addEventListener("pointermove", armIdle);
 
   const tvButton = () => `<button class="tvbtn" type="button" data-act="tv" aria-pressed="${tv}" title="${tv ? "Leave TV mode (Esc)" : "TV mode: full screen for casting (F)"}">${I.tv}TV</button>`;
 
@@ -406,7 +409,7 @@
   window.Store.onStatus(() => { refreshPending(); });
 
   async function boot() {
-    if (new URLSearchParams(location.search).get("tv") === "1") { tv = true; document.documentElement.classList.add("tv"); keepAwake(); }
+    if (new URLSearchParams(location.search).get("tv") === "1") { tv = true; document.documentElement.classList.add("tv"); keepAwake(); armIdle(); }
     if ("serviceWorker" in navigator) {
       // A new version took over: reload to use it, unless a workout is on screen.
       const hadController = !!navigator.serviceWorker.controller;
