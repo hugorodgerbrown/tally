@@ -18,7 +18,7 @@ from django.views.decorators.http import require_GET, require_POST
 
 from library.models import Exercise, ExerciseType, Workout
 
-from .models import ActivitySession, SessionEntry
+from .models import ActivitySession, DiscardedSession, SessionEntry
 
 type View = Callable[..., HttpResponse]
 
@@ -124,7 +124,7 @@ def sessions(request: HttpRequest) -> HttpResponse:
     """Upsert a batch of sessions: ``{"sessions": [...]}``.
 
     An item of ``{"uuid": ..., "discarded": true}`` deletes that session
-    instead; deleting one that never synced is a no-op.
+    instead and records the UUID, so a later upload of it is ignored.
 
     Returns the UUIDs saved, discarded, and rejected as malformed, so the
     client can clear all three from its outbox and only retry on network
@@ -145,7 +145,9 @@ def sessions(request: HttpRequest) -> HttpResponse:
         try:
             if isinstance(data, dict) and data.get("discarded") is True:
                 session_uuid = uuid.UUID(str(data["uuid"]))
-                ActivitySession.objects.filter(uuid=session_uuid, user=user).delete()
+                with transaction.atomic():
+                    ActivitySession.objects.filter(uuid=session_uuid, user=user).delete()
+                    DiscardedSession.objects.get_or_create(uuid=session_uuid, user=user)
                 discarded.append(str(session_uuid))
                 continue
             parsed.append(_parse_session(data))
@@ -154,6 +156,15 @@ def sessions(request: HttpRequest) -> HttpResponse:
                 {"uuid": data.get("uuid") if isinstance(data, dict) else None, "error": str(exc)}
             )
             continue
+
+    # Already discarded: acknowledge so the phone clears it, but don't store.
+    gone = set(
+        DiscardedSession.objects.filter(user=user, uuid__in=[u for u, _, _ in parsed]).values_list(
+            "uuid", flat=True
+        )
+    )
+    saved.extend(str(u) for u, _, _ in parsed if u in gone)
+    parsed = [p for p in parsed if p[0] not in gone]
 
     workout_ids = dict(
         Workout.objects.filter(uuid__in={f["workout_uuid"] for _, f, _ in parsed}).values_list(

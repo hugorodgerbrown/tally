@@ -91,7 +91,10 @@
           headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken() },
           body: JSON.stringify({ sessions: items }),
         });
-        const done = [...res.saved, ...(res.discarded || []), ...res.rejected.map((r) => r.uuid).filter(Boolean)];
+        // A rejected tombstone means a server too old to discard: keep it queued.
+        const tombstones = new Set(items.filter((i) => i.discarded).map((i) => i.uuid));
+        const rejected = res.rejected.map((r) => r.uuid).filter((u) => u && !tombstones.has(u));
+        const done = [...res.saved, ...(res.discarded || []), ...rejected];
         // Only clear the versions we sent; a newer edit made meanwhile stays queued.
         const sent = new Map(items.map((i) => [i.uuid, i.updatedAt]));
         const now = new Map((await pending()).map((i) => [i.uuid, i.updatedAt]));

@@ -63,3 +63,18 @@ class SessionEntry(models.Model):
 
     def __str__(self) -> str:
         return f"{self.exercise_name}: {self.seconds_worked}s"
+
+
+class DiscardedSession(models.Model):
+    """A session the user threw away on the finish screen.
+
+    Kept so an upload of the same session that arrives after the discard
+    (from another tab, or a retry) is ignored rather than re-creating it.
+    """
+
+    uuid = models.UUIDField(unique=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="+")
+    discarded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        return str(self.uuid)
