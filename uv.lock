@@ -1,5 +1,5 @@
 version = 1
-revision = 5
+revision = 3
 requires-python = ">=3.14"
 resolution-markers = [
     "python_full_version >= '3.15'",
@@ -934,6 +934,15 @@ wheels = [
 ]
 
 [[package]]
+name = "titan-mcp-auth"
+version = "0.1.0"
+source = { git = "https://github.com/hugorodgerbrown/mcp-auth?rev=7b6ec7a#7b6ec7adf28a696d92324e3eb84a2716be06d3b0" }
+dependencies = [
+    { name = "django" },
+    { name = "django-oauth-toolkit" },
+]
+
+[[package]]
 name = "tomli-w"
 version = "1.2.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1085,6 +1094,7 @@ dependencies = [
     { name = "django-oauth-toolkit" },
     { name = "gunicorn" },
     { name = "psycopg", extra = ["binary"] },
+    { name = "titan-mcp-auth" },
     { name = "whitenoise" },
 ]
 
@@ -1123,6 +1133,7 @@ requires-dist = [
     { name = "django-oauth-toolkit", specifier = ">=3.4.1" },
     { name = "gunicorn", specifier = ">=26.2.0" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.3.6" },
+    { name = "titan-mcp-auth", git = "https://github.com/hugorodgerbrown/mcp-auth?rev=7b6ec7a" },
     { name = "whitenoise", specifier = ">=6.12.0" },
 ]
 

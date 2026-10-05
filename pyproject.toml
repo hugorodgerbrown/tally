@@ -12,6 +12,7 @@ dependencies = [
     "django-oauth-toolkit>=3.4.1",
     "gunicorn>=26.2.0",
     "psycopg[binary]>=3.3.6",
+    "titan-mcp-auth",
     "whitenoise>=6.12.0",
 ]
 
@@ -43,6 +44,10 @@ dev = [
 [tool.uv]
 package = false
 default-groups = ["dev"]
+
+[tool.uv.sources]
+# The shared Titan MCP auth app. Pinned to a commit until v0.1.0 is tagged.
+titan-mcp-auth = { git = "https://github.com/hugorodgerbrown/mcp-auth", rev = "7b6ec7a" }
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings"

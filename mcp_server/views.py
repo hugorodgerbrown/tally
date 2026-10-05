@@ -3,6 +3,8 @@
 Stateless and synchronous: every request is a POST answered with one JSON
 body, so it runs under gunicorn's sync workers like the rest of the site.
 There is no server-to-client stream; GET answers 405 as the spec allows.
+Authentication is titan_mcp_auth's ``@mcp_endpoint``: a bearer token bound
+to this URL, held by the superuser, or a 401 that starts OAuth discovery.
 """
 
 import json
@@ -10,10 +12,7 @@ import logging
 from typing import Any
 
 from django.http import HttpRequest, HttpResponse, JsonResponse
-from django.urls import reverse
-from django.views.decorators.csrf import csrf_exempt
-from oauth2_provider.oauth2_backends import get_oauthlib_core
-from oauth2_provider.www_authenticate import build_bearer_challenge, challenge_status
+from titan_mcp_auth.resource import mcp_endpoint
 
 from .tools import TOOLS, ToolError
 
@@ -45,36 +44,9 @@ class RpcError(Exception):
         self.message = message
 
 
-def _resource_metadata_url(request: HttpRequest) -> str:
-    return request.build_absolute_uri(
-        reverse("oauth2_provider:oauth-resource-metadata-path", args=["mcp"])
-    )
-
-
-def _unauthorised(request: HttpRequest, oauth2_error: dict[str, str] | None) -> HttpResponse:
-    response = HttpResponse(status=challenge_status(oauth2_error))
-    response["WWW-Authenticate"] = build_bearer_challenge(
-        request, oauth2_error=oauth2_error, resource_metadata_url=_resource_metadata_url(request)
-    )
-    return response
-
-
-# CSRF protection is for cookie-authenticated browser requests. This endpoint
-# ignores cookies and authenticates only by the bearer token in the
-# Authorization header, which a cross-site form can't set.
-@csrf_exempt  # nosemgrep
+@mcp_endpoint
 def mcp(request: HttpRequest) -> HttpResponse:
-    if request.method != "POST":
-        response = HttpResponse(status=405)
-        response["Allow"] = "POST"
-        return response
-
-    valid, oauth_request = get_oauthlib_core().verify_request(request, scopes=["tally"])
-    if not valid:
-        return _unauthorised(request, getattr(oauth_request, "oauth2_error", None))
-    user = oauth_request.user
-    if not (user.is_active and user.is_superuser):
-        return _unauthorised(request, {"error": "invalid_token"})
+    user = request.user
 
     version = request.headers.get("MCP-Protocol-Version")
     if version and version not in SUPPORTED_VERSIONS:
