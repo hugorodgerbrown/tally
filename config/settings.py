@@ -9,7 +9,7 @@ from pathlib import Path
 
 import dj_database_url
 from django.utils.csp import CSP
-from titan_mcp_auth.conf import oauth2_settings
+from mcp_auth.conf import oauth2_settings
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -45,7 +45,7 @@ SILENCED_SYSTEM_CHECKS = [
     "security.W021",
     # OAuth allows http redirect URIs because Claude Code and other local MCP
     # clients sign in through a loopback port (RFC 8252). Registration only
-    # accepts http for loopback; see titan_mcp_auth's redirect allowlist.
+    # accepts http for loopback; see mcp_auth's redirect allowlist.
     "oauth2_provider.W008",
 ]
 
@@ -78,9 +78,9 @@ INSTALLED_APPS = [
     "library",
     "activity",
     "planner",
-    # Before titan_mcp_auth so its consent and connected-apps templates win.
+    # Before mcp_auth so its consent and connected-apps templates win.
     "mcp_server",
-    "titan_mcp_auth",
+    "mcp_auth",
     "oauth2_provider",
 ]
 
@@ -160,7 +160,7 @@ STORAGES = {
 }
 
 # OAuth 2.1 for the MCP server, so Claude can connect to /mcp as a connector.
-# The shared Titan preset (titan_mcp_auth): PKCE, rotating refresh tokens,
+# The shared Titan preset (mcp_auth): PKCE, rotating refresh tokens,
 # DCR and CIMD, held to Claude's callbacks and loopback. Only the superuser
 # may connect. The scope keeps its original name so live connections survive.
 OAUTH2_PROVIDER = oauth2_settings(
@@ -168,9 +168,9 @@ OAUTH2_PROVIDER = oauth2_settings(
     scope="tally",
     scope_description="Read and change your exercises, workouts and sessions",
 )
-TITAN_MCP = {
+MCP_AUTH = {
     "SCOPE": "tally",
-    "CAN_CONNECT": "titan_mcp_auth.policy.superuser_only",
+    "CAN_CONNECT": "mcp_auth.policy.superuser_only",
 }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

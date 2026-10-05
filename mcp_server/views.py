@@ -3,7 +3,7 @@
 Stateless and synchronous: every request is a POST answered with one JSON
 body, so it runs under gunicorn's sync workers like the rest of the site.
 There is no server-to-client stream; GET answers 405 as the spec allows.
-Authentication is titan_mcp_auth's ``@mcp_endpoint``: a bearer token bound
+Authentication is mcp_auth's ``@mcp_endpoint``: a bearer token bound
 to this URL, held by the superuser, or a 401 that starts OAuth discovery.
 """
 
@@ -12,7 +12,7 @@ import logging
 from typing import Any
 
 from django.http import HttpRequest, HttpResponse, JsonResponse
-from titan_mcp_auth.resource import mcp_endpoint
+from mcp_auth.resource import mcp_endpoint
 
 from .tools import TOOLS, ToolError
 

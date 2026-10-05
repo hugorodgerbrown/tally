@@ -9,8 +9,8 @@ from urllib.parse import parse_qs, urlparse
 import pytest
 from django.core.cache import cache
 from django.utils import timezone
+from mcp_auth.testing import MCPAuthContract
 from oauth2_provider.models import AccessToken, Application, set_token_value
-from titan_mcp_auth.testing import MCPAuthContract
 
 from activity.models import ActivitySession, SessionEntry
 from library.models import Exercise, ExerciseType, MuscleGroup, Workout, WorkoutItem

@@ -111,12 +111,12 @@ Tools: `list_types_and_muscles`, `list_exercises`, `get_exercise`,
 `create_exercise`, `update_exercise`, `create_workout`, `update_workout`.
 
 Sign-in is OAuth 2.1 with PKCE, from the shared Titan app
-[titan-mcp-auth](https://github.com/hugorodgerbrown/mcp-auth) on
+[mcp-auth](https://github.com/hugorodgerbrown/mcp-auth) on
 [django-oauth-toolkit](https://django-oauth-toolkit.readthedocs.io/). Clients
 identify themselves by a Client ID Metadata Document or register themselves
 (RFC 7591), but only with a redirect URI on its allowlist (Claude's callback,
 or a loopback port for local clients), and only the superuser can approve
-one. `TITAN_MCP` in `config/settings.py` sets the scope, who may connect and
+one. `MCP_AUTH` in `config/settings.py` sets the scope, who may connect and
 the allowlist. Access tokens last an hour and are bound to `/mcp`; refresh
 tokens last 30 days and rotate. Connected apps are listed at
 `/oauth/connected/`, where Disconnect revokes them.
@@ -190,7 +190,7 @@ manifest PNGs (192, 512, maskable 512), the iOS `apple-touch-icon.png`
   same calculation in Python for the workout list.
 - `mcp_server/` is the MCP endpoint (`views.py`), its tools (`tools.py`)
   and Tally's consent and connected-apps templates. The OAuth routes and
-  their rules come from `titan_mcp_auth`.
+  their rules come from `mcp_auth`.
 - `activity/` holds completed sessions and the PWA:
   - `api.py`: `GET /api/workouts/` and `POST /api/sessions/`
   - `static/activity/engine.js`: timeline and wall-clock timer
