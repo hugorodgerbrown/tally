@@ -47,7 +47,7 @@ default-groups = ["dev"]
 
 [tool.uv.sources]
 # The shared Titan MCP auth app. Pinned to a release tag.
-mcp-auth = { git = "https://github.com/hugorodgerbrown/mcp-auth", tag = "0.1.0" }
+mcp-auth = { git = "https://github.com/hugorodgerbrown/mcp-auth", tag = "v0.1.1" }
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings"

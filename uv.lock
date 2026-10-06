@@ -609,8 +609,8 @@ wheels = [
 
 [[package]]
 name = "mcp-auth"
-version = "0.1.0"
-source = { git = "https://github.com/hugorodgerbrown/mcp-auth?tag=0.1.0#8143f34372dc1f8e5aab58c42a96d7cf3fd403c4" }
+version = "0.1.1"
+source = { git = "https://github.com/hugorodgerbrown/mcp-auth?tag=v0.1.1#8ff68d008d871c6f288af69d9c2b3b8dc0786060" }
 dependencies = [
     { name = "django" },
     { name = "django-oauth-toolkit" },
@@ -1132,7 +1132,7 @@ requires-dist = [
     { name = "django", specifier = ">=6.1.1" },
     { name = "django-oauth-toolkit", specifier = ">=3.4.1" },
     { name = "gunicorn", specifier = ">=26.2.0" },
-    { name = "mcp-auth", git = "https://github.com/hugorodgerbrown/mcp-auth?tag=0.1.0" },
+    { name = "mcp-auth", git = "https://github.com/hugorodgerbrown/mcp-auth?tag=v0.1.1" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.3.6" },
     { name = "whitenoise", specifier = ">=6.12.0" },
 ]
