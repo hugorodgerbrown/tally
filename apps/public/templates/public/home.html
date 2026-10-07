@@ -1,0 +1,25 @@
+{% extends "public_base.html" %}
+{% block title %}{{ pwa.name }}{% endblock %}
+{% block description %}{{ pwa.description }}{% endblock %}
+{% block content %}
+  {# Placeholder homepage: replace with the product's own words. #}
+  <section class="hero stack">
+    <h1>{{ pwa.name }}</h1>
+    <p class="hero__lead">{{ pwa.description }}</p>
+    <p>
+      {% if user.is_authenticated %}
+        <a class="button" href="{% url 'notes:list' %}">Open the app</a>
+      {% else %}
+        <a class="button" href="{% url 'accounts:sign_in' %}">Get started</a>
+      {% endif %}
+    </p>
+  </section>
+  <section class="card stack">
+    <h2>Works offline</h2>
+    <p>Install it on your phone's home screen. What you write without a connection is kept on the device and sent when you're back.</p>
+  </section>
+  <section class="card stack">
+    <h2>No password</h2>
+    <p>Sign in with a link or code sent to your email, then add a passkey to sign in with Face ID or a fingerprint.</p>
+  </section>
+{% endblock %}

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notes</title>
+<!--
+  An MCP App view (apps/mcp/resources.py). It runs in the client's sandboxed
+  frame, not on this site, so it carries its own style and script; the host's
+  style variables win over the fallbacks here.
+-->
+<style>
+  :root {
+    color-scheme: light dark;
+    font-family: var(--font-sans, system-ui, sans-serif);
+    color: var(--color-text-primary, CanvasText);
+    background: transparent;
+  }
+  body { margin: 0; padding: 12px 16px; }
+  h1 { margin: 0 0 8px; font-size: var(--font-text-md-size, 1rem); font-weight: var(--font-weight-semibold, 600); }
+  ul { list-style: none; margin: 0; padding: 0; }
+  li { padding: 8px 0; border-top: 1px solid var(--color-border-secondary, color-mix(in srgb, currentColor 15%, transparent)); }
+  li:first-child { border-top: 0; }
+  .text { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .meta, .status { margin: 2px 0 0; font-size: var(--font-text-sm-size, 0.875rem); color: var(--color-text-secondary, GrayText); }
+</style>
+</head>
+<body>
+<h1>Notes</h1>
+<p class="status" data-status>Loading…</p>
+<ul data-notes></ul>
+<template data-note>
+  <li><p class="text" data-text></p><p class="meta"><time data-when></time></p></li>
+</template>
+</body>
+</html>

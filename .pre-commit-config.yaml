@@ -5,7 +5,9 @@ repos:
     rev: v6.0.0
     hooks:
       - id: trailing-whitespace
+        exclude: ^static/vendor/
       - id: end-of-file-fixer
+        exclude: ^static/vendor/
       - id: check-yaml
       - id: check-toml
       - id: check-merge-conflict

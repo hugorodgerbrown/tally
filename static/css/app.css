@@ -1,0 +1,222 @@
+/*
+ * static/css/app.css — the whole stylesheet. No build step.
+ *
+ * Colours, type and radii are tokens on :root; components below use only
+ * tokens. Dark mode redefines the tokens, never the components.
+ */
+
+:root {
+  --brand: #1F3FD8;
+  --brand-text: #ffffff;
+  --bg: #f6f7f9;
+  --card: #ffffff;
+  --text-1: #14171a;
+  --text-2: #4b5563;
+  --border: #d9dde3;
+  --warn-bg: #fff4d6;
+  --warn-text: #6b4e00;
+  --error: #b42318;
+  --radius-card: 12px;
+  --radius-control: 8px;
+  --space: 16px;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --text-base: 1rem;
+  --text-meta: 0.8125rem;
+  --leading: 1.5;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1115;
+    --card: #181b21;
+    --text-1: #eef1f4;
+    --text-2: #a3abb7;
+    --border: #2b3038;
+    --warn-bg: #3a2f10;
+    --warn-text: #f5d77a;
+    --error: #f97066;
+  }
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text-1);
+  font: var(--text-base) / var(--leading) var(--font);
+  -webkit-text-size-adjust: 100%;
+}
+
+h1 { font-size: 1.375rem; margin: 0; }
+h2 { font-size: 1.0625rem; margin: 0; }
+a { color: var(--brand); }
+.meta { color: var(--text-2); font-size: var(--text-meta); }
+.stack > * + * { margin-top: var(--space); }
+
+/* Layout */
+
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space);
+  padding: calc(var(--space) / 2) var(--space);
+  padding-top: max(calc(var(--space) / 2), env(safe-area-inset-top));
+  background: var(--brand);
+  color: var(--brand-text);
+}
+.app-header__name { color: inherit; font-weight: 600; text-decoration: none; margin-right: auto; }
+.app-header form { margin: 0; }
+.app-header .button--quiet { color: inherit; }
+.app-header__link { color: inherit; font-weight: 600; text-decoration: none; }
+.app-main { max-width: 40rem; margin: 0 auto; padding: var(--space); }
+.app-main > * + * { margin-top: var(--space); }
+
+.site-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space);
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: var(--space);
+  padding-bottom: max(var(--space), env(safe-area-inset-bottom));
+  font-size: var(--text-meta);
+}
+.site-footer a { color: var(--text-2); }
+
+.hero { padding: calc(var(--space) * 2) 0 var(--space); }
+.hero h1 { font-size: 2rem; }
+.hero__lead { font-size: 1.125rem; color: var(--text-2); margin: 0; }
+
+.prose { max-width: 40rem; }
+.prose h2 { margin-top: calc(var(--space) * 1.5); }
+.prose p, .prose ul { margin: 8px 0 0; }
+
+.notice {
+  margin: 0 0 var(--space);
+  padding: 8px 12px;
+  border-radius: var(--radius-control);
+  background: var(--warn-bg);
+  color: var(--warn-text);
+  font-size: var(--text-meta);
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: var(--space);
+}
+
+/* Controls */
+
+.field { display: block; }
+.field__label { display: block; font-weight: 600; margin-bottom: 4px; }
+input[type="text"], input[type="email"], input[type="password"], textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--card);
+  color: var(--text-1);
+  font: inherit;
+}
+.button {
+  display: inline-block;
+  min-height: 44px;
+  padding: 10px 18px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: var(--brand);
+  color: var(--brand-text);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+.button--quiet { background: transparent; color: var(--brand); padding-inline: 8px; }
+.button--secondary { background: transparent; color: var(--brand); box-shadow: inset 0 0 0 2px var(--brand); }
+.button:disabled { opacity: 0.6; cursor: progress; }
+.input--code { max-width: 12rem; font-size: 1.5rem; letter-spacing: 0.3em; font-variant-numeric: tabular-nums; }
+.errorlist { color: var(--error); padding-left: 1.2em; margin: 4px 0 0; }
+.form-error { color: var(--error); margin: 0; }
+
+/* Lists of things with an action on each row (passkeys) */
+
+.item-list { list-style: none; margin: 0; padding: 0; }
+.item { display: flex; align-items: center; justify-content: space-between; gap: var(--space); padding: 12px 0; }
+.item + .item { border-top: 1px solid var(--border); }
+.item__title { margin: 0; font-weight: 600; }
+.item .meta { margin: 2px 0 0; }
+
+/* Notes */
+
+.note-list { list-style: none; margin: 0; padding: 0; }
+.note + .note { border-top: 1px solid var(--border); }
+.note { padding: 12px 0; }
+.note__text { margin: 0; overflow-wrap: anywhere; }
+.note__meta { margin: 4px 0 0; color: var(--text-2); font-size: var(--text-meta); }
+.note--pending { opacity: 0.7; }
+.note--failed .note__meta { color: var(--error); }
+.note__actions { display: flex; gap: 8px; margin-top: 8px; }
+.note--empty { color: var(--text-2); }
+/* A note waiting to send means the list isn't empty, whatever the server last said. */
+[data-pending-notes]:not(:empty) ~ #note-items .note--empty { display: none; }
+
+/* Offline and outbox state */
+
+.offline-banner {
+  padding: 8px var(--space);
+  background: var(--warn-bg);
+  color: var(--warn-text);
+  font-size: var(--text-meta);
+}
+.outbox-status { font-size: var(--text-meta); }
+.outbox-status:empty { display: none; }
+
+/* htmx request indicator (htmx's own injected styles are off, for the CSP) */
+
+.htmx-indicator { opacity: 0; transition: opacity 200ms ease-in; }
+.htmx-request .htmx-indicator, .htmx-request.htmx-indicator { opacity: 1; }
+
+/*
+ * Launch screen. Hidden unless js/launch_gate.js put .app-launching on <html>
+ * before first paint. js/launch_shell.js fades it out; the failsafe keyframe
+ * hides it at 10s whether or not any script ran, because a launch screen
+ * that never leaves is worse than none.
+ */
+
+.launch-shell { display: none; }
+.app-launching .launch-shell {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  background: var(--brand);
+  transition: opacity 300ms ease-out;
+  animation: launch-failsafe 0s linear 10s forwards;
+}
+.app-launching .launch-shell.launch-shell--done { opacity: 0; pointer-events: none; }
+.launch-shell__icon { border-radius: 22%; }
+.launch-shell__spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgb(255 255 255 / 0.35);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 800ms linear infinite;
+}
+
+@keyframes launch-failsafe { to { visibility: hidden; opacity: 0; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .app-launching .launch-shell { transition: none; }
+  .launch-shell__spinner { animation-duration: 2400ms; }
+}

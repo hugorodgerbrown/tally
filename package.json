@@ -1,0 +1,17 @@
+{
+  "name": "tally",
+  "private": true,
+  "description": "Test tooling only. The app ships plain JavaScript from static/js with no build step.",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "engines": {
+    "node": ">=22.22.2"
+  },
+  "devDependencies": {
+    "fake-indexeddb": "^6.2.5",
+    "jsdom": "^30.1.2",
+    "vitest": "^5.0.3"
+  }
+}

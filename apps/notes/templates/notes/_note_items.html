@@ -1,0 +1,10 @@
+<ul class="note-list">
+  {% for note in notes %}
+    <li class="note">
+      <p class="note__text">{{ note.text|linebreaksbr }}</p>
+      <p class="note__meta"><time datetime="{{ note.written_at|date:'c' }}">{{ note.written_at|date:"j M Y, H:i" }}</time></p>
+    </li>
+  {% empty %}
+    <li class="note note--empty">No notes yet.</li>
+  {% endfor %}
+</ul>
