@@ -14,7 +14,10 @@
       <li>read your exercises, workouts and logged sessions</li>
       <li>add and change exercises and workouts</li>
     </ul>
-    <p class="help" style="margin:0">It can't delete anything. You'll go back to <strong>{{ form.redirect_uri.value|default:"" }}</strong>.</p>
+    <p class="help" style="margin:0">It can't delete anything. You'll go back to <strong>{{ redirect_host }}</strong>.</p>
+    {% if redirect_is_loopback %}
+    <p class="help" style="margin:0"><strong>That's a program on your own computer, not a website.</strong> Only connect if you started it.</p>
+    {% endif %}
     {% if form.errors %}<ul class="errorlist">{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
     <div style="display:flex;flex-direction:row-reverse;gap:8px">
       <button class="btn btn-primary" type="submit" name="allow" value="Authorize">Connect</button>

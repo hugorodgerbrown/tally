@@ -13,7 +13,7 @@ urlpatterns = [
     path("healthz", healthz, name="healthz"),
     path("admin/", admin.site.urls),
     path("mcp", mcp, name="mcp"),
-    path("", include("mcp_server.oauth")),
+    path("", include("mcp_auth.urls")),
     path(
         "login/",
         auth_views.LoginView.as_view(

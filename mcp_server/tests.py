@@ -7,7 +7,9 @@ import uuid
 from urllib.parse import parse_qs, urlparse
 
 import pytest
+from django.core.cache import cache
 from django.utils import timezone
+from mcp_auth.testing import MCPAuthContract
 from oauth2_provider.models import AccessToken, Application, set_token_value
 
 from activity.models import ActivitySession, SessionEntry
@@ -20,6 +22,12 @@ MCP_URL = "http://testserver/mcp"
 @pytest.fixture(autouse=True)
 def fast_hashing(settings):
     settings.PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
+
+
+@pytest.fixture(autouse=True)
+def fresh_rate_limits():
+    # The per-user MCP limit counts in the cache, which outlives each test.
+    cache.clear()
 
 
 @pytest.fixture
@@ -37,7 +45,11 @@ def token(hugo):
     )
     raw = secrets.token_urlsafe(32)
     token = AccessToken(
-        user=hugo, application=app, scope="tally", expires=timezone.now() + dt.timedelta(hours=1)
+        user=hugo,
+        application=app,
+        scope="tally",
+        resource=[MCP_URL],
+        expires=timezone.now() + dt.timedelta(hours=1),
     )
     set_token_value(token, raw)
     token.save()
@@ -86,27 +98,16 @@ def call(client, token, name, /, **arguments):
 # ---------- OAuth ----------
 
 
-def test_unauthenticated_request_points_at_resource_metadata(client, db):
-    response = client.post("/mcp", data="{}", content_type="application/json")
-    assert response.status_code == 401
-    challenge = response["WWW-Authenticate"]
-    assert 'resource_metadata="http://testserver/.well-known/oauth-protected-resource/mcp"' in (
-        challenge
-    )
+class TestMCPAuthContract(MCPAuthContract):
+    """Claude's connector requirements, from the shared Titan suite."""
 
+    mcp_path = "/mcp"
 
-def test_metadata_documents(client, db):
-    resource = client.get("/.well-known/oauth-protected-resource/mcp").json()
-    assert resource["resource"] == MCP_URL
-    assert resource["authorization_servers"] == ["http://testserver"]
+    def make_allowed_user(self, django_user_model):
+        return django_user_model.objects.create_superuser("owner", password="pw")
 
-    server = client.get("/.well-known/oauth-authorization-server").json()
-    assert server["issuer"] == "http://testserver"
-    assert server["authorization_endpoint"] == "http://testserver/oauth/authorize/"
-    assert server["token_endpoint"] == "http://testserver/oauth/token/"  # noqa: S105
-    assert server["registration_endpoint"] == "http://testserver/oauth/register/"
-    assert server["code_challenge_methods_supported"] == ["S256"]
-    assert server["grant_types_supported"] == ["authorization_code", "refresh_token"]
+    def make_refused_user(self, django_user_model):
+        return django_user_model.objects.create_user("guest", password="pw")
 
 
 def register(client, redirect_uris, auth_method="none"):
@@ -123,20 +124,6 @@ def register(client, redirect_uris, auth_method="none"):
         ),
         content_type="application/json",
     )
-
-
-@pytest.mark.parametrize(
-    "uris",
-    [
-        ["https://evil.example/callback"],
-        [CALLBACK, "https://evil.example/callback"],
-        ["https://claude.ai.evil.example/api/mcp/auth_callback"],
-        [],
-    ],
-)
-def test_registration_refuses_other_redirect_uris(client, db, uris):
-    assert register(client, uris).status_code == 401
-    assert not Application.objects.exists()
 
 
 def test_full_connect_flow(client, hugo, library):
@@ -213,33 +200,6 @@ def test_full_connect_flow(client, hugo, library):
     assert call(client, refreshed.json()["access_token"], "list_workouts")["structuredContent"]
 
 
-def test_token_needs_pkce(client, hugo):
-    reg = register(client, [CALLBACK]).json()
-    client.force_login(hugo)
-    response = client.get(
-        "/oauth/authorize/",
-        {"response_type": "code", "client_id": reg["client_id"], "redirect_uri": CALLBACK},
-    )
-    assert response.status_code == 302
-    assert "error=invalid_request" in response["Location"]
-    assert "code=" not in response["Location"]
-
-
-def test_only_the_superuser_can_approve(client, django_user_model):
-    reg = register(client, [CALLBACK]).json()
-    client.force_login(django_user_model.objects.create_user("guest", password="pw"))
-    response = client.get(
-        "/oauth/authorize/",
-        {"response_type": "code", "client_id": reg["client_id"], "redirect_uri": CALLBACK},
-    )
-    assert response.status_code == 403
-
-
-def test_expired_token_is_refused(client, token):
-    AccessToken.objects.update(expires=timezone.now() - dt.timedelta(seconds=1))
-    assert rpc(client, token, "tools/list").status_code == 401
-
-
 # ---------- protocol ----------
 
 
@@ -264,11 +224,6 @@ def test_notification_is_accepted(client, token):
         headers={"Authorization": f"Bearer {token}"},
     )
     assert response.status_code == 202
-
-
-def test_get_is_not_offered(client, token):
-    response = client.get("/mcp", headers={"Authorization": f"Bearer {token}"})
-    assert response.status_code == 405
 
 
 def test_bad_json_and_unknown_method(client, token):
@@ -473,11 +428,6 @@ def test_update_workout_replaces_items_and_can_deactivate(client, token, library
     assert call(client, token, "list_workouts")["structuredContent"]["workouts"] == []
 
 
-def test_token_for_a_non_superuser_is_refused(client, token, django_user_model):
-    AccessToken.objects.update(user=django_user_model.objects.create_user("guest"))
-    assert rpc(client, token, "tools/list").status_code == 401
-
-
 @pytest.mark.parametrize(
     ("body", "headers"),
     [
@@ -652,40 +602,6 @@ def test_summary_shares_time_between_types(client, token, hugo, library):
     )["structuredContent"]
     assert summary["seconds_by_type"] == {"strength": 40, "flexibility": 40}
     assert summary["seconds_by_muscle"] == {"Glutes": 81}
-
-
-def test_registration_update_keeps_the_redirect_allowlist(client, db):
-    reg = register(client, ["http://localhost:4567/callback"]).json()
-    headers = {"Authorization": f"Bearer {reg['registration_access_token']}"}
-    path = f"/oauth/register/{reg['client_id']}/"
-
-    def put(uris):
-        body = {"redirect_uris": uris, "token_endpoint_auth_method": "none"}
-        return client.put(path, json.dumps(body), "application/json", headers=headers)
-
-    assert put(["https://evil.example/callback"]).status_code == 400
-    assert Application.objects.get().redirect_uris == "http://localhost:4567/callback"
-    assert put([CALLBACK]).status_code == 200
-    assert Application.objects.get().redirect_uris == CALLBACK
-
-
-def test_consent_refuses_a_callback_off_the_allowlist(client, hugo):
-    app = Application.objects.create(
-        name="Sneaky",
-        client_type=Application.CLIENT_PUBLIC,
-        authorization_grant_type=Application.GRANT_AUTHORIZATION_CODE,
-        redirect_uris="https://evil.example/callback",
-    )
-    client.force_login(hugo)
-    response = client.get(
-        "/oauth/authorize/",
-        {
-            "response_type": "code",
-            "client_id": app.client_id,
-            "redirect_uri": "https://evil.example/callback",
-        },
-    )
-    assert response.status_code == 403
 
 
 def test_workout_counts_are_the_users_own(client, token, hugo, library, django_user_model):
