@@ -269,7 +269,7 @@ def welcome(request: HttpRequest) -> HttpResponse:
     """Suggest a passkey to a new account, once; anyone with one goes straight on."""
     if Passkey.objects.for_user(signed_in_user(request)).exists():
         return redirect(settings.LOGIN_REDIRECT_URL)
-    return render(request, "accounts/welcome.html", {"next": reverse(settings.LOGIN_REDIRECT_URL)})
+    return render(request, "accounts/welcome.html")
 
 
 @require_GET

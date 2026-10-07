@@ -9,7 +9,7 @@
   <section class="card stack" data-passkey-register
            data-options-url="{% url 'accounts:passkey_register_options' %}"
            data-register-url="{% url 'accounts:passkey_register' %}"
-           data-next="{{ next }}">
+           data-next="{% url 'activity:app' %}">
     <h1>You're in</h1>
     <p>Your account is ready, with a starter library of exercises and a sample workout.</p>
     <h2>Add a passkey?</h2>
@@ -20,6 +20,6 @@
       <p class="form-error" data-passkey-error role="alert" hidden></p>
     </div>
     <p class="meta" data-passkey-unsupported>This browser can't make passkeys. You'll sign in by email.</p>
-    <p><a class="button button--secondary" href="{{ next }}">Not now</a></p>
+    <p><a class="button button--secondary" href="{% url 'activity:app' %}">Not now</a></p>
   </section>
 {% endblock %}

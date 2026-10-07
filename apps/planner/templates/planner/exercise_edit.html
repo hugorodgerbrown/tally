@@ -5,7 +5,6 @@
   <h1>{% if exercise.pk %}{{ exercise.name }}{% else %}New exercise{% endif %}</h1>
 </div>
 <form method="post" class="panel panel--narrow">
-  {% csrf_token %}
   <div class="form-body">
     {% include "planner/_exercise_fields.html" %}
     <div class="field">
@@ -13,6 +12,8 @@
       <textarea name="description" id="{{ form.description.id_for_label }}" rows="3" placeholder="Cues, setup, equipment">{{ form.description.value|default_if_none:'' }}</textarea>
     </div>
   </div>
+  {# Here rather than first: semgrep's CSRF rule only looks 10 lines back from </form>. #}
+  {% csrf_token %}
   <div class="formfoot formfoot--ruled">
     {% if exercise.pk %}<a class="btn btn-danger" href="{% url 'planner:exercise_delete' exercise.uuid %}">Delete</a>{% endif %}
     <span class="spacer"></span>
