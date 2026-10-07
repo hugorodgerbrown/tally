@@ -8,7 +8,8 @@ from apps.accounts.sign_in import CODE_DIGITS, normalise_email
 class EmailForm(forms.Form):
     """The one field sign-in and sign-up share."""
 
-    email = forms.EmailField(max_length=254)
+    # The address becomes the account's username, whose column holds 150.
+    email = forms.EmailField(max_length=150)
     next = forms.CharField(required=False, widget=forms.HiddenInput)
 
     def clean_email(self) -> str:

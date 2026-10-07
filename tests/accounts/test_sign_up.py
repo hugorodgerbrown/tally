@@ -99,6 +99,14 @@ def test_a_bad_email_is_refused(client: Client) -> None:
     assert not mail.outbox
 
 
+def test_an_address_too_long_for_a_username_is_refused(client: Client) -> None:
+    """The address becomes the username (150 characters), so a longer one is refused up front."""
+    email = "a" * 140 + "@example.com"
+    response = client.post(SIGN_UP, {"email": email})
+    assert response.status_code == 400
+    assert not mail.outbox
+
+
 def test_sign_up_shares_the_sign_in_rate_limit(client: Client) -> None:
     """Five emails an hour per address, whichever page asks."""
     for _ in range(5):
