@@ -1,0 +1,24 @@
+{% extends "planner/base.html" %}
+{% block title %}{% if exercise.pk %}{{ exercise.name }}{% else %}New exercise{% endif %} · Tally{% endblock %}
+{% block content %}
+<div class="phead">
+  <h1>{% if exercise.pk %}{{ exercise.name }}{% else %}New exercise{% endif %}</h1>
+</div>
+<form method="post" class="panel panel--narrow">
+  <div class="form-body">
+    {% include "planner/_exercise_fields.html" %}
+    <div class="field">
+      <label for="{{ form.description.id_for_label }}">Notes</label>
+      <textarea name="description" id="{{ form.description.id_for_label }}" rows="3" placeholder="Cues, setup, equipment">{{ form.description.value|default_if_none:'' }}</textarea>
+    </div>
+  </div>
+  {# Here rather than first: semgrep's CSRF rule only looks 10 lines back from </form>. #}
+  {% csrf_token %}
+  <div class="formfoot formfoot--ruled">
+    {% if exercise.pk %}<a class="btn btn-danger" href="{% url 'planner:exercise_delete' exercise.uuid %}">Delete</a>{% endif %}
+    <span class="spacer"></span>
+    <a class="btn btn-quiet" href="{% url 'planner:exercises' %}">Cancel</a>
+    <button class="btn btn-primary" type="submit">Save exercise</button>
+  </div>
+</form>
+{% endblock %}

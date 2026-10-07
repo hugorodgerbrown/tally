@@ -1,0 +1,77 @@
+/* Tally design system: tokens and fonts.
+ * Loaded before app.css on every page, which maps the template's tokens
+ * onto these. Reference: https://claude.ai/artifact/VvqJo4QejZZrkbpmRwSdyP
+ * Fonts are self-hosted (the CSP allows no other origin): Archivo with its
+ * width axis, IBM Plex Mono 400 and 500, latin only. Licence: fonts/OFL.txt. */
+@font-face {
+  font-family: "Archivo";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
+  src: url("../fonts/archivo-latin-wdth.woff2") format("woff2-variations");
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url("../fonts/ibm-plex-mono-latin-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url("../fonts/ibm-plex-mono-latin-500.woff2") format("woff2");
+}
+
+:root {
+  /* Interface: blue-biased neutrals */
+  --ground: #F2F3F7;
+  --surface: #FFFFFF;
+  --surface-2: #E9EBF2;
+  --ink: #14162B;
+  --muted: #5A5F78;
+  --line: #D9DCE7;
+  --accent: #1F3FD8;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #E3E8FF;
+  --danger: #B8321A;
+  --ok: #2F7A57;
+
+  /* Phases: the same in both themes, and on the phone */
+  --work: #1F3FD8;
+  --rest: #BFE3CF;
+  --ready: #F7C948;
+  --switch: #FF6A3D;
+  --round: #2F7A57;
+  --night: #12142A;
+
+  /* Exercise type defaults (each type's colour is stored with it) */
+  --t-strength: #F7C948;
+  --t-flexibility: #8FD3B0;
+  --t-aerobic: #FF8A65;
+  --t-anaerobic: #E57BB0;
+  --t-fitness: #8FA2FF;
+
+  --f-ui: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --r-control: 6px;
+  --r-panel: 10px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground: #0D0F1D; --surface: #151830; --surface-2: #1D2140; --ink: #E8EAF4; --muted: #9298B3;
+    --line: #2A2F4A; --accent: #8FA2FF; --accent-ink: #0D0F1D; --accent-soft: #232A55;
+    --danger: #FF8A70; --ok: #8FD3B0;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --ground: #0D0F1D; --surface: #151830; --surface-2: #1D2140; --ink: #E8EAF4; --muted: #9298B3;
+  --line: #2A2F4A; --accent: #8FA2FF; --accent-ink: #0D0F1D; --accent-soft: #232A55;
+  --danger: #FF8A70; --ok: #8FD3B0;
+  color-scheme: dark;
+}

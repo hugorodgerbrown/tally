@@ -1,0 +1,14 @@
+# Changes here will be overwritten by Copier; do not edit by hand.
+_commit: d507ac7
+_src_path: gh:hugorodgerbrown/django-titan-template
+author_email: hugo@rodger-brown.com
+author_name: Hugo Rodger-Brown
+description: Interval workouts built from a library of exercises, run hands-free on
+    a phone
+include_mcp: true
+mcp_auth_version: v0.1.1
+mcp_can_connect: mcp_auth.policy.superuser_only
+project_name: Tally
+project_slug: tally
+render_region: frankfurt
+theme_colour: '#1F3FD8'

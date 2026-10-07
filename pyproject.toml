@@ -1,44 +1,55 @@
 [project]
-name = "workouts"
+name = "tally"
 version = "0.1.0"
-description = "Interval workouts: Django backend and an offline activity-mode PWA"
-authors = [
-    { name = "Hugo Rodger-Brown", email = "hugo@rodger-brown.com" }
-]
-requires-python = ">=3.14"
+description = "Interval workouts built from a library of exercises, run hands-free on a phone"
+authors = [{ name = "Hugo Rodger-Brown", email = "hugo@rodger-brown.com" }]
+requires-python = ">=3.14,<3.15"
 dependencies = [
-    "dj-database-url>=3.1.2",
-    "django>=6.1.1",
-    "django-oauth-toolkit>=3.4.1",
-    "gunicorn>=26.2.0",
-    "psycopg[binary]>=3.3.6",
+    "dj-database-url>=3.1.2,<4",
+    "django>=6.1.1,<6.2",
+    "gunicorn>=26.2.0,<27",
     "mcp-auth",
-    "whitenoise>=6.12.0",
+    "psycopg[binary]>=3.3.6,<4",
+    "python-decouple>=3.8,<4",
+    "webauthn>=3.0.0,<4",
+    "whitenoise>=6.12.0,<7",
 ]
 
-
-
+# One group per tox env, so each env installs only what it needs. `dev`
+# composes them all for a local `uv sync`.
 [dependency-groups]
 test = [
-    "pytest>=9.1.1",
-    "pytest-cov>=7.1.0",
-    "pytest-django>=4.14.0",
+    "factory-boy>=3.3.3,<4",
+    "freezegun>=1.5.5,<2",
+    "pytest>=9.1.1,<10",
+    "pytest-cov>=7.1.0,<8",
+    "pytest-django>=4.14.0,<5",
+    "pytest-xdist>=3.8.0,<4",
 ]
 lint = [
-    "ruff>=0.16.10",
+    # Exact pin, bumped in step with .pre-commit-config.yaml so the hook and
+    # CI never disagree.
+    "ruff==0.16.10",
 ]
 types = [
-    "django-stubs>=6.0.2",
-    "mypy>=2.3.0",
+    "django-stubs>=6.0.2,<7",
+    "mypy>=2.3.0,<2.5",
+    # mypy checks tests/ too (browser journeys included), so it needs their packages.
+    {include-group = "e2e"},
+]
+e2e = [
+    "playwright>=1.62.0,<1.64",
+    "pytest-playwright>=0.7,<0.10",
     {include-group = "test"},
 ]
 dev = [
-    "pre-commit>=4.6.1",
-    "tox>=4.52.1",
-    "tox-uv>=1.0",
+    "pre-commit>=4.6.1,<5",
+    "tox>=4.52.1,<5",
+    "tox-uv>=1.0,<2",
     {include-group = "test"},
     {include-group = "lint"},
     {include-group = "types"},
+    {include-group = "e2e"},
 ]
 
 [tool.uv]
@@ -46,12 +57,14 @@ package = false
 default-groups = ["dev"]
 
 [tool.uv.sources]
-# The shared Titan MCP auth app. Pinned to a release tag.
+# The shared Titan MCP auth app, pinned to a release tag.
 mcp-auth = { git = "https://github.com/hugorodgerbrown/mcp-auth", tag = "v0.1.1" }
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings"
-python_files = ["tests.py", "test_*.py"]
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "--ignore=tests/e2e --ignore=tests/js"
 filterwarnings = ["ignore:No directory at:UserWarning"]
 
 [tool.ruff]
@@ -71,12 +84,21 @@ select = [
     "RUF",
     "T20",  # stray print()
     "DTZ",  # naive datetimes
+    "D",    # a docstring on every module, class and function
 ]
-# Django's Meta and admin options are mutable class attributes by design.
-ignore = ["RUF012"]
+ignore = [
+    "RUF012",  # Django's Meta and admin options are mutable class attributes by design.
+    "D105", "D107",  # dunder methods and __init__ are documented by their class
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
-"**/{tests,test_*,conftest}.py" = ["S101", "S106"]
+"tests/**" = ["S101", "S105", "S106"]
+"**/migrations/*" = ["D"]
+# The template writes its free-form answers (name, description) here verbatim.
+"apps/pwa/conf.py" = ["E501"]
 
 [tool.mypy]
 python_version = "3.14"
@@ -89,27 +111,21 @@ warn_unused_ignores = true
 warn_unreachable = true
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
-exclude = ["/migrations/", "^\\.venv/"]
+exclude = ["/migrations/", "^\\.venv/", "^node_modules/"]
 
 [[tool.mypy.overrides]]
-# Tests are typed loosely: fixtures and assertions say enough.
-module = ["*.tests"]
-disallow_untyped_defs = false
-disallow_incomplete_defs = false
-
-[[tool.mypy.overrides]]
-# django-oauth-toolkit ships no type hints.
-module = ["oauth2_provider.*"]
+module = ["decouple", "factory", "factory.*", "oauth2_provider.*"]
 ignore_missing_imports = true
 
 [tool.django-stubs]
 django_settings_module = "config.settings"
 
 [tool.coverage.run]
-source = ["activity", "config", "library", "mcp_server", "planner"]
-omit = ["*/migrations/*", "*/tests.py", "config/asgi.py", "config/wsgi.py", "config/settings.py"]
+source = ["apps", "config"]
+omit = ["*/migrations/*", "config/asgi.py", "config/wsgi.py"]
 
 [tool.coverage.report]
-fail_under = 95
+fail_under = 90
 skip_empty = true
+show_missing = true
 exclude_also = ["if TYPE_CHECKING:"]

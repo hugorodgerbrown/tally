@@ -1,0 +1,6 @@
+{% load static %}
+{# The launch screen. Shown only for a cold start of the installed app (js/launch_gate.js) and removed by js/launch_shell.js; a CSS keyframe hides it at 10s even if no script runs. #}
+<div class="launch-shell" id="launch-shell" aria-hidden="true">
+  <img class="launch-shell__icon" src="{% static 'icons/icon-192.png' %}" alt="" width="96" height="96">
+  <div class="launch-shell__spinner"></div>
+</div>

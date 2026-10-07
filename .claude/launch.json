@@ -2,10 +2,22 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "django",
-      "runtimeExecutable": "uv",
-      "runtimeArgs": ["run", "python", "manage.py", "runserver", "8000"],
-      "port": 8000
+      "name": "Dev server",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "SITE_URL=http://localhost:8010 exec uv run python manage.py runserver 127.0.0.1:8010"
+      ],
+      "port": 8010
+    },
+    {
+      "name": "MCP Inspector",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "MCP_AUTO_OPEN_ENABLED=false exec npx -y @modelcontextprotocol/inspector"
+      ],
+      "port": 6274
     }
   ]
 }

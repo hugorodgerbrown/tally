@@ -1,0 +1,46 @@
+#!/usr/bin/env python3
+"""Draw placeholder app icons: the first letter of the name on the brand colour.
+
+Run once by the project template; replace the PNGs with real artwork when
+there is some. Needs Pillow, which the project doesn't depend on:
+
+    uv run --no-project --with pillow python bin/make-icons "My Project" "#1d4ed8"
+"""
+
+import sys
+from pathlib import Path
+
+from PIL import Image, ImageDraw, ImageFont
+
+OUT = Path(__file__).resolve().parent.parent / "static" / "icons"
+
+
+def draw(size: int, letter: str, colour: str, *, maskable: bool) -> Image.Image:
+    """Return a square icon. Maskable icons keep the glyph in the inner 80% safe zone."""
+    image = Image.new("RGBA", (size, size), colour)
+    if not maskable:
+        # Rounded corners for the plain icon; a maskable one is cropped by the OS.
+        mask = Image.new("L", (size, size), 0)
+        ImageDraw.Draw(mask).rounded_rectangle((0, 0, size, size), radius=size // 5, fill=255)
+        image.putalpha(mask)
+    font = ImageFont.load_default(size=int(size * (0.42 if maskable else 0.55)))
+    ImageDraw.Draw(image).text(
+        (size / 2, size / 2), letter, fill="#ffffff", font=font, anchor="mm"
+    )
+    return image
+
+
+def main() -> None:
+    """Write the icon set the manifest and base.html reference."""
+    name, colour = sys.argv[1], sys.argv[2]
+    letter = (name.strip()[:1] or "A").upper()
+    OUT.mkdir(parents=True, exist_ok=True)
+    draw(192, letter, colour, maskable=False).save(OUT / "icon-192.png")
+    draw(512, letter, colour, maskable=False).save(OUT / "icon-512.png")
+    draw(512, letter, colour, maskable=True).save(OUT / "icon-maskable-512.png")
+    # iOS ignores transparency and the manifest: an opaque 180px square.
+    draw(180, letter, colour, maskable=True).convert("RGB").save(OUT / "apple-touch-icon.png")
+
+
+if __name__ == "__main__":
+    main()

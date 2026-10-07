@@ -1,0 +1,60 @@
+"""The app's identity as the manifest, launch screen and browser chrome show it.
+
+Set once by the project template from its answers; edit freely. Settings,
+the admin and the MCP server read the name from here, and ``bin/make-icons``
+drew the icons in ``static/icons/`` from the same name and colour.
+"""
+
+APP_NAME = "Tally"
+SHORT_NAME = APP_NAME[:12]
+DESCRIPTION = "Interval workouts built from a library of exercises, run hands-free on a phone"
+THEME_COLOUR = "#1F3FD8"
+BACKGROUND_COLOUR = "#ffffff"
+
+# The installed app is everything under this path. The service worker
+# controls it and nothing else: the public pages, sign-in, admin, OAuth and
+# MCP sit outside it and are never cached or shown inside the app.
+SCOPE = "/app/"
+
+# Prefix for every Cache Storage name the service worker owns, so it never
+# deletes another app's caches on the same origin.
+CACHE_PREFIX = "tally-app"
+
+# Paths inside SCOPE the service worker must never cache (it already
+# ignores everything outside SCOPE, and every non-GET request).
+NEVER_CACHE: list[str] = [
+    # The phone app keeps its own copy of the workouts in IndexedDB
+    # (static/js/activity_store.js) and knows when it is stale; a second,
+    # silent copy in Cache Storage would only hide that.
+    "/app/api/",
+]
+
+# Static files fetched when the service worker installs, so the shell works
+# offline from the first launch. Keep this list small: tests/test_performance.py
+# holds it to a byte budget.
+PRECACHE_STATIC = [
+    "css/tokens.css",
+    "css/app.css",
+    "css/activity.css",
+    "vendor/htmx.min.js",
+    "js/launch_gate.js",
+    "js/launch_shell.js",
+    "js/idb.js",
+    "js/outbox_core.js",
+    "js/outbox.js",
+    "js/pwa.js",
+    "js/styles.js",
+    "js/engine.js",
+    "js/activity_store.js",
+    "js/activity_app.js",
+    "icons/icon-192.png",
+]
+
+# Loaded into the service worker with importScripts(), in this order.
+WORKER_SCRIPTS = [
+    "js/idb.js",
+    "js/outbox_core.js",
+    "js/outbox.js",
+    "js/sw_core.js",
+    "js/sw_worker.js",
+]

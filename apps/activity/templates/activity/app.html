@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load static %}
+{# The phone app: one full-screen shell; static/js/activity_app.js draws every screen. #}
+{% block title %}{{ pwa.name }}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/activity.css' %}">{% endblock %}
+{% block extra_js %}
+  <script src="{% static 'js/styles.js' %}" defer></script>
+  <script src="{% static 'js/engine.js' %}" defer></script>
+  <script src="{% static 'js/activity_store.js' %}" defer></script>
+  <script src="{% static 'js/activity_app.js' %}" defer></script>
+{% endblock %}
+{% block body_class %}activity{% endblock %}
+{% block header %}{% endblock %}
+{# The app shows its own sync status; the template's banner would sit under the screen. #}
+{% block banner %}{% endblock %}
+{% block main %}
+  <div id="app"
+       data-workouts-url="{% url 'activity:api_workouts' %}"
+       data-sessions-url="{% url 'activity:api_sessions' %}"
+       data-manage-url="{% url 'planner:workouts' %}"
+       data-new-workout-url="{% url 'planner:workout_new' %}"
+       data-account-url="{% url 'accounts:account' %}"
+       data-sign-in-url="{% url 'accounts:sign_in' %}?next={{ request.path|urlencode }}"></div>
+{% endblock %}
+{% block footer %}{% endblock %}
