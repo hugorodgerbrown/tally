@@ -21,6 +21,19 @@ def browser_type_launch_args(browser_type_launch_args: dict[str, Any]) -> dict[s
     return browser_type_launch_args
 
 
+def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
+    """Keep the rows data migrations made (the exercise types) across the live server's flush.
+
+    live_server flushes the database after each test, which would take the
+    five exercise types with it, and the starter library needs them.
+    pytest-django decides what to serialise at collection, so this is a
+    marker rather than a fixture.
+    """
+    for item in items:
+        if "tests/e2e/" in str(item.path):
+            item.add_marker(pytest.mark.django_db(transaction=True, serialized_rollback=True))
+
+
 @pytest.fixture
 def signed_in_page(page: Page, live_server: Any, mailoutbox: list[Any], settings: Any) -> Page:
     """A page signed in by emailed link, controlled by the service worker.

@@ -1,4 +1,4 @@
-{% autoescape off %}Sign in to {{ site_name }}:
+{% autoescape off %}{% if signing_up %}Finish creating your {{ site_name }} account:{% else %}Sign in to {{ site_name }}:{% endif %}
 
 {{ link }}
 
@@ -8,5 +8,5 @@ Or type this code where you asked for it:
 
 The link and the code work once, for {{ minutes }} minutes.
 
-If you didn't ask to sign in, ignore this email: nothing happens unless the link or code is used.
+If you didn't ask to {% if signing_up %}create an account{% else %}sign in{% endif %}, ignore this email: nothing happens unless the link or code is used.
 {% endautoescape %}

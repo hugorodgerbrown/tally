@@ -1,8 +1,9 @@
 """Sign-in by email: issue a link and code, redeem either once, find the user.
 
-There is no separate sign-up. The first redeemed link or code for an
-address creates its account; until then nothing is stored about it beyond
-the pending request. See docs/accounts.md.
+Sign-up (/signup/) and sign-in send the same link and code. The first
+redeemed link or code for an address creates its account, with the starter
+exercise library, whichever page asked; until then nothing is stored about
+it beyond the pending request. See docs/accounts.md.
 """
 
 from __future__ import annotations
@@ -22,6 +23,7 @@ from django.utils import timezone
 from django.utils.crypto import salted_hmac
 
 from apps.accounts.models import SignInRequest
+from apps.library import starter
 
 logger = logging.getLogger(__name__)
 
@@ -109,6 +111,20 @@ def redeem_code(request_uuid: str, code: str) -> SignInRequest | None:
     return request
 
 
+def _find_user(email: str) -> Any | None:
+    """Return the account for ``email``: by username, or by email for ``createsuperuser`` ones."""
+    user_model = get_user_model()
+    return (
+        user_model.objects.filter(username=email).first()
+        or user_model.objects.filter(email__iexact=email).order_by("pk").first()
+    )
+
+
+def account_exists(email: str) -> bool:
+    """Return whether ``email`` already has an account."""
+    return _find_user(normalise_email(email)) is not None
+
+
 def user_for(request: SignInRequest) -> Any | None:
     """Return the account for a redeemed request, creating it on first sign-in.
 
@@ -116,17 +132,15 @@ def user_for(request: SignInRequest) -> Any | None:
     email. Existing accounts are found by username (the email, for accounts
     made here) or by email (for ones made with ``createsuperuser``).
     """
-    user_model = get_user_model()
     email = request.email
-    user = (
-        user_model.objects.filter(username=email).first()
-        or user_model.objects.filter(email__iexact=email).order_by("pk").first()
-    )
+    user = _find_user(email)
     if user is None:
-        user = user_model(username=email, email=email)
+        user = get_user_model()(username=email, email=email)
         user.set_unusable_password()
         user.save()
         logger.info("accounts.created user=%s", user.pk)
+        # Tally: a new account starts with the starter library, not an empty one.
+        starter.install(user)
     if not user.is_active:
         return None
     return user

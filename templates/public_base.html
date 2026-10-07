@@ -11,7 +11,7 @@
     <header class="app-header">
       <a class="app-header__name" href="{% url 'public:home' %}">{{ pwa.name }}</a>
       {% if user.is_authenticated %}
-        <a class="app-header__link" href="{% url 'notes:list' %}">Open the app</a>
+        <a class="app-header__link" href="{% url 'activity:app' %}">Open the app</a>
       {% else %}
         <a class="app-header__link" href="{% url 'accounts:sign_in' %}">Sign in</a>
       {% endif %}

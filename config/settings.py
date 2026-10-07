@@ -100,7 +100,9 @@ INSTALLED_APPS = [
     "apps.accounts",
     "apps.public",
     "apps.pwa",
-    "apps.notes",
+    "apps.library",
+    "apps.activity",
+    "apps.planner",
     # Before mcp_auth so the project's own templates win.
     "apps.mcp",
     "mcp_auth",
@@ -164,10 +166,11 @@ AUTH_PASSWORD_VALIDATORS = [
 # Sign-in is by emailed link or code, or a passkey; there are no passwords
 # outside the admin's own (unused) form. See docs/accounts.md.
 LOGIN_URL = "accounts:sign_in"
-LOGIN_REDIRECT_URL = "notes:list"
+LOGIN_REDIRECT_URL = "activity:app"
 LOGOUT_REDIRECT_URL = "public:home"
-# An installed app should not sign people out while they are offline.
-SESSION_COOKIE_AGE = 60 * 60 * 24 * 90
+# An installed app should not sign people out while they are offline. Tally
+# keeps a year: the phone may sit in a gym bag for months between syncs.
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 365
 
 # How long an emailed sign-in link and code work, and how many wrong codes
 # end a request.
@@ -246,10 +249,14 @@ LOGGING = {
 # OAuth 2.1 for the MCP endpoint, so Claude can add this project as a
 # connector. The shared Titan preset: PKCE, rotating refresh tokens, DCR and
 # CIMD, held to Claude's callbacks and loopback.
+# The scope keeps Tally's original name, so connections made before the move
+# onto the template still work. Any account may connect: each one only ever
+# sees its own library and log.
 OAUTH2_PROVIDER = oauth2_settings(
     resource_name=pwa_conf.APP_NAME,
-    scope_description="Read and add your notes",
+    scope="tally",
+    scope_description="Read and change your exercises, workouts and sessions",
 )
-MCP_AUTH = {"CAN_CONNECT": "mcp_auth.policy.superuser_only"}
+MCP_AUTH = {"SCOPE": "tally", "CAN_CONNECT": "mcp_auth.policy.active_user"}
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

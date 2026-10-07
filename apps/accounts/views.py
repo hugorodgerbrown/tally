@@ -1,6 +1,7 @@
 """Views for signing in and out, and the account page.
 
 Public (outside the installed app's /app/ scope):
+  /signup/                    create an account: email form, then the same email
   /signin/                    email form, and the passkey button
   /signin/code/               "check your email", and the code form
   /signin/link/<token>/       a Continue button; the POST signs in
@@ -9,6 +10,7 @@ Public (outside the installed app's /app/ scope):
   /signout/                   POST
 
 In the app:
+  /app/welcome/                          after sign-up: suggests adding a passkey
   /app/account/                          email and passkeys
   /app/account/passkeys/options/         POST: registration challenge (JSON)
   /app/account/passkeys/                 POST: verify and save (JSON)
@@ -49,6 +51,9 @@ logger = logging.getLogger(__name__)
 # only works here.
 SESSION_REQUEST = "accounts.sign_in_request"
 SESSION_EMAIL = "accounts.sign_in_email"
+# "sign_up" when the request came from /signup/, so the code page says
+# "Create account" rather than "Sign in".
+SESSION_PURPOSE = "accounts.sign_in_purpose"
 _BACKEND = "django.contrib.auth.backends.ModelBackend"
 
 
@@ -65,7 +70,56 @@ def _complete_sign_in(request: HttpRequest, sign_in_request: SignInRequest) -> H
     login(request, user, backend=_BACKEND)
     request.session.pop(SESSION_REQUEST, None)
     request.session.pop(SESSION_EMAIL, None)
+    request.session.pop(SESSION_PURPOSE, None)
     return redirect(safe_next(request, sign_in_request.next_url))
+
+
+def _email_link_and_code(
+    request: HttpRequest, form: EmailForm, template: str, next_url: str, purpose: str
+) -> HttpResponse:
+    """Send the link and code for a valid email form, then go to the code page.
+
+    Sign-up and sign-in share the rate limits, so neither page is a way
+    round the other's.
+    """
+    email = form.cleaned_data["email"]
+    if over_limit("sign-in-ip", client_ip(request), limit=10, window_seconds=600) or (
+        over_limit("sign-in-email", email, limit=5, window_seconds=3600)
+    ):
+        form.add_error(None, "Too many emails. Wait a few minutes and try again.")
+        return render(request, template, {"form": form}, status=429)
+
+    # Sign-up to an address that already has an account gets the sign-in
+    # email: the page looks the same either way, so it reveals nothing.
+    if purpose == "sign_up" and sign_in.account_exists(email):
+        purpose = "sign_in"
+    sign_in_request, token, code = sign_in.issue(email, next_url)
+    link = settings.SITE_URL + reverse("accounts:sign_in_link", args=[token])
+    send_sign_in_email.enqueue(email=email, link=link, code=code, purpose=purpose)
+    request.session[SESSION_REQUEST] = str(sign_in_request.uuid)
+    request.session[SESSION_EMAIL] = email
+    request.session[SESSION_PURPOSE] = purpose
+    return redirect("accounts:sign_in_code")
+
+
+@never_cache
+@require_http_methods(["GET", "POST"])
+def sign_up(request: HttpRequest) -> HttpResponse:
+    """Ask a new user for their email address and send it a link and code.
+
+    Redeeming either creates the account (``sign_in.user_for``) and lands
+    on the welcome page, which suggests a passkey.
+    """
+    if request.user.is_authenticated and request.method == "GET":
+        return redirect(settings.LOGIN_REDIRECT_URL)
+
+    form = EmailForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        return _email_link_and_code(
+            request, form, "accounts/sign_up.html", reverse("accounts:welcome"), "sign_up"
+        )
+    status = 400 if request.method == "POST" else 200
+    return render(request, "accounts/sign_up.html", {"form": form}, status=status)
 
 
 @never_cache
@@ -77,20 +131,8 @@ def sign_in_view(request: HttpRequest) -> HttpResponse:
 
     form = EmailForm(request.POST or None, initial={"next": request.GET.get("next", "")})
     if request.method == "POST" and form.is_valid():
-        email = form.cleaned_data["email"]
-        if over_limit("sign-in-ip", client_ip(request), limit=10, window_seconds=600) or (
-            over_limit("sign-in-email", email, limit=5, window_seconds=3600)
-        ):
-            form.add_error(None, "Too many sign-in emails. Wait a few minutes and try again.")
-            return render(request, "accounts/sign_in.html", {"form": form}, status=429)
-
         next_url = safe_next(request, form.cleaned_data["next"])
-        sign_in_request, token, code = sign_in.issue(email, next_url)
-        link = settings.SITE_URL + reverse("accounts:sign_in_link", args=[token])
-        send_sign_in_email.enqueue(email=email, link=link, code=code)
-        request.session[SESSION_REQUEST] = str(sign_in_request.uuid)
-        request.session[SESSION_EMAIL] = email
-        return redirect("accounts:sign_in_code")
+        return _email_link_and_code(request, form, "accounts/sign_in.html", next_url, "sign_in")
 
     status = 400 if request.method == "POST" else 200
     return render(request, "accounts/sign_in.html", {"form": form}, status=status)
@@ -118,7 +160,12 @@ def sign_in_code(request: HttpRequest) -> HttpResponse:
             form.add_error(
                 "code", "That code didn't work. Check the newest email, or use its link."
             )
-    context = {"form": form, "email": request.session.get(SESSION_EMAIL, ""), "minutes": _minutes()}
+    context = {
+        "form": form,
+        "email": request.session.get(SESSION_EMAIL, ""),
+        "minutes": _minutes(),
+        "signing_up": request.session.get(SESSION_PURPOSE) == "sign_up",
+    }
     return render(request, "accounts/sign_in_code.html", context, status=status)
 
 
@@ -214,6 +261,15 @@ def passkey_sign_in(request: HttpRequest) -> JsonResponse:
 
 
 # ---------- the account page ----------
+
+
+@require_GET
+@login_required
+def welcome(request: HttpRequest) -> HttpResponse:
+    """Suggest a passkey to a new account, once; anyone with one goes straight on."""
+    if Passkey.objects.for_user(signed_in_user(request)).exists():
+        return redirect(settings.LOGIN_REDIRECT_URL)
+    return render(request, "accounts/welcome.html", {"next": reverse(settings.LOGIN_REDIRECT_URL)})
 
 
 @require_GET

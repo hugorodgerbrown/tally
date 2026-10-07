@@ -15,14 +15,15 @@ What is on by default, and what checks it.
 | Post-sign-in redirects stay on this site | `apps/core/redirects.py` | `tests/core/test_redirects.py` |
 | Signing out drops cached pages on the device | `pwa.js` + `Clear-Site-Data` | `tests/accounts/test_views.py` |
 | Each keyed write runs at most once, per user, per body | `apps/core/idempotency.py` | `tests/core/test_idempotency.py` |
-| Signed-out writes get 401, never a redirect | `login_required_json` | `tests/notes/test_views.py` |
+| Signed-out writes get 401, never a redirect | `login_required_json` | `tests/activity/test_api.py` |
+| One account never sees or changes another's exercises, workouts or sessions | `for_user` querysets, `signed_in_user` | `tests/planner/`, `tests/activity/test_api.py`, `tests/mcp/test_tools.py` |
 | Fragments refuse non-htmx requests | `require_htmx` | `tests/core/test_decorators.py` |
 | Python security lint (bandit rules) | ruff `S` | `tox -e lint` |
 | Static analysis: Django, Python, JS, security-audit packs | semgrep | `tox -e sast` (CI and weekly) |
 | Known CVEs in runtime Python deps and npm packages | pip-audit, npm audit | `tox -e audit` (CI and weekly) |
 | Secrets in commits | gitleaks | pre-commit and CI |
 | Dependency updates | Dependabot (uv, npm, actions) | weekly PRs |
-| MCP: OAuth 2.1, PKCE, audience-bound tokens, staff-only by default | `mcp-auth` | `tests/mcp/test_mcp.py` (the shared contract) |
+| MCP: OAuth 2.1, PKCE, audience-bound tokens; any active account may connect, to its own data | `mcp-auth` (`active_user`) | `tests/mcp/test_mcp.py` (the shared contract) |
 | MCP App views: self-contained, no network, data drawn as text only | `apps/mcp/resources.py`, `apps/mcp/ui/` | `tests/mcp/test_mcp.py`, `tests/js/mcp/` |
 
 ## Invariants
@@ -34,5 +35,6 @@ What is on by default, and what checks it.
 4. Every fragment view is `@require_htmx`; every outbox endpoint is
    `@login_required_json`.
 5. A sign-in secret (link token, code) is never stored or logged as given.
-6. Widening who may connect an MCP client (`apps/mcp/policy.py`) is a
-   product decision, made in a PR that says so.
+6. Widening who may connect an MCP client (`MCP_AUTH["CAN_CONNECT"]`,
+   any active account since open sign-up) is a product decision, made in a
+   PR that says so.

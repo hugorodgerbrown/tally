@@ -1,25 +1,33 @@
 {% extends "public_base.html" %}
+{% load static %}
 {% block title %}{{ pwa.name }}{% endblock %}
 {% block description %}{{ pwa.description }}{% endblock %}
 {% block content %}
-  {# Placeholder homepage: replace with the product's own words. #}
   <section class="hero stack">
+    <img class="hero__icon" src="{% static 'icons/icon-192.png' %}" alt="" width="96" height="96">
     <h1>{{ pwa.name }}</h1>
-    <p class="hero__lead">{{ pwa.description }}</p>
-    <p>
+    <p class="hero__lead">Interval workouts, hands free.</p>
+    <div class="button-row">
       {% if user.is_authenticated %}
-        <a class="button" href="{% url 'notes:list' %}">Open the app</a>
+        <a class="button" href="{% url 'activity:app' %}">Start a workout</a>
+        <a class="button button--secondary" href="{% url 'planner:workouts' %}">Manage workouts</a>
       {% else %}
-        <a class="button" href="{% url 'accounts:sign_in' %}">Get started</a>
+        <a class="button" href="{% url 'accounts:sign_up' %}">Create an account</a>
+        <a class="button button--secondary" href="{% url 'accounts:sign_in' %}">Sign in</a>
       {% endif %}
-    </p>
+    </div>
   </section>
   <section class="card stack">
-    <h2>Works offline</h2>
-    <p>Install it on your phone's home screen. What you write without a connection is kept on the device and sent when you're back.</p>
+    <h2>Build on the desktop, train on the phone</h2>
+    <p>Put a workout together from a library of exercises, with rests and rounds, and see exactly what it will play. On the phone it runs full screen with a countdown and beeps, so you never touch it mid-set.</p>
   </section>
   <section class="card stack">
-    <h2>No password</h2>
-    <p>Sign in with a link or code sent to your email, then add a passkey to sign in with Face ID or a fingerprint.</p>
+    <h2>An honest log</h2>
+    <p>Only the time you actually work is logged, split by exercise type and muscle group, with an optional effort score. It works offline and sends the log when you're back.</p>
   </section>
+  <section class="card stack">
+    <h2>Ask Claude</h2>
+    <p>Add {{ pwa.name }} to Claude as a connector, and Claude can read your library and log, review a month of training, and build or change workouts for you.</p>
+  </section>
+  <p class="meta">To install {{ pwa.name }} on your phone, open Start a workout, then add it to your Home Screen.</p>
 {% endblock %}

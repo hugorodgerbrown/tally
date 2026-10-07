@@ -1,17 +1,19 @@
-"""Tests for the MCP endpoint: the shared auth contract, then the tools."""
+"""Tests for the MCP endpoint: the shared auth contract, the protocol and the resources."""
 
 import json
 import re
+from pathlib import Path
 from typing import Any
 
 import pytest
 from django.test import Client
 from mcp_auth.testing import MCPAuthContract
 
-from apps.mcp.resources import MIME_TYPE, RESOURCES
-from apps.mcp.tools import TOOLS, ToolError, add_note, list_notes
-from apps.notes.models import Note
-from tests.factories import NoteFactory, UserFactory
+from apps.mcp import resources
+from apps.mcp.resources import MIME_TYPE, RESOURCES, UiResource
+from apps.mcp.tools import TOOLS, Tool
+from tests.factories import UserFactory
+from tests.mcp.conftest import Rpc
 
 
 class TestMCPAuth(MCPAuthContract):
@@ -20,68 +22,80 @@ class TestMCPAuth(MCPAuthContract):
     mcp_path = "/mcp"
 
     def make_allowed_user(self, django_user_model: Any) -> Any:
-        """A user who may connect: staff and superuser satisfy either policy."""
-        return UserFactory.create(is_staff=True, is_superuser=True)
-
-    def make_refused_user(self, django_user_model: Any) -> Any:
-        """A signed-in user who may not connect."""
+        """Any active account may connect (``mcp_auth.policy.active_user``)."""
         return UserFactory.create()
 
-
-@pytest.fixture
-def rpc(user: Any) -> Any:
-    """Call the MCP view as ``user``, bypassing OAuth (the contract covers that)."""
-    from apps.mcp import views
-
-    def call(method: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
-        result: dict[str, Any] = views._dispatch(user, method, params or {})
-        return result
-
-    return call
+    def make_refused_user(self, django_user_model: Any) -> Any:
+        """Under ``active_user`` the only refused account is an inactive one."""
+        return UserFactory.create(is_active=False)
 
 
-def test_initialize_and_list_tools(rpc: Any) -> None:
+def test_initialize_and_list_tools(rpc: Rpc) -> None:
     """Initialize names the server; tools/list lists every tool."""
-    assert rpc("initialize")["serverInfo"]["name"]
+    assert rpc("initialize")["serverInfo"]["name"] == "tally"
     names = {t["name"] for t in rpc("tools/list")["tools"]}
     assert names == set(TOOLS)
 
 
-def test_add_then_list_notes(rpc: Any, user: Any) -> None:
-    """add_note writes as the user; list_notes reads it back."""
-    rpc("tools/call", {"name": "add_note", "arguments": {"text": "from Claude"}})
-    result = rpc("tools/call", {"name": "list_notes", "arguments": {}})
-    assert result["structuredContent"]["notes"][0]["text"] == "from Claude"
-    assert Note.objects.get().owner == user
+def test_initialize_echoes_a_supported_version(rpc: Rpc) -> None:
+    """A supported protocol version is echoed back; an unknown one gets the latest."""
+    assert rpc("initialize", {"protocolVersion": "2025-06-18"})["protocolVersion"] == "2025-06-18"
+    assert rpc("initialize", {"protocolVersion": "1999-01-01"})["protocolVersion"] == "2025-11-25"
 
 
-def test_initialize_advertises_resources(rpc: Any) -> None:
-    """The server says it has resources and MCP Apps, so the client renders a tool's UI."""
+def test_tools_list_marks_read_only_tools(rpc: Rpc) -> None:
+    """Read tools say so, write tools don't, and nothing is destructive or deletes."""
+    tools = {t["name"]: t for t in rpc("tools/list")["tools"]}
+    assert tools["list_sessions"]["annotations"]["readOnlyHint"] is True
+    assert tools["create_workout"]["annotations"]["readOnlyHint"] is False
+    assert not any(t["annotations"]["destructiveHint"] for t in tools.values())
+    assert not any("delete" in name for name in tools)
+    assert {"privacy_policy", "terms_of_service", "help"} <= set(tools)
+
+
+def test_initialize_advertises_resources(rpc: Rpc) -> None:
+    """The server says it has resources and MCP Apps, so a client could render a tool's UI."""
     capabilities = rpc("initialize")["capabilities"]
     assert "resources" in capabilities
     assert capabilities["extensions"]["io.modelcontextprotocol/ui"] == {"mimeTypes": [MIME_TYPE]}
 
 
-def test_resources_list_every_view(rpc: Any) -> None:
-    """resources/list lists every ui:// view as an MCP App."""
-    listed = rpc("resources/list")["resources"]
-    assert {r["uri"] for r in listed} == set(RESOURCES)
-    assert all(r["uri"].startswith("ui://") and r["mimeType"] == MIME_TYPE for r in listed)
+def test_there_are_no_views_yet(rpc: Rpc) -> None:
+    """Tally answers in text: no ui:// resources, and no tool points at one."""
+    assert RESOURCES == {}
+    assert rpc("resources/list") == {"resources": []}
     assert rpc("resources/templates/list") == {"resourceTemplates": []}
+    assert not any(t.ui for t in TOOLS.values())
 
 
-@pytest.mark.parametrize("tool", [t for t in TOOLS.values() if t.ui], ids=lambda t: t.name)
-def test_a_tool_ui_names_a_listed_resource(rpc: Any, tool: Any) -> None:
-    """A tool's _meta points at a resource the server serves, in both key forms."""
-    described = next(t for t in rpc("tools/list")["tools"] if t["name"] == tool.name)
-    assert described["_meta"]["ui"]["resourceUri"] in RESOURCES
-    assert described["_meta"]["ui/resourceUri"] == described["_meta"]["ui"]["resourceUri"]
+def test_tools_without_ui_have_no_meta(rpc: Rpc) -> None:
+    """A plain tool describes itself without _meta."""
+    described = next(t for t in rpc("tools/list")["tools"] if t["name"] == "list_workouts")
+    assert "_meta" not in described
 
 
-@pytest.mark.parametrize("uri", list(RESOURCES))
-def test_a_view_is_one_self_contained_document(rpc: Any, uri: str) -> None:
-    """The HTML loads nothing from anywhere: its scripts and styles are inline."""
-    (content,) = rpc("resources/read", {"uri": uri})["contents"]
+def test_a_tool_with_ui_names_it_in_both_key_forms() -> None:
+    """A tool's ui goes in _meta, nested and in the older flat key."""
+    tool = Tool("t", "A test tool.", {}, lambda user, args: {}, ui="ui://tally/v")
+    meta = tool.describe()["_meta"]
+    assert meta == {"ui": {"resourceUri": "ui://tally/v"}, "ui/resourceUri": "ui://tally/v"}
+
+
+def test_a_view_is_one_self_contained_document(
+    rpc: Rpc, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A listed view reads back as HTML that loads nothing: its scripts are inline."""
+    (tmp_path / "test_view.html").write_text("<!doctype html><body></body>")
+    (tmp_path / resources.BRIDGE).write_text("class McpApp {}")
+    monkeypatch.setattr(resources, "UI_DIR", tmp_path)
+    uri = "ui://tally/test-view"
+    view = UiResource(uri, "test-view", "Test", "A test view.", "test_view.html")
+    monkeypatch.setattr(resources, "RESOURCES", {uri: view})
+    resources.render.cache_clear()
+    try:
+        (content,) = rpc("resources/read", {"uri": uri})["contents"]
+    finally:
+        resources.render.cache_clear()
     assert content["uri"] == uri
     assert content["mimeType"] == MIME_TYPE
     assert "prefersBorder" in content["_meta"]["ui"]
@@ -92,17 +106,11 @@ def test_a_view_is_one_self_contained_document(rpc: Any, uri: str) -> None:
     assert html.count("</script>") == html.count("<script>")
 
 
-def test_tools_without_ui_have_no_meta(rpc: Any) -> None:
-    """A plain tool describes itself as before."""
-    described = next(t for t in rpc("tools/list")["tools"] if t["name"] == "add_note")
-    assert "_meta" not in described
-
-
 @pytest.mark.parametrize(
     ("params", "code"),
     [({"uri": "ui://nope"}, -32002), ({}, -32602)],
 )
-def test_resources_read_errors(rpc: Any, params: dict[str, Any], code: int) -> None:
+def test_resources_read_errors(rpc: Rpc, params: dict[str, Any], code: int) -> None:
     """An unknown URI is 'resource not found'; a missing one is invalid params."""
     from apps.mcp.views import RpcError
 
@@ -111,10 +119,10 @@ def test_resources_read_errors(rpc: Any, params: dict[str, Any], code: int) -> N
     assert caught.value.code == code
 
 
-def test_inlined_scripts_cannot_close_their_tag(tmp_path: Any, monkeypatch: Any) -> None:
+def test_inlined_scripts_cannot_close_their_tag(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """A "</script>" inside a view's JavaScript is escaped, not left to end the tag."""
-    from apps.mcp import resources
-
     (tmp_path / "v.html").write_text("<body></body>")
     (tmp_path / "v.js").write_text("const s = '</script>';")
     monkeypatch.setattr(resources, "UI_DIR", tmp_path)
@@ -122,10 +130,8 @@ def test_inlined_scripts_cannot_close_their_tag(tmp_path: Any, monkeypatch: Any)
     assert html == "<body><script>\nconst s = '<\\/script>';</script>\n</body>"
 
 
-def test_a_view_needs_a_body(tmp_path: Any, monkeypatch: Any) -> None:
+def test_a_view_needs_a_body(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """HTML with nowhere to put the scripts is a mistake, caught at once."""
-    from apps.mcp import resources
-
     (tmp_path / "v.html").write_text("<p>no body</p>")
     monkeypatch.setattr(resources, "UI_DIR", tmp_path)
     with pytest.raises(ValueError, match="no </body>"):
@@ -136,7 +142,7 @@ def test_a_view_needs_a_body(tmp_path: Any, monkeypatch: Any) -> None:
     ("tool", "heading"),
     [("privacy_policy", "# Privacy notice"), ("terms_of_service", "# Terms"), ("help", "# Help")],
 )
-def test_public_pages_come_back_as_markdown(rpc: Any, tool: str, heading: str) -> None:
+def test_public_pages_come_back_as_markdown(rpc: Rpc, tool: str, heading: str) -> None:
     """The text content is the Markdown itself; structuredContent adds title and URL."""
     result = rpc("tools/call", {"name": tool, "arguments": {}})
     text = result["content"][0]["text"]
@@ -145,29 +151,23 @@ def test_public_pages_come_back_as_markdown(rpc: Any, tool: str, heading: str) -
     assert result["structuredContent"]["url"].startswith("http")
 
 
-def test_tool_errors_are_readable(rpc: Any) -> None:
+def test_tool_errors_are_readable(rpc: Rpc) -> None:
     """A bad argument is an isError result, not a protocol error."""
-    result = rpc("tools/call", {"name": "list_notes", "arguments": {"limit": 0}})
+    result = rpc("tools/call", {"name": "get_workout", "arguments": {"workout": "Arms"}})
     assert result["isError"] is True
+    assert "No workout matches" in result["content"][0]["text"]
 
 
-@pytest.mark.django_db
-def test_list_notes_is_per_user() -> None:
-    """A user's tools never see another user's notes."""
-    NoteFactory.create(text="private")
-    assert list_notes(UserFactory.create(), {}) == {"notes": []}
-
-
-@pytest.mark.django_db
-def test_add_note_validates() -> None:
-    """Empty text is refused with a message the model can act on."""
-    with pytest.raises(ToolError):
-        add_note(UserFactory.create(), {"text": ""})
+def test_a_missing_argument_is_a_tool_error(rpc: Rpc) -> None:
+    """Leaving out a required argument is an isError result naming it, not a crash."""
+    result = rpc("tools/call", {"name": "get_workout", "arguments": {}})
+    assert result["isError"] is True
+    assert "Missing argument 'workout'" in result["content"][0]["text"]
 
 
 def call_endpoint(client: Client, body: Any, headers: dict[str, str] | None = None) -> Any:
-    """POST ``body`` to /mcp with a valid bearer token for a staff user."""
-    token = TestMCPAuth().token_for(UserFactory.create(is_staff=True))
+    """POST ``body`` to /mcp with a valid bearer token for an active user."""
+    token = TestMCPAuth().token_for(UserFactory.create())
     return client.post(
         "/mcp",
         body if isinstance(body, str) else json.dumps(body),
@@ -182,6 +182,8 @@ def call_endpoint(client: Client, body: Any, headers: dict[str, str] | None = No
     [
         ("{nope", 400, -32700),
         ({"jsonrpc": "1.0"}, 400, -32600),
+        ([{"jsonrpc": "2.0", "id": 1, "method": "ping"}], 400, -32600),
+        ({"id": 1, "method": "ping"}, 400, -32600),
         ({"jsonrpc": "2.0", "id": 1, "method": "nope"}, 200, -32601),
         ({"jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": "x"}, 200, -32602),
         ({"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "x"}}, 200, -32602),
@@ -190,7 +192,7 @@ def call_endpoint(client: Client, body: Any, headers: dict[str, str] | None = No
                 "jsonrpc": "2.0",
                 "id": 1,
                 "method": "tools/call",
-                "params": {"name": "list_notes", "arguments": "x"},
+                "params": {"name": "get_workout", "arguments": "x"},
             },
             200,
             -32602,
@@ -228,8 +230,22 @@ def test_ping_with_a_token(client: Client) -> None:
     assert response.json() == {"jsonrpc": "2.0", "id": 7, "result": {}}
 
 
+@pytest.mark.django_db
+def test_a_tool_call_over_http_runs_as_the_tokens_user(client: Client) -> None:
+    """A tools/call through the endpoint answers with structured content."""
+    body = {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "tools/call",
+        "params": {"name": "list_workouts", "arguments": {}},
+    }
+    result = call_endpoint(client, body).json()["result"]
+    assert result["structuredContent"] == {"workouts": []}
+    assert json.loads(result["content"][0]["text"]) == {"workouts": []}
+
+
 def test_staff_only_policy() -> None:
-    """Only active staff may connect."""
+    """The template's stricter rule, kept for projects that want it: only active staff."""
     from types import SimpleNamespace
 
     from apps.mcp.policy import staff_only

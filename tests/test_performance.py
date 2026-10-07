@@ -8,8 +8,10 @@ from django.contrib.staticfiles import finders
 from apps.pwa import conf
 
 # What the service worker downloads on install. The first launch offline
-# depends on all of it arriving, so it stays small.
-PRECACHE_BUDGET_BYTES = 150_000
+# depends on all of it arriving, so it stays small. Tally raised the
+# template's 150 KB to 160 KB: its phone app (activity_app.js, engine.js,
+# activity.css, about 56 KB) is the offline shell itself, not an extra.
+PRECACHE_BUDGET_BYTES = 160_000
 
 
 def test_precached_shell_fits_the_budget() -> None:

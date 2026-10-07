@@ -25,6 +25,6 @@ caches for the app's pages.
 - Following a link out of scope inside the installed app opens it with the
   browser's own chrome (sign-in, the legal pages), which is the right cue.
 - `start_url` (`/app/`) must answer 200 without redirecting, or the app
-  can't open offline; the notes list is mounted there.
+  can't open offline; Tally's phone app is mounted there.
 - Moving the scope later strands installed apps on the old one; choose the
   path once.

@@ -118,6 +118,20 @@ describe('add a passkey', () => {
   });
 });
 
+describe('add a passkey from the welcome page', () => {
+  it('goes on to the page in data-next once the passkey is saved', async () => {
+    globalThis.fetch = vi.fn((url) => (url === '/o' ? respond(200, { challenge: 'AQID', user: { id: 'AQ' } }) : respond(201, {})));
+    const assign = vi.fn();
+    vi.spyOn(window, 'location', 'get').mockReturnValue({ assign, reload: vi.fn(), hostname: 'localhost' });
+    await load(ACCOUNT.replace('data-register-url="/r"', 'data-register-url="/r" data-next="/app/"'));
+    document.querySelector('[data-passkey-button]').click();
+    await flush();
+    await flush();
+    await flush();
+    expect(assign).toHaveBeenCalledWith('/app/');
+  });
+});
+
 describe('describe', () => {
   it('stays quiet when the user cancels, and names the common failures', async () => {
     await load(ACCOUNT);

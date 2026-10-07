@@ -1,16 +1,22 @@
 {# Help: shared by the page and apps.public.pages (the MCP tools). #}
-<p class="notice">Placeholder. Rewrite this help in your product's own words before launch.</p>
 <h1>Help</h1>
 <h2>Signing in</h2>
-<p>There are no passwords. Enter your email address on the <a href="{% url 'accounts:sign_in' %}">sign-in page</a> and we'll send you a link and a six-digit code. Use either one within 15 minutes. The first time you sign in, this creates your account.</p>
+<p>There are no passwords. To join, enter your email address on the <a href="{% url 'accounts:sign_up' %}">create an account page</a> and we'll send you a link and a six-digit code. Use either one within 15 minutes and your account is made, with a starter library of exercises and a sample workout. You'll then be offered a passkey, so next time you sign in with Face ID, a fingerprint or your device PIN.</p>
+<p>After that, sign in on the <a href="{% url 'accounts:sign_in' %}">sign-in page</a> with your passkey, or with a new link and code.</p>
 <p>If you've installed the app on an iPhone or iPad, type the code into the app rather than opening the link: the link signs in Safari, not the app.</p>
 <h2>Passkeys</h2>
-<p>Once you're signed in, open Account and choose Add a passkey. From then on you can sign in with Face ID, a fingerprint or your device PIN, using Sign in with a passkey. You can remove a passkey from the same page.</p>
+<p>Once you're signed in, open Account and choose Add a passkey. From then on you can sign in with Face ID, a fingerprint or your device PIN, using Sign in with a passkey.</p>
+<h2>Building a workout</h2>
+<p>Open Manage, then New workout. Add exercises from the library on the left; they play in that order. Set the rest between exercises, the number of rounds and the break between rounds. The panel on the right shows the whole sequence, its length, and the mix of types and muscles. One-sided exercises run twice, once per side, with a short switch between.</p>
+<h2>Running a workout</h2>
+<p>Open Activity on your phone and pick a workout. After a five-second get-ready, each exercise and rest fills the screen with its countdown, with beeps for the last three seconds. Tap to pause; from the pause screen you can go back, skip or end. At the end, rate how hard it was if you like.</p>
+<h2>What is logged</h2>
+<p>Only time actually worked is logged, including when you end a workout early. Time on an exercise with several types is split evenly between them. A workout you discard from the finish screen isn't logged.</p>
 <h2>Installing the app</h2>
-<p>On iPhone or iPad, open the app in Safari, tap Share, then Add to Home Screen. On Android or a desktop browser, use Install in the browser's menu.</p>
+<p>On iPhone or iPad, open Activity in Safari, tap Share, then Add to Home Screen. On Android, use Install in the browser's menu.</p>
 <h2>Using it offline</h2>
-<p>Pages you've opened while signed in work without a connection. Anything you write offline is kept on your device and sent when you're back online. A note that couldn't be sent shows why, with Retry and Discard.</p>
+<p>Once you've opened Activity while signed in, your workouts are saved on the phone and it opens without a connection. Finished workouts are kept on the phone and sent when you're back online.</p>
+<h2>Claude</h2>
+<p>In Claude, add a custom connector with the address of this site followed by /mcp. Claude asks you to sign in here and approve it. It can read your library and log, and add or change exercises and workouts, but never delete anything. Disconnect it from Account, under Connected apps.</p>
 <h2>Signing out</h2>
 <p>Signing out clears this device's offline copies, so the next person to use it can't read them.</p>
-<h2>Still stuck?</h2>
-<p>Contact us at <span class="meta">support@example.com</span>.</p>

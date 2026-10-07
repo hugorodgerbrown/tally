@@ -21,4 +21,4 @@ from apps.core.redirects import safe_next
 )
 def test_safe_next(rf: RequestFactory, candidate: str | None, expected: str | None) -> None:
     """Only same-site paths survive; anything else is the app's start page."""
-    assert safe_next(rf.get("/"), candidate) == (expected or reverse("notes:list"))
+    assert safe_next(rf.get("/"), candidate) == (expected or reverse("activity:app"))

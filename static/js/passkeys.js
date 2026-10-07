@@ -1,5 +1,5 @@
 /*
- * static/js/passkeys.js — passkey sign-in (sign-in page) and adding one (account page).
+ * static/js/passkeys.js — passkey sign-in (sign-in page) and adding one (account and welcome pages).
  *
  * Both pages render the passkey controls hidden; this file shows them only
  * where the browser can make or use passkeys, so a browser without WebAuthn
@@ -129,7 +129,9 @@
     const credential = await navigator.credentials.create({ publicKey: codec.creationOptions(options.data) });
     const result = await postJSON(section.dataset.registerUrl, codec.credentialToJSON(credential));
     if (!result.ok) throw new Error('register ' + result.status);
-    location.reload();
+    // The welcome page moves on once a passkey is added; the account page lists it.
+    if (section.dataset.next) location.assign(section.dataset.next);
+    else location.reload();
   }
 
   function setUpRegister(section) {

@@ -25,9 +25,15 @@ logger = logging.getLogger(__name__)
 SUPPORTED_VERSIONS = ("2025-11-25", "2025-06-18", "2025-03-26")
 SERVER_INFO = {"name": "tally", "title": APP_NAME, "version": "1.0.0"}
 INSTRUCTIONS = (
-    f"{APP_NAME} keeps short notes for the signed-in user. For questions about "
-    "privacy or personal data use privacy_policy; for the terms, terms_of_service; "
-    "for how to use the app, help."
+    f"{APP_NAME} is an interval-workout app. The signed-in user's library holds exercises, "
+    "each tagged with one or more types (aerobic, anaerobic, strength, flexibility, fitness) "
+    "and the muscle groups it works. Workouts are ordered lists of exercises with a "
+    "duration each, a rest between exercises, and a number of rounds. One-sided exercises "
+    "run twice, once per side. Sessions are the log of workouts done on the phone, with "
+    "time worked per exercise and an optional 1-10 effort rating. Times are in seconds "
+    "and dates are UK time. Nothing can be deleted through these tools; to retire a "
+    "workout, set is_active to false. For questions about privacy or personal data use "
+    "privacy_policy; for the terms, terms_of_service; for how to use the app, help."
 )
 
 PARSE_ERROR = -32700
@@ -137,6 +143,12 @@ def _call_tool(user: Any, params: dict[str, Any]) -> dict[str, Any]:
     args = params.get("arguments") or {}
     if not isinstance(args, dict):
         raise RpcError(INVALID_PARAMS, "arguments must be an object")
+    # A tool reads its required arguments by key, so a missing one is the
+    # model's mistake to correct, not a crash.
+    missing = [key for key in tool.input_schema.get("required", []) if key not in args]
+    if missing:
+        text = "; ".join(f"Missing argument {key!r}." for key in missing)
+        return {"content": [{"type": "text", "text": text}], "isError": True}
     try:
         result = tool.func(user, args)
     except ToolError as exc:

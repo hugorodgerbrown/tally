@@ -6,20 +6,22 @@
  */
 
 :root {
-  --brand: #1F3FD8;
-  --brand-text: #ffffff;
-  --bg: #f6f7f9;
-  --card: #ffffff;
-  --text-1: #14171a;
-  --text-2: #4b5563;
-  --border: #d9dde3;
+  /* Tally: the template's tokens point at Tally's (static/css/tokens.css,
+   * loaded first), which also carries the dark theme. */
+  --brand: var(--accent);
+  --brand-text: var(--accent-ink);
+  --bg: var(--ground);
+  --card: var(--surface);
+  --text-1: var(--ink);
+  --text-2: var(--muted);
+  --border: var(--line);
   --warn-bg: #fff4d6;
   --warn-text: #6b4e00;
-  --error: #b42318;
-  --radius-card: 12px;
-  --radius-control: 8px;
+  --error: var(--danger);
+  --radius-card: var(--r-panel);
+  --radius-control: var(--r-control);
   --space: 16px;
-  --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font: var(--f-ui);
   --text-base: 1rem;
   --text-meta: 0.8125rem;
   --leading: 1.5;
@@ -28,14 +30,8 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0f1115;
-    --card: #181b21;
-    --text-1: #eef1f4;
-    --text-2: #a3abb7;
-    --border: #2b3038;
     --warn-bg: #3a2f10;
     --warn-text: #f5d77a;
-    --error: #f97066;
   }
 }
 
@@ -220,3 +216,8 @@ input[type="text"], input[type="email"], input[type="password"], textarea {
   .app-launching .launch-shell { transition: none; }
   .launch-shell__spinner { animation-duration: 2400ms; }
 }
+
+/* Tally additions */
+
+.button-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.hero__icon { border-radius: 22%; }

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Welcome · {{ pwa.name }}{% endblock %}
+{% block extra_js %}
+  <script src="{% static 'js/webauthn_json.js' %}" defer></script>
+  <script src="{% static 'js/passkeys.js' %}" defer></script>
+{% endblock %}
+{% block content %}
+  <section class="card stack" data-passkey-register
+           data-options-url="{% url 'accounts:passkey_register_options' %}"
+           data-register-url="{% url 'accounts:passkey_register' %}"
+           data-next="{{ next }}">
+    <h1>You're in</h1>
+    <p>Your account is ready, with a starter library of exercises and a sample workout.</p>
+    <h2>Add a passkey?</h2>
+    <p>Next time, sign in with Face ID, a fingerprint or your device PIN instead of waiting for an email. You can add or remove passkeys later from Account.</p>
+    {# Shown by passkeys.js only where the browser supports passkeys. #}
+    <div class="stack" data-passkey-controls hidden>
+      <button class="button" type="button" data-passkey-button>Add a passkey</button>
+      <p class="form-error" data-passkey-error role="alert" hidden></p>
+    </div>
+    <p class="meta" data-passkey-unsupported>This browser can't make passkeys. You'll sign in by email.</p>
+    <p><a class="button button--secondary" href="{{ next }}">Not now</a></p>
+  </section>
+{% endblock %}

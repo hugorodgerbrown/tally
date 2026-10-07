@@ -1,11 +1,14 @@
 # Accounts: email sign-in and passkeys
 
-There are no passwords. Someone signs in, and signs up, with an email
-address; once in, they can add a passkey from the account page and sign in
-with Face ID, a fingerprint or a device PIN from then on.
+There are no passwords. Someone signs up at `/signup/` with an email
+address; the link or code in the email creates the account and lands on
+`/app/welcome/`, which suggests a passkey (Face ID, a fingerprint or a
+device PIN). From then on they sign in with the passkey, or by email.
 
 ```
-                 ┌──────────── /signin/ ─────────────┐
+   /signup/ ── email ──┐   (same request, worded "Finish creating your account",
+                       │    next = /app/welcome/ ─▶ Add a passkey / Not now)
+                 ┌─────▼────── /signin/ ─────────────┐
                  │  email ──▶ SignInRequest (hashes)  │──▶ email: link + 6-digit code
                  │  passkey button / autofill         │
                  └──────┬─────────────────────┬──────┘
@@ -24,7 +27,7 @@ with Face ID, a fingerprint or a device PIN from then on.
 | --- | --- |
 | `apps/accounts/sign_in.py` | Issue a request; redeem its link or code once; find or create the account |
 | `apps/accounts/passkeys.py` | WebAuthn options and verification (py_webauthn) |
-| `apps/accounts/views.py` | The sign-in, code, link, sign-out, account and passkey endpoints |
+| `apps/accounts/views.py` | The sign-up, sign-in, code, link, welcome, sign-out, account and passkey endpoints |
 | `apps/accounts/tasks.py` | `send_sign_in_email`, enqueued by the view (`django.tasks`) |
 | `apps/accounts/models.py` | `SignInRequest`, `Passkey` |
 | `static/js/passkeys.js`, `webauthn_json.js` | The browser side of both ceremonies |
@@ -32,8 +35,14 @@ with Face ID, a fingerprint or a device PIN from then on.
 
 ## Signing in by email
 
-- **One flow for both.** The first redeemed link or code for an address
-  creates the account (`username` and `email` both the lowercased address,
+- **Sign-up is the same flow.** `/signup/` sends the same link and code
+  (with sign-up wording) and sets the next page to `/app/welcome/`. An
+  address that already has an account gets the sign-in email instead; the
+  page looks the same, so it doesn't reveal who has an account. Both pages
+  share the rate limits. The welcome page sends anyone who already has a
+  passkey straight on to the app.
+- **The account is made on first use.** The first redeemed link or code
+  for an address, from either page, creates the account (`username` and `email` both the lowercased address,
   no usable password). Nothing about an address is stored before then
   except the pending request.
 - **Link and code, either once.** Each email carries a link and a six-digit

@@ -1,7 +1,7 @@
 {% extends "public_base.html" %}
 {% load static %}
 {% block title %}Sign in · {{ pwa.name }}{% endblock %}
-{% block description %}Sign in to {{ pwa.name }}, or create an account, with your email address.{% endblock %}
+{% block description %}Sign in to {{ pwa.name }} with your email address or a passkey.{% endblock %}
 {% block extra_js %}
   <script src="{% static 'js/webauthn_json.js' %}" defer></script>
   <script src="{% static 'js/passkeys.js' %}" defer></script>
@@ -9,7 +9,7 @@
 {% block content %}
   <section class="card stack">
     <h1>Sign in</h1>
-    <p>Enter your email address and we'll send you a link and a code. New here? The same email creates your account.</p>
+    <p>Enter your email address and we'll send you a link and a code.</p>
     <form class="stack" method="post" action="{% url 'accounts:sign_in' %}">
       {% csrf_token %}
       {{ form.non_field_errors }}
@@ -23,6 +23,7 @@
       {{ form.next }}
       <button class="button" type="submit">Email me a link</button>
     </form>
+    <p class="meta">New here? <a href="{% url 'accounts:sign_up' %}">Create an account</a>.</p>
     <p class="meta">By continuing you agree to the <a href="{% url 'public:terms' %}">terms</a>. Our <a href="{% url 'public:privacy' %}">privacy notice</a> says what we keep.</p>
   </section>
   {# Shown by passkeys.js only where the browser supports passkeys. #}

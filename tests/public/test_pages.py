@@ -17,7 +17,7 @@ def test_each_page_has_a_markdown_version(name: str, settings: Any) -> None:
     page = page_as_markdown(name)
     assert page["title"] == PAGES[name].title
     assert page["url"] == "https://example.test" + reverse(PAGES[name].url_name)
-    assert "\n# " in page["markdown"]
+    assert page["markdown"].startswith("# ")
     assert "<" not in page["markdown"]
 
 

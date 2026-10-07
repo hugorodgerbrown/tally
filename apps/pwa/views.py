@@ -32,7 +32,7 @@ def manifest(request: HttpRequest) -> HttpResponse:
         "name": conf.APP_NAME,
         "short_name": conf.SHORT_NAME,
         "description": conf.DESCRIPTION,
-        "start_url": reverse("notes:list"),
+        "start_url": reverse("activity:app"),
         "scope": conf.SCOPE,
         "display": "standalone",
         "theme_color": conf.THEME_COLOUR,

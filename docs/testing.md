@@ -6,7 +6,7 @@ Every check runs through tox, locally and in CI, one CI job per env:
 uv run tox                 # fmt, lint, types, checks, test, js, audit
 uv run tox -e e2e          # browser journeys (needs Chromium: uv run playwright install chromium)
 uv run tox -e sast         # semgrep (downloads rule packs)
-uv run pytest tests/notes  # a targeted run while iterating
+uv run pytest tests/library  # a targeted run while iterating
 ```
 
 ## Which layer does a test belong in?
@@ -27,8 +27,9 @@ in the PR; the usual answer is that the assertion belongs in `tests/js`.
 
 ### Journeys
 
-- **offline write**: sign in, go offline, reload, add a note, see it
-  pending, come back online, see it saved (`test_offline_write.py`).
+- **offline write**: sign in, go offline, reload, run the sample workout
+  and end it early, see it saved to the phone, come back online, see it
+  stored (`test_offline_write.py`).
 - **offline fallback**: a page never visited shows the offline page
   (`test_offline_page.py`).
 - **passkey**: add a passkey on the account page, sign out, sign back in
@@ -39,8 +40,8 @@ reads the link from `mailoutbox`).
 
 ## Rules
 
-- Tests mirror the source tree: `apps/notes/views.py` is tested in
-  `tests/notes/test_views.py`.
+- Tests mirror the source tree: `apps/planner/views.py` is tested in
+  `tests/planner/test_views.py`.
 - Coverage floor is 90% (`pyproject.toml`); new code comes with tests.
 - Factories live in `tests/factories.py`, one per model, always called as
   `Factory.create()` so mypy sees the model type.

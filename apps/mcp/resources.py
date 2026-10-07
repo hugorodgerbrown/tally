@@ -78,19 +78,9 @@ def render(html: str, scripts: tuple[str, ...]) -> str:
     return head + inline + sep + tail
 
 
-RESOURCES: dict[str, UiResource] = {
-    r.uri: r
-    for r in [
-        UiResource(
-            uri="ui://notes/list",
-            name="notes_list",
-            title="Notes",
-            description="The user's latest notes as a card.",
-            html="notes_list.html",
-            scripts=("notes_list.js",),
-        ),
-    ]
-}
+# Tally has no MCP App views yet; its tools answer in text. Add a UiResource
+# here, with its HTML and script in ui/, and name it from a Tool(ui=...).
+RESOURCES: dict[str, UiResource] = {}
 
 
 def read_resource(uri: str) -> dict[str, Any]:

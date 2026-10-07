@@ -1,6 +1,8 @@
 # CLAUDE.md — Tally
 
-Interval workouts built from a library of exercises, run hands-free on a phone. A Django PWA generated from the Titan
+Interval workouts built from a library of exercises, run hands-free on a phone.
+Anyone can sign up; every exercise, workout and session belongs to one
+account. A Django PWA generated from the Titan
 [django-titan-template](https://github.com/hugorodgerbrown/django-titan-template); keep
 it close to the template so `copier update --trust` stays a clean merge.
 
@@ -11,13 +13,22 @@ config/          settings (one module, env-driven), urls, wsgi/asgi
 apps/core/       BaseModel, IdempotencyMiddleware + IdempotencyRecord,
                  decorators (require_htmx, login_required_json), rate
                  limits, safe_next, livez and healthz
-apps/accounts/   sign-in by emailed link or code (SignInRequest), passkeys
-                 (Passkey), sign-out, /app/account/ (docs/accounts.md)
-apps/public/     the public pages: /, /terms/, /privacy/, /help/ (placeholders);
+apps/accounts/   sign-up (/signup/) and sign-in by emailed link or code
+                 (SignInRequest), passkeys (Passkey), the passkey nudge at
+                 /app/welcome/, sign-out, /app/account/ (docs/accounts.md)
+apps/public/     the public pages: /, /terms/, /privacy/, /help/;
                  each body is one _<name>_body.html, also served as Markdown
 apps/pwa/        /app/manifest.webmanifest, /app/sw.js, /app/offline/;
                  conf.py holds the app's identity, SCOPE and the precache list
-apps/notes/      the example offline-capable feature, at /app/; replace it
+apps/library/    ExerciseType (shared), MuscleGroup (shared, or private to
+                 an owner), Exercise, Workout, WorkoutItem (owned);
+                 starter.py installs the 21-exercise starter library on
+                 every new account; timeline.py mirrors engine.js
+apps/activity/   the phone app at /app/ (one page, static/js/activity_*.js
+                 + engine.js), its JSON API under /app/api/, and the logged
+                 ActivitySession / SessionEntry / DiscardedSession;
+                 retired.py keeps the pre-template addresses working
+apps/planner/    build workouts and exercises: /app/workouts/, /app/exercises/
 apps/mcp/        the MCP endpoint (/mcp) and its tools; auth is mcp-auth.
                  privacy_policy, terms_of_service and help return the
                  public pages as Markdown (apps/public/pages.py);
@@ -25,7 +36,9 @@ apps/mcp/        the MCP endpoint (/mcp) and its tools; auth is mcp-auth.
                  tool names with Tool(ui=...), docs/decisions/)
 templates/       base.html (the app, /app/), public_base.html, includes
 static/js/       plain JavaScript, classic scripts, no build step
-static/css/      app.css: tokens on :root, components below
+static/css/      tokens.css (Tally's tokens and fonts), app.css (template
+                 components), planner.css (scoped .planner), activity.css
+                 (scoped #app)
 docs/            accounts, testing, pwa, security, performance, decisions/
 ```
 
@@ -36,7 +49,7 @@ uv sync && npm install
 uv run python manage.py runserver
 uv run tox                      # every check CI runs (except e2e, sast)
 uv run tox -e e2e               # Playwright journeys
-uv run pytest tests/notes       # targeted run while iterating
+uv run pytest tests/library     # targeted run while iterating
 ```
 
 Never run a bare `pytest`; use `uv run`. Dependencies: `uv add` /
@@ -66,7 +79,11 @@ queryset, a factory in `tests/factories.py`, and tests. Use `uuid`, never
 - Full pages return whole documents; fragments live under `partials/` and
   are `@require_htmx`.
 - No inline `<script>`, `style=` or `on*=` in templates: the CSP blocks
-  them and `tests/test_security.py` fails the build.
+  them and `tests/test_security.py` fails the build. A style that comes
+  from data (a type's colour, a bar's width) goes in `data-css="..."`,
+  which `static/js/styles.js` applies through the CSSOM.
+- Every query for exercises, workouts or sessions is scoped to the signed-in
+  user (`for_user`, `signed_in_user`); another account's uuid is a 404.
 - Style with the tokens in `static/css/app.css`; add a component class
   there rather than one-off values.
 - A page should work without JavaScript; JavaScript makes it better.
@@ -114,5 +131,6 @@ choice in `docs/decisions/`.
 5. Email addresses are lower-cased before storage and lookup.
 6. Sign-in secrets (link tokens, codes) are stored only as hashes and
    never logged.
-7. Who may connect an MCP client (`apps/mcp/policy.py`) only widens in a PR
-   that says so.
+7. Who may connect an MCP client (`MCP_AUTH["CAN_CONNECT"]` in
+   `config/settings.py`, now any active account) only widens in a PR that
+   says so.

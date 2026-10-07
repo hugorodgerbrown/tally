@@ -22,23 +22,34 @@
     <script src="{% static 'js/outbox.js' %}" defer></script>
     <script src="{% static 'js/pwa.js' %}" defer></script>
     <script src="{% static 'js/launch_shell.js' %}" defer></script>
+    {% block extra_css %}{% endblock %}
     {% block extra_js %}{% endblock %}
   </head>
-  <body>
+  <body class="{% block body_class %}{% endblock %}">
     {% include "includes/_launch_shell.html" %}
-    <header class="app-header">
-      <a class="app-header__name" href="{% url 'notes:list' %}">{{ pwa.name }}</a>
-      {% include "includes/_outbox_status.html" %}
-      {% if user.is_authenticated %}
-        <a class="app-header__link" href="{% url 'accounts:account' %}">Account</a>
-      {% endif %}
-    </header>
-    <div class="offline-banner" data-offline-banner hidden>
-      You're offline. Changes are saved on this device and sent when you're back.
-    </div>
-    <main class="app-main">
-      {% block content %}{% endblock %}
-    </main>
-    {% include "includes/_footer.html" %}
+    {# Tally: the planner and the phone app draw their own header, and the phone app no footer. #}
+    {% block header %}
+      <header class="app-header">
+        <a class="app-header__name" href="{% url 'activity:app' %}">{{ pwa.name }}</a>
+        {% include "includes/_outbox_status.html" %}
+        {% if user.is_authenticated %}
+          <a class="app-header__link" href="{% url 'accounts:account' %}">Account</a>
+        {% endif %}
+      </header>
+    {% endblock %}
+    {% block banner %}
+      <div class="offline-banner" data-offline-banner hidden>
+        You're offline. Changes are saved on this device and sent when you're back.
+      </div>
+    {% endblock %}
+    {% block main %}
+      <main class="app-main">
+        {% block content %}{% endblock %}
+      </main>
+    {% endblock %}
+    {% block footer %}
+      {% include "includes/_footer.html" %}
+    {% endblock %}
+    {% block body_js %}{% endblock %}
   </body>
 </html>

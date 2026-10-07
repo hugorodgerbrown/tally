@@ -1,6 +1,7 @@
 """Tests for apps.core.idempotency: each keyed write runs at most once."""
 
 import json
+import uuid
 from collections.abc import Callable
 from typing import Any
 
@@ -9,35 +10,51 @@ from django.http import HttpResponse
 from django.test import Client, RequestFactory
 from django.urls import reverse
 
+from apps.activity.models import DiscardedSession
 from apps.core.idempotency import IdempotencyMiddleware
 from apps.core.models import IdempotencyRecord
-from apps.notes.models import Note
 from tests.factories import UserFactory
 
-URL = reverse("notes:create")
+URL = reverse("activity:api_sessions")
+
+
+def batch(name: str) -> str:
+    """Return a session batch discarding the session named ``name``.
+
+    A discard leaves one DiscardedSession, so the tests can see whether the
+    view ran; the same name always means the same body.
+    """
+    session = str(uuid.uuid5(uuid.NAMESPACE_URL, name))
+    return json.dumps({"sessions": [{"uuid": session, "discarded": True}]})
 
 
 def post(client: Client, body: dict[str, Any], key: str | None = "key-1") -> Any:
-    """POST JSON to the note endpoint, with an Idempotency-Key unless key is None."""
+    """POST a session batch, with an Idempotency-Key unless key is None.
+
+    ``{"text": name}`` stands for a batch discarding the session named ``name``,
+    so a repeat with no key runs again but leaves the same row.
+    """
     headers = {"Idempotency-Key": key} if key else {}
-    return client.post(URL, json.dumps(body), content_type="application/json", headers=headers)
+    return client.post(URL, batch(body["text"]), content_type="application/json", headers=headers)
 
 
 def test_replay_returns_first_response_without_running_view_again(signed_in: Client) -> None:
-    """A repeat of a keyed write answers from the record; one note exists."""
+    """A repeat of a keyed write answers from the record; the view ran once."""
     first = post(signed_in, {"text": "hello"})
     second = post(signed_in, {"text": "hello"})
-    assert first.status_code == second.status_code == 201
+    assert first.status_code == second.status_code == 200
     assert second.content == first.content
     assert second["Idempotent-Replayed"] == "true"
-    assert Note.objects.count() == 1
+    assert DiscardedSession.objects.count() == 1
 
 
 def test_no_key_passes_through(signed_in: Client) -> None:
     """Without a key every request runs, as for a plain form."""
-    post(signed_in, {"text": "a"}, key=None)
-    post(signed_in, {"text": "a"}, key=None)
-    assert Note.objects.count() == 2
+    first = post(signed_in, {"text": "a"}, key=None)
+    second = post(signed_in, {"text": "a"}, key=None)
+    assert "Idempotent-Replayed" not in first
+    assert "Idempotent-Replayed" not in second
+    assert DiscardedSession.objects.count() == 1
     assert not IdempotencyRecord.objects.exists()
 
 
@@ -45,7 +62,7 @@ def test_same_key_different_body_is_a_conflict(signed_in: Client) -> None:
     """A key reused for a different body gets 409, not the first response."""
     post(signed_in, {"text": "one"})
     assert post(signed_in, {"text": "two"}).status_code == 409
-    assert Note.objects.count() == 1
+    assert DiscardedSession.objects.count() == 1
 
 
 def test_same_key_different_user_is_a_conflict(signed_in: Client, client: Client) -> None:
@@ -61,7 +78,7 @@ def test_in_flight_key_is_a_retryable_conflict(signed_in: Client, user: Any) -> 
     import hashlib
     from datetime import timedelta
 
-    body = json.dumps({"text": "x"}).encode()
+    body = batch("x").encode()
     IdempotencyRecord.objects.reserve(
         key="key-1",
         method="POST",
@@ -167,5 +184,5 @@ def test_exception_releases_the_key(rf: RequestFactory) -> None:
 
 def test_get_is_never_recorded(signed_in: Client) -> None:
     """Reads pass straight through, key or not."""
-    signed_in.get(reverse("notes:list"), headers={"Idempotency-Key": "k"})
+    signed_in.get(reverse("activity:app"), headers={"Idempotency-Key": "k"})
     assert not IdempotencyRecord.objects.exists()

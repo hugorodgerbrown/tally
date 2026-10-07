@@ -4,6 +4,7 @@ from django.contrib import admin
 from django.urls import include, path
 
 from apps.accounts.views import admin_login
+from apps.activity import retired
 from apps.core.views import healthz, livez
 from apps.mcp.views import mcp
 from apps.pwa.conf import APP_NAME
@@ -22,8 +23,13 @@ urlpatterns = [
     path("admin/login/", admin_login),
     path("admin/", admin.site.urls),
     # The installed app: everything under /app/ (apps/pwa/conf.py: SCOPE).
+    # The phone's activity mode is /app/ itself; the planner sits beside it.
     path("app/", include("apps.pwa.urls")),
-    path("app/", include("apps.notes.urls")),
+    path("app/", include("apps.activity.urls")),
+    path("app/", include("apps.planner.urls")),
     path("", include("mcp_auth.urls")),
     path("mcp", mcp, name="mcp"),
+    # Before the move to /app/: retire the old service workers and send old
+    # bookmarks and installed apps to the new addresses.
+    path("", include(retired.urlpatterns)),
 ]

@@ -144,7 +144,7 @@ def test_next_from_elsewhere_is_ignored(client: Client) -> None:
     """A next pointing off-site lands on the app instead."""
     request_email(client, next_url="https://evil.example/")
     link, _ = emailed()
-    assert client.post(link)["Location"] == reverse("notes:list")
+    assert client.post(link)["Location"] == reverse("activity:app")
 
 
 # ---------- the code ----------
@@ -155,7 +155,7 @@ def test_code_signs_in_this_browser(client: Client) -> None:
     request_email(client)
     _, code = emailed()
     response = client.post(CODE, {"code": code})
-    assert response["Location"] == reverse("notes:list")
+    assert response["Location"] == reverse("activity:app")
     assert signed_in_user(client) is not None
     assert SignInRequest.objects.get().used_at is not None
 

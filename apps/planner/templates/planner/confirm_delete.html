@@ -1,0 +1,17 @@
+{% extends "planner/base.html" %}
+{% block content %}
+<div class="phead"><h1>Delete {{ object_name }}?</h1></div>
+<div class="panel confirm">
+  {% if blocked_by %}
+  <p>This exercise is used in {{ blocked_by|length }} workout{{ blocked_by|length|pluralize }}. Remove it from {{ blocked_by|length|pluralize:"that workout,those workouts" }} first:</p>
+  <ul class="flush">{% for w in blocked_by %}<li><a href="{% url 'planner:workout_edit' w.uuid %}">{{ w.name }}</a></li>{% endfor %}</ul>
+  <div><a class="btn btn-quiet" href="{% url cancel_url %}">Back</a></div>
+  {% else %}
+  <p>This can't be undone. {{ detail }}</p>
+  <form method="post" class="confirm__actions">{% csrf_token %}
+    <button class="btn btn-danger solid" type="submit">Delete {{ kind }}</button>
+    <a class="btn btn-quiet" href="{% url cancel_url %}">Cancel</a>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

@@ -26,12 +26,13 @@
 1. The endpoint is a POST (or PUT/PATCH/DELETE) that accepts JSON and
    answers JSON, decorated `@login_required_json` (a 401, never a redirect
    to the sign-in page, which fetch would report as success).
-2. Validate client-supplied times (`written_at` in `NoteForm`): the write
-   may arrive days after the user made it.
+2. Validate client-supplied times (`startedAt` and `endedAt` in
+   `apps/activity/api.py`): the write may arrive days after the user made it.
 3. In the page: `Outbox.enqueue({url, body: JSON.stringify(data), meta})`.
    `meta` is whatever you need to draw the pending item.
 4. Draw pending items from `Outbox.list()` on `outbox:changed`; refresh the
-   server-rendered part with htmx on `outbox:sent` (see `note_list.html`).
+   server-rendered part on `outbox:sent` (the phone app redraws from
+   `Store.pending()`, `static/js/activity_store.js`).
 5. Keep a no-JavaScript path: the form posts normally.
 
 You never mint keys or handle retries yourself; the outbox does.

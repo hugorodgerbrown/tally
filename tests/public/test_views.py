@@ -29,14 +29,16 @@ def test_public_pages_are_outside_the_app(client: Client, name: str) -> None:
     assert "pwa.js" not in content
 
 
-def test_home_invites_sign_in(client: Client) -> None:
-    """Signed out, the homepage's call to action is signing in."""
+def test_home_invites_sign_up_and_sign_in(client: Client) -> None:
+    """Signed out, the homepage offers creating an account first, then signing in."""
     content = client.get(reverse("public:home")).content.decode()
-    assert reverse("accounts:sign_in") in content
+    assert content.index(reverse("accounts:sign_up")) < content.index(
+        'button--secondary" href="/signin/'
+    )
 
 
 def test_home_opens_the_app_when_signed_in(signed_in: Client) -> None:
     """Signed in, it offers the app instead."""
     content = signed_in.get(reverse("public:home")).content.decode()
-    assert reverse("notes:list") in content
-    assert "Open the app" in content
+    assert reverse("activity:app") in content
+    assert "Start a workout" in content

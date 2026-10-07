@@ -13,9 +13,9 @@
                autocomplete="one-time-code" maxlength="20" required autofocus>
       </label>
       {{ form.code.errors }}
-      <button class="button" type="submit">Sign in</button>
+      <button class="button" type="submit">{% if signing_up %}Create account{% else %}Sign in{% endif %}</button>
     </form>
     <p class="meta">Using the installed app on an iPhone? Type the code: a link opens in Safari, which signs in Safari rather than the app.</p>
-    <p class="meta">Nothing arrived? Check spam, or <a href="{% url 'accounts:sign_in' %}">send another</a>.</p>
+    <p class="meta">Nothing arrived? Check spam, or <a href="{% if signing_up %}{% url 'accounts:sign_up' %}{% else %}{% url 'accounts:sign_in' %}{% endif %}">send another</a>.</p>
   </section>
 {% endblock %}

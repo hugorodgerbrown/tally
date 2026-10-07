@@ -1,11 +1,8 @@
-// Tests for apps/mcp/ui/bridge.js and the notes view: the MCP Apps handshake as a host drives it.
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+// Tests for apps/mcp/ui/bridge.js: the MCP Apps handshake as a host drives it.
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const SCRIPTS = {
   'bridge.js': () => import('../../../apps/mcp/ui/bridge.js'),
-  'notes_list.js': () => import('../../../apps/mcp/ui/notes_list.js'),
 };
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -93,42 +90,14 @@ describe('bridge', () => {
 
   it('calls a tool through the host and settles with its answer', async () => {
     await load(['bridge.js']);
-    const ok = self.McpApp.callTool('add_note', { text: 'hi' });
+    const ok = self.McpApp.callTool('get_workout', { workout: 'Morning mobility' });
     const call = host.sent.at(-1);
-    expect(call).toMatchObject({ method: 'tools/call', params: { name: 'add_note', arguments: { text: 'hi' } } });
+    expect(call).toMatchObject({ method: 'tools/call', params: { name: 'get_workout', arguments: { workout: 'Morning mobility' } } });
     deliver({ jsonrpc: '2.0', id: call.id, result: { content: [] } });
     await expect(ok).resolves.toEqual({ content: [] });
 
     const refused = self.McpApp.callTool('nope');
     deliver({ jsonrpc: '2.0', id: host.sent.at(-1).id, error: { code: -32602, message: 'Unknown tool' } });
     await expect(refused).rejects.toThrow('Unknown tool');
-  });
-});
-
-describe('notes view', () => {
-  beforeEach(() => {
-    const html = readFileSync(resolve('apps/mcp/ui/notes_list.html'), 'utf8');
-    document.body.innerHTML = html.slice(html.indexOf('<body>') + 6, html.indexOf('</body>'));
-  });
-
-  const result = (params) => deliver({ jsonrpc: '2.0', method: 'ui/notifications/tool-result', params });
-
-  it('draws each note as text', async () => {
-    await load(['bridge.js', 'notes_list.js']);
-    result({ structuredContent: { notes: [{ text: '<b>hi</b>', written_at: '2026-10-07T09:00:00Z' }] } });
-    const items = document.querySelectorAll('[data-notes] li');
-    expect(items).toHaveLength(1);
-    expect(items[0].querySelector('[data-text]').textContent).toBe('<b>hi</b>');
-    expect(items[0].querySelector('b')).toBeNull();
-    expect(items[0].querySelector('time').dateTime).toBe('2026-10-07T09:00:00Z');
-    expect(document.querySelector('[data-status]').hidden).toBe(true);
-  });
-
-  it('says when there are none, and shows a tool error', async () => {
-    await load(['bridge.js', 'notes_list.js']);
-    result({ structuredContent: { notes: [] } });
-    expect(document.querySelector('[data-status]').textContent).toBe('No notes yet.');
-    result({ isError: true, content: [{ type: 'text', text: 'limit must be a whole number' }] });
-    expect(document.querySelector('[data-status]').textContent).toBe('limit must be a whole number');
   });
 });

@@ -18,7 +18,7 @@ def test_manifest_is_installable(client: Client) -> None:
     data = json.loads(response.content)
     assert data["name"] == conf.APP_NAME
     assert data["display"] == "standalone"
-    assert data["start_url"] == reverse("notes:list") == conf.SCOPE
+    assert data["start_url"] == reverse("activity:app") == conf.SCOPE
     assert data["scope"] == data["id"] == conf.SCOPE
     sizes = {icon["sizes"] for icon in data["icons"]}
     assert {"192x192", "512x512"} <= sizes

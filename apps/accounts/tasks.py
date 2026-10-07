@@ -1,4 +1,4 @@
-"""Background tasks for accounts: the sign-in email.
+"""Background tasks for accounts: the sign-in (or sign-up) email.
 
 Views enqueue; they never send mail themselves, so a slow mail server
 can't hold a request (settings.TASKS chooses where the task runs).
@@ -13,9 +13,10 @@ from apps.pwa import conf
 
 
 @task()
-def send_sign_in_email(email: str, link: str, code: str) -> None:
-    """Email ``email`` its sign-in link and code."""
+def send_sign_in_email(email: str, link: str, code: str, purpose: str = "sign_in") -> None:
+    """Email ``email`` its link and code; ``purpose`` "sign_up" words it for a new account."""
     context = {
+        "signing_up": purpose == "sign_up",
         "link": link,
         "code": code,
         "minutes": settings.SIGN_IN_MAX_AGE_SECONDS // 60,

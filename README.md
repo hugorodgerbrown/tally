@@ -1,6 +1,9 @@
 # Tally
 
-Interval workouts built from a library of exercises, run hands-free on a phone
+Interval workouts built from a library of exercises, run hands-free on a phone.
+Build workouts on the desktop at `/app/workouts/`; run them on the phone at
+`/app/`, offline if need be; ask Claude about them through `/mcp`. Anyone can
+create an account; each account has its own library, workouts and log.
 
 Generated from the Titan [django-titan-template](https://github.com/hugorodgerbrown/django-titan-template).
 Pull template improvements in with `copier update --trust`.
@@ -29,7 +32,7 @@ uv run python manage.py createsuperuser --username you@example.com --email you@e
 uv run python manage.py runserver
 ```
 
-Open <http://localhost:8000/>. Sign in with any email address: the email,
+Open <http://localhost:8000/>. Create an account with any email address: the email,
 with its link and code, prints in the `runserver` console. The app itself
 is <http://localhost:8000/app/>; the admin is `/admin/` (signed in by email
 too, as the superuser above). Service workers run on `localhost` and
@@ -61,6 +64,22 @@ screen and how to make a new write work offline.
 Also: [security](docs/security.md), [performance](docs/performance.md),
 [decisions](docs/decisions/).
 
+## Moving the live site onto the template (October 2026)
+
+The first deploy of this version migrates the existing database in place:
+the app labels (`library`, `activity`) and tables are unchanged.
+
+- Every existing exercise and workout is given to the earliest active
+  superuser (the one account Tally had). Muscle groups stay shared.
+- That account signs in by email now, so its `email` must be set. Check in
+  a Render shell before deploying:
+  `uv run --no-sync python manage.py shell -c "from django.contrib.auth.models import User; print(list(User.objects.values_list('username', 'email')))"`
+- The phone app moved from `/activity/` to `/app/`. Old addresses redirect
+  and the old service workers remove themselves, but an app installed on a
+  phone's Home Screen keeps its old start page: delete it and add it again
+  from `/app/`. Sessions still waiting to upload on the phone are moved
+  into the new outbox the first time `/app/` opens.
+
 ## Deploy to Render
 
 `render.yaml` is a Blueprint for the web service and a daily clean-up job.
@@ -81,9 +100,10 @@ Also: [security](docs/security.md), [performance](docs/performance.md),
 
 ## Connect Claude
 
-Add `https://<your host>/mcp` as a custom connector in Claude. Who may
-connect is `apps/mcp/policy.py` (staff only to start); the consent page
-signs people in through the normal email sign-in. For a local token:
+Add `https://<your host>/mcp` as a custom connector in Claude. Any active
+account may connect (`MCP_AUTH["CAN_CONNECT"]` is `mcp_auth.policy.active_user`
+in `config/settings.py`), and the tools only ever see that account's data;
+the consent page signs people in through the normal email sign-in. For a local token:
 
 ```bash
 TOKEN=$(uv run python manage.py mint_mcp_token --commit -v 0)

@@ -18,17 +18,24 @@ SCOPE = "/app/"
 
 # Prefix for every Cache Storage name the service worker owns, so it never
 # deletes another app's caches on the same origin.
-CACHE_PREFIX = "tally"
+CACHE_PREFIX = "tally-app"
 
 # Paths inside SCOPE the service worker must never cache (it already
 # ignores everything outside SCOPE, and every non-GET request).
-NEVER_CACHE: list[str] = []
+NEVER_CACHE: list[str] = [
+    # The phone app keeps its own copy of the workouts in IndexedDB
+    # (static/js/activity_store.js) and knows when it is stale; a second,
+    # silent copy in Cache Storage would only hide that.
+    "/app/api/",
+]
 
 # Static files fetched when the service worker installs, so the shell works
 # offline from the first launch. Keep this list small: tests/test_performance.py
 # holds it to a byte budget.
 PRECACHE_STATIC = [
+    "css/tokens.css",
     "css/app.css",
+    "css/activity.css",
     "vendor/htmx.min.js",
     "js/launch_gate.js",
     "js/launch_shell.js",
@@ -36,7 +43,10 @@ PRECACHE_STATIC = [
     "js/outbox_core.js",
     "js/outbox.js",
     "js/pwa.js",
-    "js/notes.js",
+    "js/styles.js",
+    "js/engine.js",
+    "js/activity_store.js",
+    "js/activity_app.js",
     "icons/icon-192.png",
 ]
 
