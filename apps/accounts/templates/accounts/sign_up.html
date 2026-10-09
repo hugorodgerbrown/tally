@@ -1,0 +1,22 @@
+{% extends "public_base.html" %}
+{% block title %}Create an account · {{ pwa.name }}{% endblock %}
+{% block description %}Create a {{ pwa.name }} account with your email address. No password.{% endblock %}
+{% block content %}
+  <section class="card stack">
+    <h1>Create an account</h1>
+    <p>Enter your email address and we'll send you a link and a code to confirm it. There's no password: once you're in, you can add a passkey so signing in next time is one tap.</p>
+    <form class="stack" method="post" action="{% url 'accounts:sign_up' %}">
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+      <label class="field">
+        <span class="field__label">Email address</span>
+        <input type="email" name="email" value="{{ form.email.value|default_if_none:'' }}"
+               autocomplete="email" inputmode="email" required autofocus>
+      </label>
+      {{ form.email.errors }}
+      <button class="button" type="submit">Create account</button>
+    </form>
+    <p class="meta">You start with a library of 21 exercises and a sample workout. By continuing you agree to the <a href="{% url 'public:terms' %}">terms</a>; our <a href="{% url 'public:privacy' %}">privacy notice</a> says what we keep.</p>
+    <p class="meta">Already have an account? <a href="{% url 'accounts:sign_in' %}">Sign in</a>.</p>
+  </section>
+{% endblock %}

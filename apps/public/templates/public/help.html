@@ -1,0 +1,8 @@
+{% extends "public_base.html" %}
+{% block title %}Help · {{ pwa.name }}{% endblock %}
+{% block description %}How to sign in to {{ pwa.name }}, add a passkey, install the app and use it offline.{% endblock %}
+{% block content %}
+  <article class="card prose">
+    {% include "public/_help_body.html" %}
+  </article>
+{% endblock %}

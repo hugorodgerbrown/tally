@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load static %}
+{# The desktop planner: Tally's own header and layout, inside the installed app's scope. #}
+{% block title %}{{ pwa.name }}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/planner.css' %}">{% endblock %}
+{% block extra_js %}<script src="{% static 'js/styles.js' %}" defer></script>{% endblock %}
+{% block body_class %}planner{% endblock %}
+{% block header %}
+  <header class="topbar">
+    <div class="hrow">
+      <a class="eb" href="{% url 'planner:workouts' %}">{{ pwa.name }}</a>
+      <div class="hctl">
+        {% include "includes/_outbox_status.html" %}
+        <nav class="modes" aria-label="Mode"><a href="{% url 'activity:app' %}">Activity</a><span aria-current="page">Manage</span></nav>
+        <a class="signout" href="{% url 'accounts:account' %}">Account</a>
+      </div>
+    </div>
+    <nav class="nav" aria-label="Main">
+      <a href="{% url 'planner:workouts' %}"{% if nav == "workouts" %} aria-current="page"{% endif %}>Workouts</a>
+      <a href="{% url 'planner:exercises' %}"{% if nav == "exercises" %} aria-current="page"{% endif %}>Exercises</a>
+    </nav>
+  </header>
+{% endblock %}
+{% block main %}
+  <main class="page">
+    {% if messages %}<ul class="messages">{% for m in messages %}<li>{{ m }}</li>{% endfor %}</ul>{% endif %}
+    {% block content %}{% endblock %}
+  </main>
+{% endblock %}

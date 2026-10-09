@@ -1,0 +1,9 @@
+{% load static %}{# What every page's <head> has, public or in the app. #}
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="{{ pwa.theme_colour }}">
+<link rel="icon" href="{% static 'icons/favicon.svg' %}" type="image/svg+xml">
+<link rel="icon" href="{% static 'icons/favicon.ico' %}" sizes="32x32">
+<link rel="apple-touch-icon" href="{% static 'icons/apple-touch-icon.png' %}">
+<link rel="stylesheet" href="{% static 'css/tokens.css' %}">
+<link rel="stylesheet" href="{% static 'css/app.css' %}">

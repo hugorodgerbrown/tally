@@ -1,0 +1,8 @@
+{% extends "public_base.html" %}
+{% block title %}Terms · {{ pwa.name }}{% endblock %}
+{% block description %}The terms of using {{ pwa.name }}.{% endblock %}
+{% block content %}
+  <article class="card prose">
+    {% include "public/_terms_body.html" %}
+  </article>
+{% endblock %}

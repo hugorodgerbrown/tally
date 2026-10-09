@@ -1,0 +1,43 @@
+# Performance, accessibility and best-practice budgets (lighthouserc.json),
+# measured against the app running in production mode: DEBUG off, hashed and
+# compressed static files, gunicorn. @lhci/cli is fetched by npx here rather
+# than kept in package.json, so its large dependency tree stays out of the
+# project's lock file and npm audit.
+name: Lighthouse
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    env:
+      DJANGO_DEBUG: "0"
+      DJANGO_SSL_REDIRECT: "0"
+      DJANGO_SECRET_KEY: lighthouse-only-0123456789-abcdefghijklmnopqrstuvwxyz-ABCDEFGH
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - name: Start the app
+        run: |
+          uv sync --locked --no-dev
+          uv run --no-sync python manage.py collectstatic --noinput
+          uv run --no-sync python manage.py migrate --noinput
+          uv run --no-sync gunicorn config.wsgi --bind 127.0.0.1:8000 --daemon
+      - name: Run Lighthouse CI
+        run: npx --yes @lhci/cli@0.15.1 autorun
+      - if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: lighthouse
+          path: .lighthouseci

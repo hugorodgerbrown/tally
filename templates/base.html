@@ -1,0 +1,55 @@
+{% load static %}<!doctype html>
+{# The installed app's pages (everything under /app/). Public pages extend public_base.html. #}
+<html lang="en-GB">
+  <head>
+    {% include "includes/_head.html" %}
+    <title>{% block title %}{{ pwa.name }}{% endblock %}</title>
+    <meta name="description" content="{% block description %}{{ pwa.name }}{% endblock %}">
+    {# The outbox reads these to send queued writes as the right user. #}
+    <meta name="app-principal" content="{{ request.user.pk|default_if_none:'' }}">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    {# pwa.js registers the worker from these. #}
+    <meta name="app-worker" content="{% url 'pwa:service_worker' %}">
+    <meta name="app-scope" content="{{ pwa.scope }}">
+    {# No eval, no injected <style>: both would need a looser CSP. #}
+    <meta name="htmx-config" content='{"allowEval": false, "includeIndicatorStyles": false}'>
+    <link rel="manifest" href="{% url 'pwa:manifest' %}">
+    {# Blocking on purpose and tiny: decides before first paint whether the launch screen shows. #}
+    <script src="{% static 'js/launch_gate.js' %}"></script>
+    <script src="{% static 'vendor/htmx.min.js' %}" defer></script>
+    <script src="{% static 'js/idb.js' %}" defer></script>
+    <script src="{% static 'js/outbox_core.js' %}" defer></script>
+    <script src="{% static 'js/outbox.js' %}" defer></script>
+    <script src="{% static 'js/pwa.js' %}" defer></script>
+    <script src="{% static 'js/launch_shell.js' %}" defer></script>
+    {% block extra_css %}{% endblock %}
+    {% block extra_js %}{% endblock %}
+  </head>
+  <body class="{% block body_class %}{% endblock %}">
+    {% include "includes/_launch_shell.html" %}
+    {# Tally: the planner and the phone app draw their own header, and the phone app no footer. #}
+    {% block header %}
+      <header class="app-header">
+        <a class="app-header__name" href="{% url 'activity:app' %}">{{ pwa.name }}</a>
+        {% include "includes/_outbox_status.html" %}
+        {% if user.is_authenticated %}
+          <a class="app-header__link" href="{% url 'accounts:account' %}">Account</a>
+        {% endif %}
+      </header>
+    {% endblock %}
+    {% block banner %}
+      <div class="offline-banner" data-offline-banner hidden>
+        You're offline. Changes are saved on this device and sent when you're back.
+      </div>
+    {% endblock %}
+    {% block main %}
+      <main class="app-main">
+        {% block content %}{% endblock %}
+      </main>
+    {% endblock %}
+    {% block footer %}
+      {% include "includes/_footer.html" %}
+    {% endblock %}
+    {% block body_js %}{% endblock %}
+  </body>
+</html>

@@ -17,24 +17,27 @@ permissions:
   contents: read
 
 jobs:
+  # One job per tox env: the same commands as `uv run tox` locally.
   tox:
     name: ${{ matrix.env }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        env: [fmt, lint, types, checks, test, js, audit, sast]
+        env: [fmt, lint, types, checks, test, js, audit, sast, e2e]
     steps:
       - uses: actions/checkout@v7
-      # The tox envs run on 3.14 (base_python in tox.ini).
       - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
-      - if: matrix.env == 'js'
+      - if: matrix.env == 'js' || matrix.env == 'audit'
         uses: actions/setup-node@v7
         with:
-          node-version: "22"
+          node-version-file: .nvmrc
+      - if: matrix.env == 'e2e'
+        name: Install Chromium for Playwright
+        run: uv run --frozen --only-group e2e playwright install --with-deps chromium
       - name: Run tox -e ${{ matrix.env }}
         run: uvx --with tox-uv tox -e ${{ matrix.env }}
 
