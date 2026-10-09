@@ -22,6 +22,9 @@ def test_install_is_safe_to_run_twice(user: Any) -> None:
     second = starter.install(user)
     assert (second.exercises, second.workout) == (0, False)
     assert Exercise.objects.for_user(user).count() == 21
+    # Recorded as the starter library.
+    assert set(Exercise.objects.for_user(user).values_list("source", flat=True)) == {"seed"}
+    assert workout.source == "seed"
 
 
 def test_install_tags_kit_and_holds(user: Any) -> None:

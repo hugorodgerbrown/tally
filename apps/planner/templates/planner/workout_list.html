@@ -16,6 +16,7 @@
       <a class="nm" href="{% url 'planner:workout_edit' w.uuid %}">{{ w.name }}</a>
       <div class="sub">{{ r.items|length }} exercise{{ r.items|length|pluralize }}{% if w.rounds > 1 %} · {{ w.rounds }} rounds{% endif %}
         <span class="dots dots--gap">{% for t in r.types %}<i data-css="background:{{ t.colour }}" title="{{ t.name }}"></i>{% endfor %}</span>
+        {% if w.source == "claude" %}<span class="tag-src" title="Made by Claude through the connector">Claude</span>{% endif %}
         {% if not w.is_active %}<span class="tag-off">Hidden on phone</span>{% endif %}</div>
     </div>
     {% include "planner/_strip.html" with segments=r.segments size="mini" label="Interval sequence" %}

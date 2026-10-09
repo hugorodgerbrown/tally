@@ -109,6 +109,14 @@ class Equipment(models.TextChoices):
     DUMBBELL = "dumbbell", "Dumbbell"
 
 
+class Source(models.TextChoices):
+    """Where an exercise or workout was made. Blank on ones made before this was recorded."""
+
+    MANAGE = "manage", "Manage"
+    CLAUDE = "claude", "Claude"
+    SEED = "seed", "Starter library"
+
+
 class Movement(models.TextChoices):
     """Whether the body moves through reps (dynamic) or holds a position (static).
 
@@ -160,6 +168,9 @@ class Exercise(BaseModel):
         default=Movement.DYNAMIC,
         help_text="Dynamic moves through reps; static holds a position.",
     )
+    source = models.CharField(
+        max_length=10, choices=Source.choices, default=Source.MANAGE, blank=True
+    )
 
     objects = ExerciseQuerySet.as_manager()
 
@@ -207,6 +218,9 @@ class Workout(BaseModel):
     )
     is_active = models.BooleanField(
         default=True, help_text="Inactive workouts are hidden from the app."
+    )
+    source = models.CharField(
+        max_length=10, choices=Source.choices, default=Source.MANAGE, blank=True
     )
 
     objects = WorkoutQuerySet.as_manager()

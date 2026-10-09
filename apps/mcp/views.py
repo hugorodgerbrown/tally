@@ -31,8 +31,9 @@ INSTRUCTIONS = (
     "duration each, a rest between exercises, and a number of rounds. One-sided exercises "
     "run twice, once per side. Sessions are the log of workouts done on the phone, with "
     "time worked per exercise and an optional 1-10 effort rating. Times are in seconds "
-    "and dates are UK time. Nothing can be deleted through these tools; to retire a "
-    "workout, set is_active to false. For questions about privacy or personal data use "
+    "and dates are UK time. Every exercise and workout records who made it (made_by): "
+    "Claude, Manage or the starter library. Nothing can be deleted through these tools; "
+    "to retire a workout, set is_active to false. For questions about privacy or personal data use "
     "privacy_policy; for the terms, terms_of_service; for how to use the app, help."
 )
 

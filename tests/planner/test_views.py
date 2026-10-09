@@ -184,7 +184,7 @@ def test_create_workout(signed_in: Client, user: Any, squat: Exercise, swing: Ex
     assert response.status_code == 302
     assert response["Location"] == reverse("planner:workouts")
     workout = Workout.objects.get(name="Legs")
-    assert workout.owner == user
+    assert (workout.owner, workout.source) == (user, "manage")
     assert [(i.exercise, i.duration_seconds) for i in workout.items.all()] == [
         (swing, 30),
         (squat, 40),
@@ -523,6 +523,24 @@ def test_invalid_exercise_form_shows_errors(signed_in: Client) -> None:
     response = signed_in.post(reverse("planner:exercise_new"), {"name": "Plank"})
     assert response.status_code == 200
     assert "Pick at least one type." in response.content.decode()
+
+
+# ---------- who made it ----------
+
+
+def test_claude_tag_on_workout_list(signed_in: Client, user: Any, squat: Exercise) -> None:
+    """A workout Claude made carries the Claude tag; one made in Manage doesn't."""
+    WorkoutItemFactory.create(workout__owner=user, workout__source="claude", exercise=squat)
+    WorkoutItemFactory.create(workout__owner=user, exercise=squat)
+    html = signed_in.get(reverse("planner:workouts")).content.decode()
+    assert html.count('class="tag-src"') == 1
+
+
+def test_claude_tag_on_exercise_list(signed_in: Client, user: Any) -> None:
+    """An exercise Claude made carries the Claude tag."""
+    ExerciseFactory.create(owner=user, name="Cat-cow", source="claude")
+    html = signed_in.get(reverse("planner:exercises")).content.decode()
+    assert 'class="tag-src"' in html
 
 
 # ---------- query counts ----------

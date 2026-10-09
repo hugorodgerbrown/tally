@@ -280,6 +280,7 @@ def test_create_exercise(call: Rpc, user: Any, library: dict[str, Any]) -> None:
     assert (exercise.owner, exercise.default_duration) == (user, 45)
     assert MuscleGroup.objects.filter(name="Hips").count() == 1
     assert MuscleGroup.objects.get(name="Spine").owner == user
+    assert (exercise.source, result["made_by"]) == ("claude", "claude")
 
 
 @pytest.mark.parametrize(
@@ -394,6 +395,7 @@ def test_create_workout(call: Rpc, user: Any, library: dict[str, Any]) -> None:
     assert result["rounds"] == 2
     assert result["is_active"] is True
     assert Workout.objects.get(uuid=uuid.UUID(result["id"])).owner == user
+    assert result["made_by"] == "claude"
 
 
 @pytest.mark.parametrize(

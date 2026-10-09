@@ -31,6 +31,7 @@ from apps.library.models import (
     ExerciseType,
     Movement,
     MuscleGroup,
+    Source,
     Workout,
     WorkoutItem,
 )
@@ -283,6 +284,7 @@ def exercise_json(exercise: Exercise) -> Result:
         "movement": exercise.movement,
         "one_sided": exercise.one_sided,
         "default_duration": exercise.default_duration,
+        "made_by": exercise.source or None,
     }
 
 
@@ -295,6 +297,8 @@ def workout_summary(workout: Workout) -> Result:
         "name": workout.name,
         "description": workout.description,
         "is_active": workout.is_active,
+        "made_by": workout.source or None,
+        "created_at": workout.created_at.isoformat(),
         "rounds": workout.rounds,
         "rest_seconds": workout.rest_seconds,
         "round_rest_seconds": workout.round_rest_seconds,
@@ -657,7 +661,7 @@ def _full_clean(obj: Exercise | Workout) -> None:
 def create_exercise(user: AbstractBaseUser, args: Args) -> Result:
     """Add an exercise to the user's library."""
     _require(args, "name", "types")
-    return _save_exercise(Exercise(owner_id=user.pk), user, args)
+    return _save_exercise(Exercise(owner_id=user.pk, source=Source.CLAUDE), user, args)
 
 
 @tool(
@@ -727,7 +731,7 @@ def _save_workout(workout: Workout, user: AbstractBaseUser, args: Args) -> Resul
 def create_workout(user: AbstractBaseUser, args: Args) -> Result:
     """Build a workout in the user's library."""
     _require(args, "name", "items")
-    return _save_workout(Workout(owner_id=user.pk), user, args)
+    return _save_workout(Workout(owner_id=user.pk, source=Source.CLAUDE), user, args)
 
 
 @tool(

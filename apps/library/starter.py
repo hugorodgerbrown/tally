@@ -12,7 +12,14 @@ from dataclasses import dataclass
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.db import transaction
 
-from apps.library.models import Exercise, ExerciseType, MuscleGroup, Workout, WorkoutItem
+from apps.library.models import (
+    Exercise,
+    ExerciseType,
+    MuscleGroup,
+    Source,
+    Workout,
+    WorkoutItem,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +89,7 @@ def install(user: AbstractBaseUser) -> StarterResult:
             default_duration=duration,
             equipment=EQUIPMENT.get(name, ""),
             movement="static" if name in STATIC else "dynamic",
+            source=Source.SEED,
         )
         exercise.types.set([types[s] for s in type_slugs])
         exercise.muscles.set(
@@ -91,7 +99,7 @@ def install(user: AbstractBaseUser) -> StarterResult:
 
     added_workout = False
     if not Workout.objects.for_user(user).filter(name=SAMPLE_WORKOUT).exists():
-        workout = Workout.objects.create(owner_id=user.pk, name=SAMPLE_WORKOUT)
+        workout = Workout.objects.create(owner_id=user.pk, name=SAMPLE_WORKOUT, source=Source.SEED)
         # Names are unique per owner, not globally, so in_bulk(field_name=...) won't do.
         names = [n for n, _ in MORNING_MOBILITY]
         by_name = {e.name: e for e in Exercise.objects.for_user(user).filter(name__in=names)}

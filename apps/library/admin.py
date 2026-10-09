@@ -38,8 +38,9 @@ class ExerciseAdmin(admin.ModelAdmin):
         "one_sided",
         "default_duration",
         "type_list",
+        "source",
     ]
-    list_filter = ["types", "equipment", "movement", "one_sided"]
+    list_filter = ["types", "equipment", "movement", "one_sided", "source"]
     list_select_related = ["owner"]
     search_fields = ["name", "owner__email"]
     filter_horizontal = ["types", "muscles"]
@@ -68,8 +69,16 @@ class WorkoutItemInline(admin.TabularInline):
 class WorkoutAdmin(admin.ModelAdmin):
     """Every account's workouts, with their items inline."""
 
-    list_display = ["name", "owner", "rounds", "rest_seconds", "is_active", "updated_at"]
-    list_filter = ["is_active"]
+    list_display = [
+        "name",
+        "owner",
+        "rounds",
+        "rest_seconds",
+        "is_active",
+        "source",
+        "created_at",
+    ]
+    list_filter = ["is_active", "source"]
     list_select_related = ["owner"]
     search_fields = ["name", "owner__email"]
     inlines = [WorkoutItemInline]
@@ -82,6 +91,7 @@ class WorkoutAdmin(admin.ModelAdmin):
         "rounds",
         "round_rest_seconds",
         "is_active",
+        "source",
     ]
 
 

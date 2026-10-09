@@ -89,3 +89,9 @@ def test_shared_muscle_names_are_unique() -> None:
     MuscleGroupFactory.create(name="Core")
     with pytest.raises(IntegrityError):
         MuscleGroupFactory.create(name="Core")
+
+
+def test_new_rows_are_made_in_manage() -> None:
+    """Exercises and workouts default to Manage as their source."""
+    assert WorkoutFactory.create().source == "manage"
+    assert ExerciseFactory.create().source == "manage"
