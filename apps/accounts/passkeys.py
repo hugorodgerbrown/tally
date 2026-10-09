@@ -190,6 +190,19 @@ _DEVICE_NAMES = (
 )
 
 
+def serves_host(host: str) -> bool:
+    """Whether a page on ``host`` can use passkeys for ``WEBAUTHN_RP_ID``.
+
+    The browser refuses a ceremony whose relying party isn't the page's
+    host or a parent domain of it, with nothing sent back to the server.
+    So the options views check first and log the mismatch: it means
+    ``SITE_URL`` (or ``WEBAUTHN_RP_ID``) doesn't name the domain in use.
+    """
+    host = host.lower().rstrip(".")
+    rp_id = settings.WEBAUTHN_RP_ID.lower()
+    return host == rp_id or host.endswith("." + rp_id)
+
+
 def default_name(user_agent: str) -> str:
     """Name a new passkey after the device it was made on ("Passkey on iPhone")."""
     for marker, device in _DEVICE_NAMES:

@@ -26,6 +26,11 @@ services:
         generateValue: true
       - key: DJANGO_DEBUG
         value: "0"
+      # The public address (https://tally.example.com): links in emails and
+      # the passkey domain. Unset, it is the onrender.com name, and passkeys
+      # then fail on a custom domain.
+      - key: SITE_URL
+        sync: false
       # Major.minor only, so Render uses its latest prebuilt 3.14.
       - key: PYTHON_VERSION
         value: "3.14"

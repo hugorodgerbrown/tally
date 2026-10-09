@@ -30,6 +30,12 @@ def _fresh_rate_limits() -> None:
     cache.clear()
 
 
+@pytest.fixture(autouse=True)
+def _site_is_the_test_host(settings: Any) -> None:
+    """The test client's host is ``testserver``; make it the passkey domain."""
+    settings.WEBAUTHN_RP_ID = "testserver"
+
+
 @pytest.fixture
 def verified_registration(monkeypatch: pytest.MonkeyPatch) -> None:
     """Make every registration verify, as credential ``credential-1``."""
@@ -121,6 +127,35 @@ def test_register_refuses_a_body_that_is_not_json(signed_in: Client) -> None:
         reverse("accounts:passkey_register"), "nope", content_type="application/json"
     )
     assert response.status_code == 400
+
+
+@pytest.mark.parametrize("url_name", ["passkey_register_options", "passkey_sign_in_options"])
+def test_options_refuse_a_host_the_passkey_domain_does_not_cover(
+    signed_in: Client, settings: Any, caplog: pytest.LogCaptureFixture, url_name: str
+) -> None:
+    """SITE_URL left on onrender.com while the site runs on its own domain."""
+    settings.WEBAUTHN_RP_ID = "app.onrender.com"
+    response = signed_in.post(reverse(f"accounts:{url_name}"))
+    assert response.status_code == 409
+    assert response.json() == {"error": "wrong_host"}
+    assert "passkeys.wrong_host host=testserver rp_id=app.onrender.com" in caplog.text
+
+
+@pytest.mark.parametrize(
+    ("host", "serves"),
+    [
+        ("tally.example.com", True),
+        ("TALLY.example.com.", True),
+        ("app.tally.example.com", True),
+        ("app.onrender.com", False),
+        ("eviltally.example.com", False),
+        ("example.com", False),
+    ],
+)
+def test_serves_host(settings: Any, host: str, serves: bool) -> None:
+    """The RP ID covers its own host and its subdomains, nothing else."""
+    settings.WEBAUTHN_RP_ID = "tally.example.com"
+    assert passkeys.serves_host(host) is serves
 
 
 def test_registering_needs_sign_in(client: Client) -> None:
