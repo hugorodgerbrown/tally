@@ -223,11 +223,30 @@ def _json_body(request: HttpRequest) -> dict[str, Any] | None:
     return data if isinstance(data, dict) else None
 
 
+def _wrong_host(request: HttpRequest) -> JsonResponse | None:
+    """Refuse passkey options the browser would reject for this page's host.
+
+    Without this the browser fails the ceremony on its own and the server
+    never hears of it; here the misconfiguration lands in the log.
+    """
+    host = request.get_host().partition(":")[0]
+    if passkeys.serves_host(host):
+        return None
+    logger.error(
+        "passkeys.wrong_host host=%s rp_id=%s: set SITE_URL to this site's address",
+        host,
+        settings.WEBAUTHN_RP_ID,
+    )
+    return JsonResponse({"error": "wrong_host"}, status=409)
+
+
 @require_POST
 def passkey_sign_in_options(request: HttpRequest) -> JsonResponse:
     """Return a challenge for ``navigator.credentials.get()``."""
     if over_limit("passkey-ip", client_ip(request), limit=30, window_seconds=600):
         return JsonResponse({"error": "rate_limited"}, status=429)
+    if refusal := _wrong_host(request):
+        return refusal
     return JsonResponse(passkeys.sign_in_options(request.session))
 
 
@@ -288,6 +307,8 @@ def account(request: HttpRequest) -> HttpResponse:
 @login_required_json
 def passkey_register_options(request: HttpRequest) -> JsonResponse:
     """Return a challenge for ``navigator.credentials.create()``."""
+    if refusal := _wrong_host(request):
+        return refusal
     return JsonResponse(passkeys.registration_options(signed_in_user(request), request.session))
 
 

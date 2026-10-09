@@ -85,6 +85,11 @@ device PIN). From then on they sign in with the passkey, or by email.
 - `WEBAUTHN_RP_ID` is the site's host name and `WEBAUTHN_ORIGINS` its
   origin(s), both from `SITE_URL` by default. A passkey only works on the
   host it was made for: moving to a custom domain means users add new ones.
+  If `SITE_URL` is unset in production it is the onrender.com name, and the
+  browser refuses passkeys on a custom domain without telling the server.
+  So both options endpoints answer 409 `wrong_host`, and log
+  `passkeys.wrong_host`, when the request's host isn't the RP ID or a
+  subdomain of it.
 
 ## Staff and the admin
 
