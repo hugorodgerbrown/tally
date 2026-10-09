@@ -12,7 +12,6 @@ urlpatterns = [
     path("workouts/<uuid:uuid>/", views.workout_edit, name="workout_edit"),
     path("workouts/<uuid:uuid>/duplicate/", views.workout_duplicate, name="workout_duplicate"),
     path("workouts/<uuid:uuid>/toggle/", views.workout_toggle, name="workout_toggle"),
-    path("workouts/<uuid:uuid>/keep/", views.workout_keep, name="workout_keep"),
     path("workouts/<uuid:uuid>/delete/", views.workout_delete, name="workout_delete"),
     path("exercises/", views.exercise_list, name="exercises"),
     path("exercises/new/", views.exercise_edit, name="exercise_new"),

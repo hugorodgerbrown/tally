@@ -4,7 +4,6 @@
  *   Store.loadWorkouts()        fetch the workouts, keep a copy on the phone, or use the copy
  *   Store.saveSession(s)        queue a finished session (or a new effort score) for upload
  *   Store.discardSession(uuid)  queue a tombstone, so a synced copy is deleted too
- *   Store.keepWorkout(id)       turn a one-off into a saved workout (needs the server)
  *   Store.pending()             the sessions still waiting, as [{uuid, discarded, failed}]
  *   Store.get / set / del       small per-user values: the workouts, the running checkpoint
  *   Store.flush()               send what is queued now
@@ -119,27 +118,6 @@
     return [...latest.values()];
   }
 
-  /* Turn a one-off into a saved workout. Needs the server; throws offline. */
-  async function keepWorkout(id) {
-    let res;
-    try {
-      res = await fetch(urls.workouts + encodeURIComponent(id) + '/keep/', {
-        method: 'POST',
-        credentials: 'same-origin',
-        redirect: 'manual',
-        headers: { Accept: 'application/json', 'X-CSRFToken': csrfToken() },
-      });
-    } catch (e) {
-      setStatus('offline');
-      throw e;
-    }
-    if (res.status === 401 || res.type === 'opaqueredirect') {
-      setStatus('signed-out');
-      throw new Error('signed-out');
-    }
-    if (!res.ok) throw new Error('http ' + res.status);
-  }
-
   function flush() {
     return outbox.drain();
   }
@@ -196,7 +174,6 @@
     loadWorkouts,
     saveSession,
     discardSession,
-    keepWorkout,
     flush,
     csrfToken,
     migrateLegacy,

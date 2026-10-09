@@ -2,13 +2,11 @@
 
 import json
 import uuid
-from datetime import timedelta
 from typing import Any
 
 import pytest
 from django.test import Client
 from django.urls import reverse
-from django.utils import timezone
 
 from apps.activity.models import ActivitySession, DiscardedSession
 from apps.library.models import Workout
@@ -259,61 +257,3 @@ def test_workouts_query_count_is_flat(
         WorkoutItemFactory.create(workout__owner=user, exercise=workout.items.get().exercise)
     with django_assert_max_num_queries(10):
         signed_in.get(WORKOUTS)
-
-
-def _made(workout: Workout, days_ago: int) -> None:
-    """Backdate ``workout``'s creation by ``days_ago`` days."""
-    Workout.objects.filter(pk=workout.pk).update(
-        created_at=timezone.now() - timedelta(days=days_ago)
-    )
-
-
-def test_one_offs_drop_off_the_phone_after_a_week(
-    signed_in: Client, user: Any, workout: Workout
-) -> None:
-    """Saved workouts stay; one-offs are sent for seven days after they're made."""
-    exercise = workout.items.get().exercise
-    for name, days in [("Today", 0), ("Six days", 6), ("Eight days", 8)]:
-        item = WorkoutItemFactory.create(
-            workout__owner=user, workout__name=name, workout__one_off=True, exercise=exercise
-        )
-        _made(item.workout, days)
-    _made(workout, 30)
-    data = signed_in.get(WORKOUTS).json()
-    assert data["oneOffDays"] == 7
-    assert [(w["name"], w["oneOff"]) for w in data["workouts"]] == [
-        ("Legs", False),
-        ("Six days", True),
-        ("Today", True),
-    ]
-
-
-def test_keep_turns_a_one_off_into_a_saved_workout(signed_in: Client, workout: Workout) -> None:
-    """Keep makes an old one-off a saved workout, back on the phone."""
-    Workout.objects.filter(pk=workout.pk).update(one_off=True)
-    _made(workout, 30)
-    assert signed_in.get(WORKOUTS).json()["workouts"] == []
-    url = reverse("activity:api_keep_workout", args=[workout.uuid])
-    assert signed_in.post(url).json() == {"kept": str(workout.uuid)}
-    workout.refresh_from_db()
-    assert workout.one_off is False
-    (sent,) = signed_in.get(WORKOUTS).json()["workouts"]
-    assert sent["oneOff"] is False
-
-
-def test_keep_unknown_or_another_accounts_workout(signed_in: Client) -> None:
-    """An unknown uuid, or another account's workout, is a 404 and changes nothing."""
-    theirs = WorkoutFactory.create(one_off=True)
-    for workout_id in (uuid.uuid4(), theirs.uuid):
-        url = reverse("activity:api_keep_workout", args=[workout_id])
-        assert signed_in.post(url).status_code == 404
-    theirs.refresh_from_db()
-    assert theirs.one_off is True
-
-
-def test_keep_needs_sign_in_and_post(client: Client, signed_in: Client, workout: Workout) -> None:
-    """Keep is POST only, and a signed-out request gets a 401."""
-    url = reverse("activity:api_keep_workout", args=[workout.uuid])
-    assert signed_in.get(url).status_code == 405
-    signed_in.logout()
-    assert client.post(url).status_code == 401

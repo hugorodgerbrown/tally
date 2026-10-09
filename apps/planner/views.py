@@ -15,7 +15,6 @@ from django.db import transaction
 from django.db.models import Count, Max, Prefetch, Q, QuerySet
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from apps.core.decorators import signed_in_user
@@ -52,38 +51,17 @@ def _wants_json(request: HttpRequest) -> bool:
 # ---------- workouts ----------
 
 
-# The workout list's tabs: saved workouts, one-offs (on the phone or not), and
-# anything hidden from the phone.
-WORKOUT_TABS = {
-    "saved": ("Saved", Q(is_active=True, one_off=False)),
-    "one-offs": ("One-offs", Q(is_active=True, one_off=True)),
-    "hidden": ("Hidden", Q(is_active=False)),
-}
-
-
 @login_required
 def workout_list(request: HttpRequest) -> HttpResponse:
-    """List the user's workouts on one tab: saved, one-offs or hidden."""
-    user = signed_in_user(request)
-    tab = request.GET.get("show", "saved")
-    if tab not in WORKOUT_TABS:
-        tab = "saved"
-    counts = Workout.objects.for_user(user).aggregate(
-        **{f"n{i}": Count("pk", filter=q) for i, (_, q) in enumerate(WORKOUT_TABS.values())}
-    )
-    tabs = [
-        {"key": key, "label": label, "count": counts[f"n{i}"]}
-        for i, (key, (label, _)) in enumerate(WORKOUT_TABS.items())
-    ]
+    """List the user's workouts with their make-up, length and use."""
     workouts = (
-        Workout.objects.for_user(user)
-        .filter(WORKOUT_TABS[tab][1])
+        Workout.objects.for_user(signed_in_user(request))
         .annotate(times_done=Count("sessions"), last_done=Max("sessions__started_at"))
         .prefetch_related(
             Prefetch("items", WorkoutItem.objects.select_related("exercise")),
             "items__exercise__types",
         )
-        .order_by("-created_at" if tab == "one-offs" else "name")
+        .order_by("-is_active", "name")
     )
     rows = []
     for w in workouts:
@@ -99,11 +77,7 @@ def workout_list(request: HttpRequest) -> HttpResponse:
                 "types": sorted(types, key=lambda t: t.order),
             }
         )
-    return render(
-        request,
-        "planner/workout_list.html",
-        {"rows": rows, "nav": "workouts", "tab": tab, "tabs": tabs},
-    )
+    return render(request, "planner/workout_list.html", {"rows": rows, "nav": "workouts"})
 
 
 @login_required
@@ -200,17 +174,6 @@ def workout_toggle(request: HttpRequest, uuid: uuid_lib.UUID) -> HttpResponse:
     state = "shown on" if workout.is_active else "hidden from"
     messages.success(request, f"{workout.name} is {state} the phone.")
     return redirect("planner:workouts")
-
-
-@login_required
-@require_POST
-def workout_keep(request: HttpRequest, uuid: uuid_lib.UUID) -> HttpResponse:
-    """Turn a one-off into a saved workout."""
-    workout = get_object_or_404(Workout.objects.for_user(signed_in_user(request)), uuid=uuid)
-    workout.one_off = False
-    workout.save(update_fields=["one_off", "updated_at"])
-    messages.success(request, f"Kept {workout.name}. It's now a saved workout.")
-    return redirect(f"{reverse('planner:workouts')}?show=one-offs")
 
 
 @login_required

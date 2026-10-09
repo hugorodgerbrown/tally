@@ -395,29 +395,7 @@ def test_create_workout(call: Rpc, user: Any, library: dict[str, Any]) -> None:
     assert result["rounds"] == 2
     assert result["is_active"] is True
     assert Workout.objects.get(uuid=uuid.UUID(result["id"])).owner == user
-    # Made by Claude, and a one-off unless asked to save it.
-    assert (result["made_by"], result["one_off"], result["on_phone"]) == ("claude", True, True)
-
-
-def test_create_saved_workout(call: Rpc, library: dict[str, Any]) -> None:
-    """one_off false makes a saved workout."""
-    result = call("create_workout", name="Regular", one_off=False, items=[{"exercise": "90:90"}])[
-        "structuredContent"
-    ]
-    assert result["one_off"] is False
-
-
-def test_old_one_offs_leave_the_list_until_kept(call: Rpc, library: dict[str, Any]) -> None:
-    """A one-off over a week old is listed only with include_inactive, until kept."""
-    Workout.objects.filter(name="Legs").update(
-        one_off=True, created_at=timezone.now() - dt.timedelta(days=8)
-    )
-    assert call("list_workouts")["structuredContent"]["workouts"] == []
-    (old,) = call("list_workouts", include_inactive=True)["structuredContent"]["workouts"]
-    assert (old["one_off"], old["on_phone"]) == (True, False)
-    kept = call("update_workout", workout="Legs", one_off=False)["structuredContent"]
-    assert kept["on_phone"] is True
-    assert names(call("list_workouts")["structuredContent"]["workouts"]) == ["Legs"]
+    assert result["made_by"] == "claude"
 
 
 @pytest.mark.parametrize(

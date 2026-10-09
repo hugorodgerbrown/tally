@@ -16,8 +16,6 @@
   let wakeLock = null;
   let audio = null;
   let tv = false;              // TV mode: full screen, sized for across the room
-  let keeping = null;          // id of a one-off being kept
-  let keepFailed = null;       // id of a one-off whose Keep needed a connection
 
   /* ---------- helpers ---------- */
 
@@ -146,42 +144,15 @@
     return `<div class="hctl"><nav class="modes" aria-label="Mode"><span aria-current="page">Activity</span>${manage}</nav>${account}</div>`;
   }
 
-  /* "today", "yesterday" or "3 Oct", for when a one-off was made. */
-  function madeWhen(iso) {
-    const d = new Date(iso);
-    const day = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
-    const ago = Math.round((day(new Date()) - day(d)) / 864e5);
-    if (ago <= 0) return "made today";
-    if (ago === 1) return "made yesterday";
-    return "made " + d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-  }
-
-  function workoutRow(w) {
-    const total = totalSeconds(buildTimeline(w));
-    const types = [...new Set(w.items.flatMap((i) => i.types))];
-    const meta = w.oneOff && w.createdAt ? madeWhen(w.createdAt) : `${w.items.length} exercises`;
-    const link = `<a href="#/w/${w.id}"><span class="wn">${esc(w.name)}</span>
-        <span class="wm"><b>${durationText(total)}</b> · ${meta}${w.rounds > 1 ? ` · ${w.rounds} rounds` : ""}</span>
-        <span class="wt">${types.map((t) => `<s data-css="background:${typeColour(t)}" title="${esc(typeName(t))}"></s>`).join("")}</span></a>`;
-    if (!w.oneOff) return `<li>${link}</li>`;
-    const label = keepFailed === w.id ? "Needs a connection" : keeping === w.id ? "Keeping…" : "Keep";
-    return `<li class="once">${link}<button class="keep" type="button" data-act="keep" data-id="${esc(w.id)}" title="Save this workout so it stays on the list"${keeping === w.id ? " disabled" : ""}>${label}</button></li>`;
-  }
-
-  /* The server drops one-offs after a week, but offline the phone shows its
-   * stored copy, so it applies the same cutoff itself. */
-  function onPhone(w) {
-    if (!w.oneOff || !w.createdAt) return true;
-    const days = (library && library.oneOffDays) || 7;
-    return Date.now() - new Date(w.createdAt).getTime() < days * 864e5;
-  }
-
   function homeScreen() {
-    const ws = library ? library.workouts.filter(onPhone) : [];
-    const saved = ws.filter((w) => !w.oneOff);
-    const once = ws.filter((w) => w.oneOff).sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
-    const list = saved.map(workoutRow).join("")
-      + (once.length ? `<li class="wsec">One-offs<span>last ${(library && library.oneOffDays) || 7} days</span></li>${once.map(workoutRow).join("")}` : "");
+    const ws = library ? library.workouts : [];
+    const list = ws.map((w) => {
+      const total = totalSeconds(buildTimeline(w));
+      const types = [...new Set(w.items.flatMap((i) => i.types))];
+      return `<li><a href="#/w/${w.id}"><span class="wn">${esc(w.name)}</span>
+        <span class="wm"><b>${durationText(total)}</b> · ${w.items.length} exercises${w.rounds > 1 ? ` · ${w.rounds} rounds` : ""}</span>
+        <span class="wt">${types.map((t) => `<s data-css="background:${typeColour(t)}" title="${esc(typeName(t))}"></s>`).join("")}</span></a></li>`;
+    }).join("");
     const empty = library
       ? `<p class="empty">No workouts yet. Build one in <a href="${esc(url.newWorkoutUrl)}">Manage</a>.</p>`
       : `<p class="empty">Workouts appear here after the first sync. Connect to the internet and reopen the app.</p>`;
@@ -390,7 +361,6 @@
     const b = e.target.closest("[data-act]");
     const act = b && b.dataset.act;
     if (act === "tv") return setTv(!tv);
-    if (act === "keep") return keep(b.dataset.id);
     if (!run) return;
     const t = run.timer;
     if (act === "start") return start();
@@ -412,21 +382,6 @@
     checkpoint();
     render();
   });
-
-  async function keep(id) {
-    if (keeping) return;
-    keeping = id;
-    keepFailed = null;
-    render();
-    try {
-      await window.Store.keepWorkout(id);
-    } catch (e) {
-      keepFailed = id;
-    }
-    keeping = null;
-    if (keepFailed) render();
-    else await sync();
-  }
 
   /* Keys, for a laptop casting to a TV: Space pauses, the arrows go back
    * and skip, F toggles TV mode. */

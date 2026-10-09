@@ -1,11 +1,9 @@
 """Tests for apps.library.models: names, querysets and the per-owner rules."""
 
-from datetime import timedelta
 from typing import Any
 
 import pytest
 from django.db import IntegrityError
-from django.utils import timezone
 
 from apps.library.models import Exercise, ExerciseType, MuscleGroup, Workout, WorkoutItem
 from tests.factories import (
@@ -93,30 +91,7 @@ def test_shared_muscle_names_are_unique() -> None:
         MuscleGroupFactory.create(name="Core")
 
 
-@pytest.mark.parametrize(
-    ("fields", "days_ago", "listed"),
-    [
-        ({}, 30, True),
-        ({"one_off": True}, 0, True),
-        ({"one_off": True}, 6, True),
-        ({"one_off": True}, 8, False),
-        ({"is_active": False}, 0, False),
-        ({"one_off": True, "is_active": False}, 0, False),
-    ],
-)
-def test_on_phone(fields: dict[str, Any], days_ago: int, listed: bool) -> None:
-    """Saved workouts stay on the phone; one-offs for a week; hidden ones never."""
-    workout = WorkoutFactory.create(**fields)
-    Workout.objects.filter(pk=workout.pk).update(
-        created_at=timezone.now() - timedelta(days=days_ago)
-    )
-    workout.refresh_from_db()
-    assert workout.on_phone is listed
-    assert Workout.objects.on_phone().filter(pk=workout.pk).exists() is listed
-
-
 def test_new_rows_are_made_in_manage() -> None:
-    """Exercises and workouts default to Manage as their source, and saved."""
-    workout = WorkoutFactory.create()
-    assert (workout.source, workout.one_off) == ("manage", False)
+    """Exercises and workouts default to Manage as their source."""
+    assert WorkoutFactory.create().source == "manage"
     assert ExerciseFactory.create().source == "manage"

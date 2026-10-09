@@ -8,19 +8,13 @@ lists. Exercises and workouts always belong to one account.
 
 from __future__ import annotations
 
-from datetime import timedelta
-
 from django.conf import settings
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Q
-from django.utils import timezone
 
 from apps.core.models import BaseModel
-
-# How long a one-off workout stays on the phone after it is made.
-ONE_OFF_DAYS = 7
 
 
 class ExerciseTypeQuerySet(models.QuerySet["ExerciseType"]):
@@ -204,14 +198,6 @@ class WorkoutQuerySet(models.QuerySet["Workout"]):
         """Return the workouts shown on the phone."""
         return self.filter(is_active=True)
 
-    def on_phone(self) -> WorkoutQuerySet:
-        """Return the active workouts the phone lists.
-
-        That is every saved one, and one-offs made in the last ``ONE_OFF_DAYS`` days.
-        """
-        cutoff = timezone.now() - timedelta(days=ONE_OFF_DAYS)
-        return self.active().filter(Q(one_off=False) | Q(created_at__gte=cutoff))
-
 
 class Workout(BaseModel):
     """An ordered list of exercises with rests and rounds, played by the phone."""
@@ -233,11 +219,6 @@ class Workout(BaseModel):
     is_active = models.BooleanField(
         default=True, help_text="Inactive workouts are hidden from the app."
     )
-    one_off = models.BooleanField(
-        default=False,
-        help_text=f"Made for one go. Listed on the phone for {ONE_OFF_DAYS} days, then "
-        "only in Manage until kept.",
-    )
     source = models.CharField(
         max_length=10, choices=Source.choices, default=Source.MANAGE, blank=True
     )
@@ -252,13 +233,6 @@ class Workout(BaseModel):
     def to_string(self) -> str:
         """Return the workout's name."""
         return self.name
-
-    @property
-    def on_phone(self) -> bool:
-        """Return whether the phone lists this workout (see ``WorkoutQuerySet.on_phone``)."""
-        if not self.is_active:
-            return False
-        return not self.one_off or self.created_at >= timezone.now() - timedelta(days=ONE_OFF_DAYS)
 
 
 class WorkoutItemQuerySet(models.QuerySet["WorkoutItem"]):

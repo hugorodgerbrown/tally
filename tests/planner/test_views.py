@@ -1,13 +1,11 @@
 """Tests for apps.planner.views: the workout list and builder, and the exercise library."""
 
 import json
-from datetime import timedelta
 from typing import Any
 
 import pytest
 from django.test import Client
 from django.urls import reverse
-from django.utils import timezone
 
 from apps.library import timeline
 from apps.library.models import Exercise, MuscleGroup, Workout
@@ -93,7 +91,6 @@ def test_pages_need_sign_in(client: Client, name: str) -> None:
         "planner:workout_delete",
         "planner:workout_duplicate",
         "planner:workout_toggle",
-        "planner:workout_keep",
     ],
 )
 def test_workout_pages_need_sign_in(client: Client, name: str) -> None:
@@ -114,7 +111,6 @@ def test_workout_pages_need_sign_in(client: Client, name: str) -> None:
         ("planner:workout_delete", "post"),
         ("planner:workout_duplicate", "post"),
         ("planner:workout_toggle", "post"),
-        ("planner:workout_keep", "post"),
     ],
 )
 def test_another_accounts_workout_is_not_found(signed_in: Client, name: str, method: str) -> None:
@@ -188,7 +184,7 @@ def test_create_workout(signed_in: Client, user: Any, squat: Exercise, swing: Ex
     assert response.status_code == 302
     assert response["Location"] == reverse("planner:workouts")
     workout = Workout.objects.get(name="Legs")
-    assert (workout.owner, workout.source, workout.one_off) == (user, "manage", False)
+    assert (workout.owner, workout.source) == (user, "manage")
     assert [(i.exercise, i.duration_seconds) for i in workout.items.all()] == [
         (swing, 30),
         (squat, 40),
@@ -318,9 +314,7 @@ def test_toggle_hides_and_shows_a_workout(signed_in: Client, user: Any) -> None:
     assert workout.is_active is True
 
 
-@pytest.mark.parametrize(
-    "name", ["planner:workout_toggle", "planner:workout_duplicate", "planner:workout_keep"]
-)
+@pytest.mark.parametrize("name", ["planner:workout_toggle", "planner:workout_duplicate"])
 def test_toggle_and_duplicate_need_post(signed_in: Client, user: Any, name: str) -> None:
     """A GET can't change or copy a workout."""
     workout = WorkoutFactory.create(owner=user)
@@ -531,65 +525,15 @@ def test_invalid_exercise_form_shows_errors(signed_in: Client) -> None:
     assert "Pick at least one type." in response.content.decode()
 
 
-# ---------- saved and one-off workouts ----------
+# ---------- who made it ----------
 
 
-@pytest.fixture
-def mix(user: Any, squat: Exercise) -> None:
-    """A saved workout, a one-off made by Claude a fortnight ago, and a hidden one."""
-    made: dict[str, dict[str, Any]] = {
-        "Regular": {},
-        "Quick hips": {"one_off": True, "source": "claude"},
-        "Old": {"is_active": False},
-    }
-    for name, fields in made.items():
-        WorkoutItemFactory.create(
-            workout__owner=user,
-            workout__name=name,
-            exercise=squat,
-            **{f"workout__{k}": v for k, v in fields.items()},
-        )
-    Workout.objects.filter(name="Quick hips").update(created_at=timezone.now() - timedelta(days=14))
-    # Another account's workouts are in no tab and no count.
-    WorkoutFactory.create(one_off=True)
-
-
-@pytest.mark.parametrize(
-    ("show", "names"),
-    [
-        ("", ["Regular"]),
-        ("saved", ["Regular"]),
-        ("one-offs", ["Quick hips"]),
-        ("hidden", ["Old"]),
-        ("nonsense", ["Regular"]),
-    ],
-)
-def test_workout_tabs(signed_in: Client, mix: None, show: str, names: list[str]) -> None:
-    """Each tab lists its own workouts, and every tab shows its count."""
-    response = signed_in.get(reverse("planner:workouts"), {"show": show} if show else {})
-    assert [r["workout"].name for r in response.context["rows"]] == names
-    assert [(t["label"], t["count"]) for t in response.context["tabs"]] == [
-        ("Saved", 1),
-        ("One-offs", 1),
-        ("Hidden", 1),
-    ]
-
-
-def test_one_off_row_shows_maker_and_keep(signed_in: Client, mix: None) -> None:
-    """An old one-off says it's off the phone, who made it, and offers Keep."""
-    html = signed_in.get(reverse("planner:workouts"), {"show": "one-offs"}).content.decode()
-    assert "Off the phone" in html
-    assert 'class="tag-src"' in html
-    assert ">Keep</button>" in html
-
-
-def test_keep_in_manage(signed_in: Client, mix: None) -> None:
-    """Keep makes a one-off a saved workout and returns to the one-offs tab."""
-    workout = Workout.objects.get(name="Quick hips")
-    response = signed_in.post(reverse("planner:workout_keep", args=[workout.uuid]))
-    assert response["Location"] == reverse("planner:workouts") + "?show=one-offs"
-    workout.refresh_from_db()
-    assert workout.one_off is False
+def test_claude_tag_on_workout_list(signed_in: Client, user: Any, squat: Exercise) -> None:
+    """A workout Claude made carries the Claude tag; one made in Manage doesn't."""
+    WorkoutItemFactory.create(workout__owner=user, workout__source="claude", exercise=squat)
+    WorkoutItemFactory.create(workout__owner=user, exercise=squat)
+    html = signed_in.get(reverse("planner:workouts")).content.decode()
+    assert html.count('class="tag-src"') == 1
 
 
 def test_claude_tag_on_exercise_list(signed_in: Client, user: Any) -> None:
@@ -625,7 +569,7 @@ def test_workout_list_query_count(
 ) -> None:
     """The workout list costs the same number of queries for one workout or ten."""
     _workouts_with_items(user, workouts, [squat, swing])
-    with django_assert_num_queries(6):  # + the tab counts
+    with django_assert_num_queries(5):
         signed_in.get(reverse("planner:workouts"))
 
 

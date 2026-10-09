@@ -75,11 +75,10 @@ class WorkoutAdmin(admin.ModelAdmin):
         "rounds",
         "rest_seconds",
         "is_active",
-        "one_off",
         "source",
         "created_at",
     ]
-    list_filter = ["is_active", "one_off", "source"]
+    list_filter = ["is_active", "source"]
     list_select_related = ["owner"]
     search_fields = ["name", "owner__email"]
     inlines = [WorkoutItemInline]
@@ -92,7 +91,6 @@ class WorkoutAdmin(admin.ModelAdmin):
         "rounds",
         "round_rest_seconds",
         "is_active",
-        "one_off",
         "source",
     ]
 
