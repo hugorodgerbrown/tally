@@ -1,5 +1,5 @@
 version = 1
-revision = 5
+revision = 3
 requires-python = "==3.14.*"
 
 [[package]]
@@ -583,8 +583,8 @@ wheels = [
 
 [[package]]
 name = "mcp-auth"
-version = "0.1.1"
-source = { git = "https://github.com/hugorodgerbrown/mcp-auth?tag=v0.1.1#8ff68d008d871c6f288af69d9c2b3b8dc0786060" }
+version = "0.1.2"
+source = { git = "https://github.com/hugorodgerbrown/mcp-auth?tag=v0.1.2#7af9cc6dd920c75e0ecebafa21da293906c0d9e5" }
 dependencies = [
     { name = "django" },
     { name = "django-oauth-toolkit" },
@@ -1110,7 +1110,7 @@ requires-dist = [
     { name = "dj-database-url", specifier = ">=3.1.2,<4" },
     { name = "django", specifier = ">=6.1.1,<6.2" },
     { name = "gunicorn", specifier = ">=26.2.0,<27" },
-    { name = "mcp-auth", git = "https://github.com/hugorodgerbrown/mcp-auth?tag=v0.1.1" },
+    { name = "mcp-auth", git = "https://github.com/hugorodgerbrown/mcp-auth?tag=v0.1.2" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.3.6,<4" },
     { name = "python-decouple", specifier = ">=3.8,<4" },
     { name = "webauthn", specifier = ">=3.0.0,<4" },
