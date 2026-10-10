@@ -11,6 +11,7 @@ from urllib.parse import urlsplit
 
 import dj_database_url
 from decouple import Csv, config
+from django.core.exceptions import ImproperlyConfigured
 from django.utils.csp import CSP
 from mcp_auth.conf import oauth2_settings
 
@@ -144,10 +145,16 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 
 # DATABASE_URL (Postgres in production) wins; otherwise a local SQLite file.
+# Render sets RENDER on every service, so a service there that was never
+# given DATABASE_URL stops here rather than writing to an empty SQLite file.
 if DATABASE_URL := config("DATABASE_URL", default=""):
     DATABASES = {
         "default": dj_database_url.parse(DATABASE_URL, conn_max_age=600, conn_health_checks=True)
     }
+elif config("RENDER", default=False, cast=bool):
+    raise ImproperlyConfigured(
+        "DATABASE_URL is not set. Copy it from the tally web service in Render."
+    )
 else:
     DATABASES = {
         "default": {
