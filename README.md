@@ -88,7 +88,8 @@ the app labels (`library`, `activity`) and tables are unchanged.
 2. In Render, New → Blueprint, pick this repository, and enter
    `DATABASE_URL` (the instance's internal URL with this project's role and
    database) for both services. `DJANGO_SECRET_KEY` is generated for the
-   web service; copy it to the cron job.
+   web service; copy it to the cron job. A service on Render without
+   `DATABASE_URL` stops with an error rather than use an empty SQLite file.
 3. Set the email relay on the web service: `EMAIL_HOST`, `EMAIL_PORT`,
    `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` and `DEFAULT_FROM_EMAIL`.
    Without them nobody can sign in.
