@@ -112,7 +112,9 @@ curl -s -X POST http://localhost:8000/mcp -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 ```
 
-To browse the tools in the MCP Inspector (`npx @modelcontextprotocol/inspector`,
-or its `.claude/launch.json` entry) against the server on 8010, mint the token
-with `--resource http://localhost:8010/mcp`, then connect over Streamable HTTP
-to `http://localhost:8010/mcp` with it as the Bearer token.
+To try the whole OAuth sign-in, run the MCP Inspector
+(`npx @modelcontextprotocol/inspector`, or its `.claude/launch.json` entry),
+add a server with transport `streamable-http` and URL
+`http://localhost:8010/mcp`, and connect. It registers itself, sends you to
+the sign-in and consent pages, and comes back connected; leave its OAuth
+settings empty.

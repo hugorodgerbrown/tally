@@ -40,6 +40,8 @@ static/css/      tokens.css (Tally's tokens and fonts), app.css (template
                  components), planner.css (scoped .planner), activity.css
                  (scoped #app)
 docs/            accounts, testing, pwa, security, performance, decisions/
+.claude/skills/  writing the Titan docs kept in Linear (research, user
+                 testing script, blog post), each with a length setting
 ```
 
 ## Commands
