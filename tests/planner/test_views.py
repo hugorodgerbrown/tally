@@ -678,19 +678,15 @@ def test_builder_query_count(
         signed_in.get(reverse("planner:workout_new"))
 
 
-def test_round_lines_puts_each_round_on_its_own_line_to_one_scale() -> None:
-    """Each line ends at its round break; widths are shares of the longest line."""
-    segs = [("ready", 5), ("work", 40), ("round", 55), ("work", 40), ("round", 55), ("work", 40)]
-    lines = round_lines(segs)
-    assert [line["segments"] for line in lines] == [
-        [("ready", 5), ("work", 40), ("round", 55)],
-        [("work", 40), ("round", 55)],
-        [("work", 40)],
+def test_round_lines_puts_each_round_on_its_own_line() -> None:
+    """One line per round, without the get-ready or the breaks between rounds."""
+    segs = [("ready", 5), ("work", 40), ("rest", 10), ("work", 30), ("round", 55)]
+    segs += [("work", 40), ("rest", 10), ("work", 30)]
+    assert round_lines(segs) == [
+        [("work", 40), ("rest", 10), ("work", 30)],
+        [("work", 40), ("rest", 10), ("work", 30)],
     ]
-    assert [line["width"] for line in lines] == ["100.0", "95.0", "40.0"]
-    assert round_lines([("ready", 5), ("work", 40)]) == [
-        {"segments": [("ready", 5), ("work", 40)], "width": "100.0"}
-    ]
+    assert round_lines([("ready", 5), ("work", 40)]) == [[("work", 40)]]
 
 
 def test_list_draws_a_strip_line_per_round(signed_in: Client, user: Any) -> None:

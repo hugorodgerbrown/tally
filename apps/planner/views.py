@@ -58,23 +58,20 @@ def _wants_json(request: HttpRequest) -> bool:
 # ---------- workouts ----------
 
 
-def round_lines(segments: list[tuple[str, int]]) -> list[dict[str, Any]]:
-    """Split a workout's steps into one line per round, each ending at its round break.
+def round_lines(segments: list[tuple[str, int]]) -> list[list[tuple[str, int]]]:
+    """Split a workout's steps into one line per round, for the list's strips.
 
-    Every line is drawn to the same scale: ``width`` is its share, as a CSS
-    percentage, of the longest line.
+    The get-ready and the breaks between rounds are left out: a new line
+    already says "next round", and dropping get-ready keeps every round
+    starting at the same edge, so the rounds line up.
     """
     lines: list[list[tuple[str, int]]] = [[]]
     for kind, seconds in segments:
-        lines[-1].append((kind, seconds))
         if kind == "round":
             lines.append([])
-    lines = [line for line in lines if line]
-    longest = max((sum(s for _, s in line) for line in lines), default=0) or 1
-    return [
-        {"segments": line, "width": f"{100 * sum(s for _, s in line) / longest:.1f}"}
-        for line in lines
-    ]
+        elif kind != "ready":
+            lines[-1].append((kind, seconds))
+    return [line for line in lines if line]
 
 
 @login_required

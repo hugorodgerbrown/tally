@@ -6,7 +6,7 @@
         <span class="dots dots--gap">{% for t in r.types %}<i data-css="background:{{ t.colour }}" title="{{ t.name }}"></i>{% endfor %}</span>
         {% if w.source == "claude" %}<span class="tag-src" title="Made by Claude through the connector">Claude</span>{% endif %}</div>
     </div>
-    <div class="strips" role="img" aria-label="Interval sequence{% if w.rounds > 1 %}, one line per round{% endif %}">{% for line in r.lines %}<div class="strip mini" data-css="width:{{ line.width }}%">{% for kind, seconds in line.segments %}<span class="{{ kind }}" data-css="flex:{{ seconds }}"></span>{% endfor %}</div>{% endfor %}</div>
+    <div class="strips" role="img" aria-label="Interval sequence{% if w.rounds > 1 %}, one line per round{% endif %}">{% for line in r.lines %}<div class="strip mini">{% for kind, seconds in line %}<span class="{{ kind }}" data-css="flex:{{ seconds }}"></span>{% endfor %}</div>{% endfor %}</div>
     <span class="num">{{ r.total|duration }}</span>
     <span class="num">{{ w.times_done|default:"–" }}</span>
     <span class="num">{% if w.last_done %}{{ w.last_done|date:"j M" }}{% else %}Never{% endif %}</span>
