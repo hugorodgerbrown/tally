@@ -34,6 +34,7 @@ from apps.library.models import (
     Source,
     Workout,
     WorkoutItem,
+    WorkoutStatus,
 )
 from apps.public.pages import page_as_markdown
 
@@ -206,9 +207,11 @@ WORKOUT_FIELDS: dict[str, Any] = {
         "maximum": MAX_SECONDS,
         "description": "Break between rounds.",
     },
-    "is_active": {
-        "type": "boolean",
-        "description": "Inactive workouts are hidden from the phone app.",
+    "status": {
+        "type": "string",
+        "enum": WorkoutStatus.values,
+        "description": "pinned shows on the phone's home screen; active under Show all; "
+        "archived not on the phone at all.",
     },
     "items": ITEMS,
 }
@@ -296,7 +299,7 @@ def workout_summary(workout: Workout) -> Result:
         "id": str(workout.uuid),
         "name": workout.name,
         "description": workout.description,
-        "is_active": workout.is_active,
+        "status": workout.status,
         "made_by": workout.source or None,
         "created_at": workout.created_at.isoformat(),
         "rounds": workout.rounds,
@@ -456,19 +459,22 @@ def get_exercise(user: AbstractBaseUser, args: Args) -> Result:
     "Workouts with their settings, total length in seconds (including get-ready, rests, "
     "side switches and round breaks), how often each was done, and when it was last done.",
     {
-        "include_inactive": {
-            "type": "boolean",
-            "description": "Also list workouts hidden from the phone app. Default false.",
+        "status": {
+            "type": "array",
+            "items": {"type": "string", "enum": WorkoutStatus.values},
+            "description": "Which statuses to list. Default pinned and active, the ones "
+            "on the phone; add archived to see retired workouts.",
         }
     },
     [],
     read_only=True,
 )
 def list_workouts(user: AbstractBaseUser, args: Args) -> Result:
-    """Return the user's workouts, active ones only unless asked."""
-    qs = _workouts(user)
-    if not args.get("include_inactive"):
-        qs = qs.filter(is_active=True)
+    """Return the user's workouts with the given statuses, pinned and active unless asked."""
+    statuses = args.get("status") or [WorkoutStatus.PINNED, WorkoutStatus.ACTIVE]
+    if not isinstance(statuses, list) or not all(s in WorkoutStatus.values for s in statuses):
+        raise ToolError(f"status must be a list of: {', '.join(WorkoutStatus.values)}.")
+    qs = _workouts(user).filter(status__in=statuses)
     return {"workouts": [workout_summary(w) for w in qs]}
 
 
@@ -705,8 +711,10 @@ def _save_workout(workout: Workout, user: AbstractBaseUser, args: Args) -> Resul
         if isinstance(rounds, bool) or not isinstance(rounds, int) or not 1 <= rounds <= 20:
             raise ToolError("rounds must be a whole number from 1 to 20.")
         workout.rounds = rounds
-    if "is_active" in args:
-        workout.is_active = bool(args["is_active"])
+    if "status" in args:
+        if args["status"] not in WorkoutStatus.values:
+            raise ToolError(f"status must be one of: {', '.join(WorkoutStatus.values)}.")
+        workout.status = args["status"]
     items = _items(args["items"], user) if "items" in args else None
     _full_clean(workout)
     with transaction.atomic():
@@ -723,7 +731,9 @@ def _save_workout(workout: Workout, user: AbstractBaseUser, args: Args) -> Resul
 @tool(
     "Create a workout",
     "Build a workout from library exercises. Defaults: 15 s rest between exercises, "
-    "1 round, 120 s between rounds, active. One-sided exercises run twice, once per side.",
+    "1 round, 120 s between rounds, status active (on the phone under Show all). One-sided "
+    "exercises run twice, once per side. A workout made here that is still active, has "
+    "never been done and is unchanged for 7 days is archived; pin it to keep it.",
     {"name": {"type": "string"}, **WORKOUT_FIELDS},
     ["name", "items"],
     read_only=False,
@@ -737,7 +747,8 @@ def create_workout(user: AbstractBaseUser, args: Args) -> Result:
 @tool(
     "Update a workout",
     "Change a workout. Only the fields given change; items, when given, replace the whole "
-    "exercise list, so send every exercise in order. Set is_active false to hide it.",
+    "exercise list, so send every exercise in order. Set status to pinned to put it on "
+    "the phone's home screen, or archived to retire it.",
     {"workout": WORKOUT_REF, "name": {"type": "string"}, **WORKOUT_FIELDS},
     ["workout"],
     read_only=False,

@@ -44,7 +44,8 @@ services:
       - key: DEFAULT_FROM_EMAIL
         sync: false
 
-  # Deletes expired idempotency records (24 hours) and sign-in requests (15 minutes).
+  # Deletes expired idempotency records (24 hours) and sign-in requests (15 minutes),
+  # and archives Claude's workouts left unused for 7 days.
   - type: cron
     name: tally-purge
     runtime: python
@@ -54,7 +55,8 @@ services:
     buildCommand: pip install uv==0.12.22 && uv sync --locked --no-dev
     startCommand: >-
       uv run --no-sync python manage.py purge_idempotency_records --commit &&
-      uv run --no-sync python manage.py purge_sign_in_requests --commit
+      uv run --no-sync python manage.py purge_sign_in_requests --commit &&
+      uv run --no-sync python manage.py archive_unused_workouts --commit
     envVars:
       - key: DATABASE_URL
         sync: false

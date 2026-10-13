@@ -1,5 +1,4 @@
 {% extends "planner/base.html" %}
-{% load planner %}
 {% block content %}
 <div class="phead">
   <h1>Workouts</h1>
@@ -7,32 +6,25 @@
   <span class="spacer"></span>
   <a class="btn btn-primary" href="{% url 'planner:workout_new' %}">New workout</a>
 </div>
-<div class="panel list wl">
-  {% if rows %}
-  <div class="row head"><span class="lbl">Workout</span><span class="lbl">Make-up</span><span class="lbl ta-r">Time</span><span class="lbl ta-r">Done</span><span class="lbl ta-r">Last</span><span></span></div>
-  {% for r in rows %}{% with w=r.workout %}
-  <div class="row{% if not w.is_active %} off{% endif %}">
-    <div>
-      <a class="nm" href="{% url 'planner:workout_edit' w.uuid %}">{{ w.name }}</a>
-      <div class="sub">{{ r.items|length }} exercise{{ r.items|length|pluralize }}{% if w.rounds > 1 %} · {{ w.rounds }} rounds{% endif %}
-        <span class="dots dots--gap">{% for t in r.types %}<i data-css="background:{{ t.colour }}" title="{{ t.name }}"></i>{% endfor %}</span>
-        {% if w.source == "claude" %}<span class="tag-src" title="Made by Claude through the connector">Claude</span>{% endif %}
-        {% if not w.is_active %}<span class="tag-off">Hidden on phone</span>{% endif %}</div>
-    </div>
-    {% include "planner/_strip.html" with segments=r.segments size="mini" label="Interval sequence" %}
-    <span class="num">{{ r.total|duration }}</span>
-    <span class="num">{{ w.times_done|default:"–" }}</span>
-    <span class="num">{% if w.last_done %}{{ w.last_done|date:"j M" }}{% else %}Never{% endif %}</span>
-    <div class="actions">
-      <a class="btn btn-quiet btn-sm" href="{% url 'planner:workout_edit' w.uuid %}">Edit</a>
-      <form method="post" action="{% url 'planner:workout_duplicate' w.uuid %}">{% csrf_token %}<button class="btn btn-quiet btn-sm" type="submit">Copy</button></form>
-      <form method="post" action="{% url 'planner:workout_toggle' w.uuid %}">{% csrf_token %}<button class="btn btn-quiet btn-sm" type="submit" title="{% if w.is_active %}Hide from the phone{% else %}Show on the phone{% endif %}">{% if w.is_active %}Hide{% else %}Show{% endif %}</button></form>
-    </div>
+{% if rows %}
+{% for g in groups %}{% if g.rows %}
+{% if g.status == "archived" %}
+<details class="wgroup">
+  <summary><h2>{{ g.title }}</h2><span class="meta">{{ g.rows|length }}</span></summary>
+{% else %}
+<section class="wgroup" aria-labelledby="wg-{{ g.status }}">
+  <div class="wghead"><h2 id="wg-{{ g.status }}">{{ g.title }}</h2><span class="meta">{% if g.status == "pinned" %}On the phone's home screen{% else %}Under Show all on the phone, newest first{% endif %}</span></div>
+{% endif %}
+  <div class="panel list wl">
+    <div class="row head"><span class="lbl">Workout</span><span class="lbl">Make-up</span><span class="lbl ta-r">Time</span><span class="lbl ta-r">Done</span><span class="lbl ta-r">Last</span><span></span></div>
+    {% for r in g.rows %}{% include "planner/_workout_row.html" %}{% endfor %}
   </div>
-  {% endwith %}{% endfor %}
-  {% else %}
+{% if g.status == "archived" %}</details>{% else %}</section>{% endif %}
+{% endif %}{% endfor %}
+{% else %}
+<div class="panel list wl">
   <div class="empty"><b>No workouts yet</b><span>Build one from the exercise library.</span><a class="btn btn-primary" href="{% url 'planner:workout_new' %}">New workout</a></div>
-  {% endif %}
 </div>
-<div class="legend"><span><i class="ph-ready"></i>Get ready</span><span><i class="ph-work"></i>Work</span><span><i class="ph-switch"></i>Switch sides</span><span><i class="ph-rest"></i>Rest</span><span><i class="ph-round"></i>Round break</span></div>
+{% endif %}
+<div class="legend"><span><i class="ph-work"></i>Work</span><span><i class="ph-switch"></i>Switch sides</span><span><i class="ph-rest"></i>Rest</span><span>One line per round</span></div>
 {% endblock %}

@@ -187,3 +187,30 @@ describe("durationText", () => {
     it(`${seconds} s reads as ${text}`, () => assert.equal(E.durationText(seconds), text));
   }
 });
+
+describe("groupWorkouts", () => {
+  const w = (name, status, createdAt) => ({ name, status, createdAt });
+
+  it("puts pinned workouts first by name and the rest newest first", () => {
+    const g = E.groupWorkouts([
+      w("Zed", "pinned", "2026-10-01"),
+      w("Older", "active", "2026-10-02"),
+      w("Abs", "pinned", "2026-10-05"),
+      w("Newer", "active", "2026-10-09"),
+    ]);
+    assert.deepEqual(plain(g.pinned.map((x) => x.name)), ["Abs", "Zed"]);
+    assert.deepEqual(plain(g.rest.map((x) => x.name)), ["Newer", "Older"]);
+  });
+
+  it("leaves everything in the rest when nothing is pinned", () => {
+    const g = E.groupWorkouts([w("A", "active", "2026-10-01"), w("B", "active", "2026-10-02")]);
+    assert.deepEqual(plain(g.pinned), []);
+    assert.deepEqual(plain(g.rest.map((x) => x.name)), ["B", "A"]);
+  });
+
+  it("shows a payload cached before statuses existed flat, in its own order", () => {
+    const g = E.groupWorkouts([{ name: "B" }, { name: "A" }]);
+    assert.deepEqual(plain(g.pinned.map((x) => x.name)), ["B", "A"]);
+    assert.deepEqual(plain(g.rest), []);
+  });
+});

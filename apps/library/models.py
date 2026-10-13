@@ -8,6 +8,8 @@ lists. Exercises and workouts always belong to one account.
 
 from __future__ import annotations
 
+from datetime import datetime
+
 from django.conf import settings
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -117,6 +119,14 @@ class Source(models.TextChoices):
     SEED = "seed", "Starter library"
 
 
+class WorkoutStatus(models.TextChoices):
+    """Where a workout shows: pinned to the phone's home screen, behind "Show all", or archived."""
+
+    PINNED = "pinned", "Pinned"
+    ACTIVE = "active", "Active"
+    ARCHIVED = "archived", "Archived"
+
+
 class Movement(models.TextChoices):
     """Whether the body moves through reps (dynamic) or holds a position (static).
 
@@ -194,9 +204,31 @@ class WorkoutQuerySet(models.QuerySet["Workout"]):
         """Return ``user``'s workouts."""
         return self.filter(owner=user)
 
-    def active(self) -> WorkoutQuerySet:
-        """Return the workouts shown on the phone."""
-        return self.filter(is_active=True)
+    def on_phone(self) -> WorkoutQuerySet:
+        """Return the workouts sent to the phone: pinned and active."""
+        return self.exclude(status=WorkoutStatus.ARCHIVED)
+
+    def pinned(self) -> WorkoutQuerySet:
+        """Return the workouts pinned to the phone's home screen."""
+        return self.filter(status=WorkoutStatus.PINNED)
+
+    def archived(self) -> WorkoutQuerySet:
+        """Return the archived workouts, which the phone never sees."""
+        return self.filter(status=WorkoutStatus.ARCHIVED)
+
+    def unused_from_claude(self, changed_before: datetime) -> WorkoutQuerySet:
+        """Return Claude's active workouts never done and unchanged since ``changed_before``.
+
+        These are the ones ``archive_unused_workouts`` retires. Pinned
+        workouts, workouts done at least once and ones made in Manage are
+        never included.
+        """
+        return self.filter(
+            source=Source.CLAUDE,
+            status=WorkoutStatus.ACTIVE,
+            updated_at__lt=changed_before,
+            sessions__isnull=True,
+        )
 
 
 class Workout(BaseModel):
@@ -216,8 +248,12 @@ class Workout(BaseModel):
     round_rest_seconds = models.PositiveSmallIntegerField(
         default=120, help_text="Break between rounds."
     )
-    is_active = models.BooleanField(
-        default=True, help_text="Inactive workouts are hidden from the app."
+    status = models.CharField(
+        max_length=10,
+        choices=WorkoutStatus.choices,
+        default=WorkoutStatus.ACTIVE,
+        help_text="Pinned shows on the phone's home screen, Active behind "
+        '"Show all", Archived not at all.',
     )
     source = models.CharField(
         max_length=10, choices=Source.choices, default=Source.MANAGE, blank=True

@@ -393,7 +393,7 @@ def test_create_workout(call: Rpc, user: Any, library: dict[str, Any]) -> None:
         ("Split squat", 20),
     ]
     assert result["rounds"] == 2
-    assert result["is_active"] is True
+    assert result["status"] == "active"
     assert Workout.objects.get(uuid=uuid.UUID(result["id"])).owner == user
     assert result["made_by"] == "claude"
 
@@ -421,22 +421,46 @@ def test_create_workout_errors(
     assert Workout.objects.count() == 1
 
 
-def test_update_workout_replaces_items_and_can_deactivate(
-    call: Rpc, library: dict[str, Any]
-) -> None:
-    """Items replace the whole list; an inactive workout drops out of the default list."""
+def test_update_workout_replaces_items_and_can_archive(call: Rpc, library: dict[str, Any]) -> None:
+    """Items replace the whole list; an archived workout drops out of the default list."""
     result = call(
         "update_workout",
         workout="Legs",
-        is_active=False,
+        status="archived",
         items=[{"exercise": "90:90", "duration_seconds": 90}],
     )["structuredContent"]
-    assert result["is_active"] is False
+    assert result["status"] == "archived"
     assert [(i["exercise"], i["duration_seconds"]) for i in result["items"]] == [("90:90", 90)]
     assert result["rest_seconds"] == 10
     assert call("list_workouts")["structuredContent"]["workouts"] == []
-    listed = call("list_workouts", include_inactive=True)["structuredContent"]["workouts"]
+    listed = call("list_workouts", status=["archived"])["structuredContent"]["workouts"]
     assert names(listed) == ["Legs"]
+
+
+def test_list_workouts_by_status(call: Rpc, library: dict[str, Any]) -> None:
+    """Pinned and active are listed by default; a status list narrows or widens it."""
+    call("update_workout", workout="Legs", status="pinned")
+    assert names(call("list_workouts")["structuredContent"]["workouts"]) == ["Legs"]
+    pinned = call("list_workouts", status=["pinned"])["structuredContent"]["workouts"]
+    assert [w["status"] for w in pinned] == ["pinned"]
+    assert call("list_workouts", status=["active"])["structuredContent"]["workouts"] == []
+
+
+@pytest.mark.parametrize(
+    ("tool", "args"),
+    [
+        ("update_workout", {"workout": "Legs", "status": "hidden"}),
+        ("list_workouts", {"status": ["hidden"]}),
+        ("list_workouts", {"status": "pinned"}),
+    ],
+)
+def test_an_unknown_status_is_refused(
+    call: Rpc, library: dict[str, Any], tool: str, args: dict[str, Any]
+) -> None:
+    """Only pinned, active and archived are statuses."""
+    result = call(tool, **args)
+    assert result["isError"] is True
+    assert "status must be" in result["content"][0]["text"]
 
 
 def test_update_workout_settings(call: Rpc, library: dict[str, Any]) -> None:
@@ -471,7 +495,7 @@ def theirs(other: Any) -> dict[str, Any]:
 def test_another_accounts_library_is_invisible(user: Any, theirs: dict[str, Any]) -> None:
     """Lists come back empty and lookups by name or id find nothing."""
     assert list_exercises(user, {}) == {"exercises": []}
-    assert list_workouts(user, {"include_inactive": True}) == {"workouts": []}
+    assert list_workouts(user, {"status": ["pinned", "active", "archived"]}) == {"workouts": []}
     assert list_sessions(user, {}) == {"sessions": [], "truncated": False}
     for ref in ("Split squat", str(theirs["squat"].uuid)):
         with pytest.raises(ToolError, match="No exercise matches"):
@@ -500,11 +524,11 @@ def test_another_accounts_library_cannot_be_changed(user: Any, theirs: dict[str,
     with pytest.raises(ToolError, match="No exercise matches"):
         update_exercise(user, {"exercise": str(theirs["squat"].uuid), "name": "Mine now"})
     with pytest.raises(ToolError, match="No workout matches"):
-        update_workout(user, {"workout": str(theirs["legs"].uuid), "is_active": False})
+        update_workout(user, {"workout": str(theirs["legs"].uuid), "status": "archived"})
     theirs["squat"].refresh_from_db()
     theirs["legs"].refresh_from_db()
     assert theirs["squat"].name == "Split squat"
-    assert theirs["legs"].is_active is True
+    assert theirs["legs"].status == "active"
 
 
 def test_a_workout_cannot_use_another_accounts_exercise(

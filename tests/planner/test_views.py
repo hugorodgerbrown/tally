@@ -1,14 +1,17 @@
 """Tests for apps.planner.views: the workout list and builder, and the exercise library."""
 
 import json
+from datetime import timedelta
 from typing import Any
 
 import pytest
 from django.test import Client
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.library import timeline
-from apps.library.models import Exercise, MuscleGroup, Workout
+from apps.library.models import Exercise, MuscleGroup, Source, Workout, WorkoutStatus
+from apps.planner.views import round_lines
 from tests.factories import (
     ActivitySessionFactory,
     ExerciseFactory,
@@ -90,7 +93,7 @@ def test_pages_need_sign_in(client: Client, name: str) -> None:
         "planner:workout_edit",
         "planner:workout_delete",
         "planner:workout_duplicate",
-        "planner:workout_toggle",
+        "planner:workout_status",
     ],
 )
 def test_workout_pages_need_sign_in(client: Client, name: str) -> None:
@@ -99,7 +102,7 @@ def test_workout_pages_need_sign_in(client: Client, name: str) -> None:
     response = client.post(reverse(name, args=[workout.uuid]))
     assert response.status_code == 302
     assert response["Location"].startswith(reverse("accounts:sign_in"))
-    assert Workout.objects.filter(pk=workout.pk, is_active=True).exists()
+    assert Workout.objects.filter(pk=workout.pk, status=WorkoutStatus.ACTIVE).exists()
 
 
 @pytest.mark.parametrize(
@@ -110,7 +113,7 @@ def test_workout_pages_need_sign_in(client: Client, name: str) -> None:
         ("planner:workout_delete", "get"),
         ("planner:workout_delete", "post"),
         ("planner:workout_duplicate", "post"),
-        ("planner:workout_toggle", "post"),
+        ("planner:workout_status", "post"),
     ],
 )
 def test_another_accounts_workout_is_not_found(signed_in: Client, name: str, method: str) -> None:
@@ -121,7 +124,7 @@ def test_another_accounts_workout_is_not_found(signed_in: Client, name: str, met
     response = getattr(signed_in, method)(url)
     assert response.status_code == 404
     theirs.refresh_from_db()
-    assert (theirs.name, theirs.is_active, theirs.items.count()) == ("Theirs", True, 1)
+    assert (theirs.name, theirs.status, theirs.items.count()) == ("Theirs", "active", 1)
     assert Workout.objects.count() == 1
 
 
@@ -302,20 +305,96 @@ def test_duplicate_workout(signed_in: Client, user: Any, squat: Exercise) -> Non
     assert [(i.exercise, i.duration_seconds) for i in copy.items.all()] == [(squat, 40)]
 
 
-def test_toggle_hides_and_shows_a_workout(signed_in: Client, user: Any) -> None:
-    """Each toggle flips whether the phone shows the workout."""
+@pytest.mark.parametrize(
+    ("status", "message"),
+    [
+        ("pinned", "Legs is pinned to the phone."),
+        ("archived", "Legs is archived."),
+        ("active", "Legs is under Show all on the phone."),
+    ],
+)
+def test_status_pins_archives_and_restores(
+    signed_in: Client, user: Any, status: str, message: str
+) -> None:
+    """Pin, Archive, Unpin and Restore each post a status and say what happened."""
+    workout = WorkoutFactory.create(owner=user, name="Legs", status=WorkoutStatus.PINNED)
+    if status == "pinned":
+        workout.status = WorkoutStatus.ACTIVE
+        workout.save()
+    url = reverse("planner:workout_status", args=[workout.uuid])
+    response = signed_in.post(url, {"status": status}, follow=True)
+    workout.refresh_from_db()
+    assert workout.status == status
+    assert message in response.content.decode()
+
+
+def test_restore_starts_the_seven_days_again(signed_in: Client, user: Any) -> None:
+    """Restoring bumps updated_at, so archive_unused_workouts waits another week."""
+    workout = WorkoutFactory.create(owner=user, source=Source.CLAUDE, status=WorkoutStatus.ARCHIVED)
+    old = timezone.now() - timedelta(days=30)
+    Workout.objects.filter(pk=workout.pk).update(updated_at=old)
+    signed_in.post(reverse("planner:workout_status", args=[workout.uuid]), {"status": "active"})
+    workout.refresh_from_db()
+    assert workout.updated_at > old + timedelta(days=29)
+
+
+def test_status_rejects_an_unknown_value(signed_in: Client, user: Any) -> None:
+    """Only the three statuses are accepted."""
     workout = WorkoutFactory.create(owner=user)
-    url = reverse("planner:workout_toggle", args=[workout.uuid])
-    signed_in.post(url)
+    url = reverse("planner:workout_status", args=[workout.uuid])
+    assert signed_in.post(url, {"status": "deleted"}).status_code == 400
     workout.refresh_from_db()
-    assert workout.is_active is False
-    signed_in.post(url)
-    workout.refresh_from_db()
-    assert workout.is_active is True
+    assert workout.status == WorkoutStatus.ACTIVE
 
 
-@pytest.mark.parametrize("name", ["planner:workout_toggle", "planner:workout_duplicate"])
-def test_toggle_and_duplicate_need_post(signed_in: Client, user: Any, name: str) -> None:
+def test_list_groups_pinned_then_newest_then_archived(signed_in: Client, user: Any) -> None:
+    """Pinned by name, the rest newest first, archived collapsed with its count."""
+    for name, status in [
+        ("Zed", WorkoutStatus.PINNED),
+        ("Abs", WorkoutStatus.PINNED),
+        ("Older", WorkoutStatus.ACTIVE),
+        ("Newer", WorkoutStatus.ACTIVE),
+        ("Gone", WorkoutStatus.ARCHIVED),
+    ]:
+        WorkoutItemFactory.create(workout__owner=user, workout__name=name, workout__status=status)
+    response = signed_in.get(reverse("planner:workouts"))
+    groups = {
+        g["status"]: [r["workout"].name for r in g["rows"]] for g in response.context["groups"]
+    }
+    assert groups == {
+        "pinned": ["Abs", "Zed"],
+        "active": ["Newer", "Older"],
+        "archived": ["Gone"],
+    }
+    html = response.content.decode()
+    assert '<details class="wgroup">' in html
+    for action in ("Edit", "Copy", "Unpin", "Pin", "Restore", "Archive"):
+        assert f'aria-label="{action} ' in html
+
+
+def test_the_form_sets_status_and_keeps_it_when_left_out(signed_in: Client, user: Any) -> None:
+    """The builder's status select pins a workout; a post without it changes nothing."""
+    workout = WorkoutItemFactory.create(workout__owner=user, exercise__owner=user).workout
+    url = reverse("planner:workout_edit", args=[workout.uuid])
+    item = workout.items.get()
+    data = {
+        "name": workout.name,
+        "description": "",
+        "rest_seconds": 15,
+        "rounds": 1,
+        "round_rest_seconds": 120,
+        "items": json.dumps([{"exercise": str(item.exercise.uuid), "dur": 30}]),
+    }
+    signed_in.post(url, {**data, "status": "pinned"})
+    workout.refresh_from_db()
+    assert workout.status == WorkoutStatus.PINNED
+    signed_in.post(url, data)
+    workout.refresh_from_db()
+    assert workout.status == WorkoutStatus.PINNED
+
+
+@pytest.mark.parametrize("name", ["planner:workout_status", "planner:workout_duplicate"])
+def test_status_and_duplicate_need_post(signed_in: Client, user: Any, name: str) -> None:
     """A GET can't change or copy a workout."""
     workout = WorkoutFactory.create(owner=user)
     response = signed_in.get(reverse(name, args=[workout.uuid]))
@@ -597,3 +676,22 @@ def test_builder_query_count(
         ExerciseFactory.create(owner=user)
     with django_assert_num_queries(9):
         signed_in.get(reverse("planner:workout_new"))
+
+
+def test_round_lines_puts_each_round_on_its_own_line() -> None:
+    """One line per round, without the get-ready or the breaks between rounds."""
+    segs = [("ready", 5), ("work", 40), ("rest", 10), ("work", 30), ("round", 55)]
+    segs += [("work", 40), ("rest", 10), ("work", 30)]
+    assert round_lines(segs) == [
+        [("work", 40), ("rest", 10), ("work", 30)],
+        [("work", 40), ("rest", 10), ("work", 30)],
+    ]
+    assert round_lines([("ready", 5), ("work", 40)]) == [[("work", 40)]]
+
+
+def test_list_draws_a_strip_line_per_round(signed_in: Client, user: Any) -> None:
+    """A three-round workout gets three strip lines."""
+    WorkoutItemFactory.create(workout__owner=user, workout__rounds=3)
+    html = signed_in.get(reverse("planner:workouts")).content.decode()
+    assert html.count('class="strip mini"') == 3
+    assert "one line per round" in html

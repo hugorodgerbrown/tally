@@ -9,7 +9,7 @@ from django.test import Client
 from django.urls import reverse
 
 from apps.activity.models import ActivitySession, DiscardedSession
-from apps.library.models import Workout
+from apps.library.models import Workout, WorkoutStatus
 from tests.factories import (
     ActivitySessionFactory,
     ExerciseFactory,
@@ -90,15 +90,29 @@ def test_workouts_payload(signed_in: Client, workout: Workout) -> None:
     assert {t["slug"] for t in data["types"]} >= {"strength", "aerobic"}
 
 
-def test_only_my_active_workouts_with_items_are_sent(
+def test_only_my_phone_workouts_with_items_are_sent(
     signed_in: Client, user: Any, workout: Workout
 ) -> None:
-    """Empty, retired and other accounts' workouts stay off the phone."""
+    """Empty, archived and other accounts' workouts stay off the phone; pinned ones go."""
     WorkoutFactory.create(owner=user, name="Empty")
-    WorkoutItemFactory.create(workout__owner=user, workout__name="Hidden", workout__is_active=False)
+    WorkoutItemFactory.create(
+        workout__owner=user, workout__name="Archived", workout__status=WorkoutStatus.ARCHIVED
+    )
+    WorkoutItemFactory.create(
+        workout__owner=user, workout__name="Abs", workout__status=WorkoutStatus.PINNED
+    )
     WorkoutItemFactory.create(workout__name="Someone else's")
     names = [w["name"] for w in signed_in.get(WORKOUTS).json()["workouts"]]
-    assert names == ["Legs"]
+    assert names == ["Abs", "Legs"]
+
+
+def test_each_workout_carries_its_status_and_age(
+    signed_in: Client, user: Any, workout: Workout
+) -> None:
+    """The phone groups and sorts by status and createdAt."""
+    (sent,) = signed_in.get(WORKOUTS).json()["workouts"]
+    assert sent["status"] == "active"
+    assert sent["createdAt"] == workout.created_at.isoformat()
 
 
 def test_session_upsert_is_idempotent(signed_in: Client, user: Any, workout: Workout) -> None:

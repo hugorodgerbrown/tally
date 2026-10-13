@@ -205,8 +205,21 @@
   }
   const durationText = (seconds) => durationParts(seconds).map(([v, u]) => `${v} ${u}`).join(" ");
 
+  /* The home screen's two groups: pinned workouts by name, then the rest
+   * (active) newest first, behind "Show all". A payload cached before
+   * workouts had a status has none, so everything shows flat, as before. */
+  function groupWorkouts(workouts) {
+    if (!workouts.some((w) => w.status)) return { pinned: workouts.slice(), rest: [] };
+    const byName = (a, b) => a.name.localeCompare(b.name);
+    const newest = (a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")) || byName(a, b);
+    return {
+      pinned: workouts.filter((w) => w.status === "pinned").sort(byName),
+      rest: workouts.filter((w) => w.status !== "pinned").sort(newest),
+    };
+  }
+
   window.Engine = {
     buildTimeline, totalSeconds, workingSeconds, model, breakdown, Timer, READY_SECONDS,
-    durationParts, durationText,
+    durationParts, durationText, groupWorkouts,
   };
 })();

@@ -58,6 +58,10 @@ body.planner { margin: 0; background: var(--ground); color: var(--ink); font-fam
 .planner .icon-btn { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--ink); display: inline-grid; place-items: center; cursor: pointer; padding: 0; flex: none; }
 .planner .icon-btn:hover { background: var(--surface-2); }
 .planner .icon-btn svg { width: 14px; height: 14px; }
+.planner .list .actions .icon-btn { width: 32px; height: 32px; color: var(--muted); }
+.planner .list .actions .icon-btn:hover { color: var(--ink); }
+.planner .list .actions .icon-btn svg { width: 16px; height: 16px; }
+.planner .list .actions .icon-btn.on { color: var(--accent); }
 .planner .icon-btn.bare { border-color: transparent; background: transparent; color: var(--muted); }
 .planner .icon-btn.bare:hover { color: var(--ink); background: var(--surface-2); }
 .planner .icon-btn:disabled { opacity: .3; cursor: default; background: transparent; }
@@ -94,7 +98,6 @@ body.planner { margin: 0; background: var(--ground); color: var(--ink); font-fam
 .planner .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; }
 .planner .side { font-family: var(--f-mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; white-space: nowrap; }
 .planner .tag-src { font-family: var(--f-mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); background: var(--accent-soft); border-radius: 4px; padding: 2px 6px; white-space: nowrap; }
-.planner .tag-off { font-family: var(--f-mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: var(--surface-2); border-radius: 4px; padding: 2px 6px; }
 
 /* ---------- Panels and lists ---------- */
 .planner .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-panel); min-width: 0; }
@@ -107,8 +110,19 @@ body.planner { margin: 0; background: var(--ground); color: var(--ink); font-fam
 .planner .list .num { font-size: 14px; text-align: right; }
 .planner .list .actions { display: flex; gap: 6px; justify-content: flex-end; }
 .planner .list .actions form { margin: 0; }
+.planner .wl .nums { display: contents; }
+.planner .wl .actions { justify-content: flex-start; }
 .planner .list .row.off .nm, .planner .list .row.off .strip { opacity: .5; }
-.planner .wl > .row { grid-template-columns: minmax(200px, 1.2fr) minmax(200px, 2fr) 100px 60px 90px 150px; }
+.planner .wl > .row { grid-template-columns: minmax(200px, 1.2fr) minmax(200px, 2fr) 100px 60px 90px 152px; }
+.planner .wgroup { display: flex; flex-direction: column; gap: 10px; }
+.planner .wghead, .planner .wgroup > summary { display: flex; align-items: baseline; gap: 12px; }
+.planner .wgroup .meta { color: var(--muted); font-size: 14px; }
+.planner .wgroup h2 { font-size: 20px; font-weight: 800; font-stretch: 82%; }
+.planner .wgroup > summary { cursor: pointer; list-style: none; }
+.planner .wgroup > summary::-webkit-details-marker { display: none; }
+.planner .wgroup > summary::before { content: "▸"; color: var(--muted); }
+.planner .wgroup[open] > summary::before { content: "▾"; }
+.planner .wgroup > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .planner .xl > .row { grid-template-columns: minmax(180px, 1.2fr) minmax(120px, .8fr) minmax(160px, 1.4fr) 70px 80px 90px; }
 .planner .empty { padding: 40px 20px; text-align: center; color: var(--muted); display: flex; flex-direction: column; gap: 12px; align-items: center; }
 .planner .toolbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
@@ -122,6 +136,7 @@ body.planner { margin: 0; background: var(--ground); color: var(--ink); font-fam
 .planner .strip .switch { background: var(--switch); }
 .planner .strip .ready { background: var(--ready); }
 .planner .strip .round { background: var(--round); }
+.planner .strips { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .planner .strip.mini { height: 8px; gap: 1px; border-radius: 3px; }
 .planner .strip.mid { height: 26px; }
 .planner .axis { display: flex; justify-content: space-between; font-family: var(--f-mono); font-size: 11.5px; color: var(--muted); margin-top: 6px; }
@@ -212,6 +227,16 @@ body.planner { margin: 0; background: var(--ground); color: var(--ink); font-fam
   .planner .wl > .row, .planner .xl > .row { grid-template-columns: 1fr; gap: 8px; }
   .planner .list > .row.head { display: none; }
   .planner .list .num, .planner .list .actions { text-align: left; justify-content: flex-start; }
+  /* A workout row on a phone: name with the icon actions beside it, the
+   * round lines, then time, done and last on one line. */
+  .planner .wl > .row { grid-template-columns: minmax(0, 1fr) auto; gap: 10px 12px; }
+  .planner .wl > .row > .strips, .planner .wl .nums { grid-column: 1 / -1; }
+  .planner .wl .actions { grid-column: 2; grid-row: 1; align-self: start; gap: 4px; }
+  .planner .wl .nums { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+  .planner .wl .num { font-size: 13px; color: var(--muted); white-space: nowrap; }
+  .planner .wl .n-time { color: var(--ink); }
+  .planner .wl .n-done::before { content: "Done "; }
+  .planner .wl .n-last::before { content: "Last "; }
   .planner .item { grid-template-columns: 20px 20px minmax(0, 1fr) 92px; }
   .planner .item .sidecell { display: none; }
   .planner .item .tools { grid-column: 3 / -1; }
