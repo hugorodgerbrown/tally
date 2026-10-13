@@ -13,14 +13,21 @@ from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Count, Max, Prefetch, Q, QuerySet
-from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from apps.core.decorators import signed_in_user
 from apps.library import timeline
 from apps.library.equipment import equipment_json
-from apps.library.models import Exercise, ExerciseType, MuscleGroup, Workout, WorkoutItem
+from apps.library.models import (
+    Exercise,
+    ExerciseType,
+    MuscleGroup,
+    Workout,
+    WorkoutItem,
+    WorkoutStatus,
+)
 from apps.planner.forms import ExerciseForm, WorkoutForm
 
 
@@ -61,23 +68,36 @@ def workout_list(request: HttpRequest) -> HttpResponse:
             Prefetch("items", WorkoutItem.objects.select_related("exercise")),
             "items__exercise__types",
         )
-        .order_by("-is_active", "name")
+        .order_by("name")
     )
     rows = []
+    by_status: dict[str, list[dict[str, Any]]] = {s: [] for s in WorkoutStatus.values}
     for w in workouts:
         items = list(w.items.all())
         segs = timeline.segments(w, items)
         types = {t for i in items for t in i.exercise.types.all()}
-        rows.append(
-            {
-                "workout": w,
-                "items": items,
-                "segments": segs,
-                "total": sum(s for _, s in segs),
-                "types": sorted(types, key=lambda t: t.order),
-            }
-        )
-    return render(request, "planner/workout_list.html", {"rows": rows, "nav": "workouts"})
+        row = {
+            "workout": w,
+            "items": items,
+            "segments": segs,
+            "total": sum(s for _, s in segs),
+            "types": sorted(types, key=lambda t: t.order),
+        }
+        rows.append(row)
+        by_status[w.status].append(row)
+    # Pinned by name, as on the phone; the rest newest first.
+    for status in (WorkoutStatus.ACTIVE, WorkoutStatus.ARCHIVED):
+        by_status[status].sort(key=lambda r: r["workout"].created_at, reverse=True)
+    groups = [
+        {"status": WorkoutStatus.PINNED, "title": "Pinned", "rows": by_status["pinned"]},
+        {"status": WorkoutStatus.ACTIVE, "title": "Workouts", "rows": by_status["active"]},
+        {"status": WorkoutStatus.ARCHIVED, "title": "Archived", "rows": by_status["archived"]},
+    ]
+    return render(
+        request,
+        "planner/workout_list.html",
+        {"rows": rows, "groups": groups, "nav": "workouts"},
+    )
 
 
 @login_required
@@ -164,15 +184,25 @@ def workout_duplicate(request: HttpRequest, uuid: uuid_lib.UUID) -> HttpResponse
     return redirect("planner:workout_edit", uuid=copy.uuid)
 
 
+STATUS_MESSAGES = {
+    WorkoutStatus.PINNED: "{name} is pinned to the phone.",
+    WorkoutStatus.ACTIVE: "{name} is under Show all on the phone.",
+    WorkoutStatus.ARCHIVED: "{name} is archived.",
+}
+
+
 @login_required
 @require_POST
-def workout_toggle(request: HttpRequest, uuid: uuid_lib.UUID) -> HttpResponse:
-    """Show a workout on the phone, or hide it."""
+def workout_status(request: HttpRequest, uuid: uuid_lib.UUID) -> HttpResponse:
+    """Pin, unpin, archive or restore a workout: set its status from the posted one."""
     workout = get_object_or_404(Workout.objects.for_user(signed_in_user(request)), uuid=uuid)
-    workout.is_active = not workout.is_active
-    workout.save(update_fields=["is_active", "updated_at"])
-    state = "shown on" if workout.is_active else "hidden from"
-    messages.success(request, f"{workout.name} is {state} the phone.")
+    status = request.POST.get("status", "")
+    if status not in WorkoutStatus.values:
+        return HttpResponseBadRequest("Unknown status.")
+    workout.status = status
+    # Bumps updated_at too, so a restored workout starts its seven days again.
+    workout.save(update_fields=["status", "updated_at"])
+    messages.success(request, STATUS_MESSAGES[WorkoutStatus(status)].format(name=workout.name))
     return redirect("planner:workouts")
 
 

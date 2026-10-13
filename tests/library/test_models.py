@@ -1,12 +1,23 @@
 """Tests for apps.library.models: names, querysets and the per-owner rules."""
 
+from datetime import timedelta
 from typing import Any
 
 import pytest
 from django.db import IntegrityError
+from django.utils import timezone
 
-from apps.library.models import Exercise, ExerciseType, MuscleGroup, Workout, WorkoutItem
+from apps.library.models import (
+    Exercise,
+    ExerciseType,
+    MuscleGroup,
+    Source,
+    Workout,
+    WorkoutItem,
+    WorkoutStatus,
+)
 from tests.factories import (
+    ActivitySessionFactory,
     ExerciseFactory,
     MuscleGroupFactory,
     UserFactory,
@@ -50,11 +61,34 @@ def test_querysets_are_per_owner(user: Any) -> None:
     assert theirs.exercise.owner != user
 
 
-def test_active_hides_retired_workouts(user: Any) -> None:
-    """Only active workouts go to the phone."""
-    shown = WorkoutFactory.create(owner=user)
-    WorkoutFactory.create(owner=user, is_active=False)
-    assert list(Workout.objects.for_user(user).active()) == [shown]
+def test_workout_status_querysets(user: Any) -> None:
+    """Pinned and active go to the phone; archived ones don't."""
+    pinned = WorkoutFactory.create(owner=user, name="A", status=WorkoutStatus.PINNED)
+    active = WorkoutFactory.create(owner=user, name="B")
+    archived = WorkoutFactory.create(owner=user, name="C", status=WorkoutStatus.ARCHIVED)
+    mine = Workout.objects.for_user(user)
+    assert active.status == WorkoutStatus.ACTIVE
+    assert list(mine.on_phone()) == [pinned, active]
+    assert list(mine.pinned()) == [pinned]
+    assert list(mine.archived()) == [archived]
+
+
+def test_unused_from_claude_picks_only_stale_never_done_active_claude_workouts(
+    user: Any,
+) -> None:
+    """Pinned, done, recent and Manage-made workouts are never picked."""
+    old = timezone.now() - timedelta(days=8)
+    stale = WorkoutFactory.create(owner=user, name="Stale", source=Source.CLAUDE)
+    pinned = WorkoutFactory.create(
+        owner=user, name="Pinned", source=Source.CLAUDE, status=WorkoutStatus.PINNED
+    )
+    done = WorkoutFactory.create(owner=user, name="Done", source=Source.CLAUDE)
+    ActivitySessionFactory.create(owner=user, workout=done)
+    manage = WorkoutFactory.create(owner=user, name="Manage", source=Source.MANAGE)
+    WorkoutFactory.create(owner=user, name="Fresh", source=Source.CLAUDE)
+    Workout.objects.filter(pk__in=[stale.pk, pinned.pk, done.pk, manage.pk]).update(updated_at=old)
+    cutoff = timezone.now() - timedelta(days=7)
+    assert list(Workout.objects.unused_from_claude(cutoff)) == [stale]
 
 
 def test_exercise_names_are_unique_per_owner(user: Any) -> None:

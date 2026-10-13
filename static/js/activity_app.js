@@ -2,7 +2,7 @@
 (function () {
   "use strict";
 
-  const { Timer, model, breakdown, buildTimeline, totalSeconds, durationParts, durationText } = window.Engine;
+  const { Timer, model, breakdown, buildTimeline, totalSeconds, durationParts, durationText, groupWorkouts } = window.Engine;
   const durationBig = (s) => durationParts(s).map(([v, u]) => `<span>${v}<small>${u}</small></span>`).join("");
   const root = document.getElementById("app");
   // Addresses come from the page (apps/activity/templates/activity/app.html).
@@ -16,6 +16,7 @@
   let wakeLock = null;
   let audio = null;
   let tv = false;              // TV mode: full screen, sized for across the room
+  let showAll = false;         // the home screen's "Show all workouts" is open
 
   /* ---------- helpers ---------- */
 
@@ -37,6 +38,8 @@
     left: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     tv: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 20.5h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
     refresh: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3M19.5 4v4.5H15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    pin: '<svg class="pin" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2l2.6 5.5 6 .7-4.4 4.1 1.2 5.9L12 16.5l-5.4 2.9 1.2-5.9-4.4-4.1 6-.7z" fill="currentColor"/></svg>',
+    down: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9l7 7 7-7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     cloud: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .6-8 6 6 0 0 0-11.4 1.6A3.3 3.3 0 0 0 7 18z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>',
   };
 
@@ -146,13 +149,21 @@
 
   function homeScreen() {
     const ws = library ? library.workouts : [];
-    const list = ws.map((w) => {
+    const row = (w) => {
       const total = totalSeconds(buildTimeline(w));
       const types = [...new Set(w.items.flatMap((i) => i.types))];
-      return `<li><a href="#/w/${w.id}"><span class="wn">${esc(w.name)}</span>
+      const pin = w.status === "pinned" ? `${I.pin}<span class="vh">Pinned: </span>` : "";
+      return `<li><a href="#/w/${w.id}"><span class="wn">${pin}${esc(w.name)}</span>
         <span class="wm"><b>${durationText(total)}</b> · ${w.items.length} exercises${w.rounds > 1 ? ` · ${w.rounds} rounds` : ""}</span>
         <span class="wt">${types.map((t) => `<s data-css="background:${typeColour(t)}" title="${esc(typeName(t))}"></s>`).join("")}</span></a></li>`;
-    }).join("");
+    };
+    const { pinned, rest } = groupWorkouts(ws);
+    // Nothing pinned: the rest is the list, with no reveal to open.
+    const open = showAll || !pinned.length;
+    const reveal = pinned.length && rest.length
+      ? `<button class="reveal" type="button" data-act="all" aria-expanded="${open}" aria-controls="wrest">${open ? "Show pinned only" : `Show all workouts (${rest.length})`}${I.down}</button>`
+      : "";
+    const list = `${pinned.length ? `<ul class="wlist">${pinned.map(row).join("")}</ul>` : ""}${reveal}${rest.length && open ? `<ul class="wlist" id="wrest">${rest.map(row).join("")}</ul>` : ""}`;
     const empty = library
       ? `<p class="empty">No workouts yet. Build one in <a href="${esc(url.newWorkoutUrl)}">Manage</a>.</p>`
       : `<p class="empty">Workouts appear here after the first sync. Connect to the internet and reopen the app.</p>`;
@@ -361,6 +372,7 @@
     const b = e.target.closest("[data-act]");
     const act = b && b.dataset.act;
     if (act === "tv") return setTv(!tv);
+    if (act === "all" && !run) { showAll = !showAll; return render(); }
     if (!run) return;
     const t = run.timer;
     if (act === "start") return start();

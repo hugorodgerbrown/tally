@@ -19,6 +19,7 @@ from apps.library.models import (
     Source,
     Workout,
     WorkoutItem,
+    WorkoutStatus,
 )
 
 logger = logging.getLogger(__name__)
@@ -99,7 +100,9 @@ def install(user: AbstractBaseUser) -> StarterResult:
 
     added_workout = False
     if not Workout.objects.for_user(user).filter(name=SAMPLE_WORKOUT).exists():
-        workout = Workout.objects.create(owner_id=user.pk, name=SAMPLE_WORKOUT, source=Source.SEED)
+        workout = Workout.objects.create(
+            owner_id=user.pk, name=SAMPLE_WORKOUT, source=Source.SEED, status=WorkoutStatus.PINNED
+        )
         # Names are unique per owner, not globally, so in_bulk(field_name=...) won't do.
         names = [n for n, _ in MORNING_MOBILITY]
         by_name = {e.name: e for e in Exercise.objects.for_user(user).filter(name__in=names)}

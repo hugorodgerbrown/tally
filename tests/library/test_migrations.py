@@ -80,3 +80,28 @@ def test_rows_without_an_account_stop_the_migration() -> None:
         _migrate([("library", "0007_fill_uuids_and_owners")])
     old.get_model("library", "Exercise").objects.all().delete()
     _migrate(_latest())
+
+
+STATUS_BEFORE = [("library", "0009_source")]
+
+
+@pytest.mark.django_db(transaction=True)
+def test_shown_workouts_are_pinned_and_hidden_ones_archived_and_back() -> None:
+    """is_active true becomes pinned and false archived; going back reverses it."""
+    old = _migrate(STATUS_BEFORE)
+    owner = old.get_model("auth", "User").objects.create(username="hugo")
+    workouts = old.get_model("library", "Workout").objects
+    workouts.create(owner=owner, name="Shown", is_active=True, uuid=uuid.uuid4())
+    workouts.create(owner=owner, name="Hidden", is_active=False, uuid=uuid.uuid4())
+
+    new = _migrate([("library", "0010_workout_status")])
+    statuses = dict(new.get_model("library", "Workout").objects.values_list("name", "status"))
+    assert statuses == {"Shown": "pinned", "Hidden": "archived"}
+    new.get_model("library", "Workout").objects.create(
+        owner_id=owner.pk, name="New", status="active", is_active=False, uuid=uuid.uuid4()
+    )
+
+    back = _migrate(STATUS_BEFORE)
+    flags = dict(back.get_model("library", "Workout").objects.values_list("name", "is_active"))
+    assert flags == {"Shown": True, "Hidden": False, "New": True}
+    _migrate(_latest())

@@ -35,6 +35,13 @@
         <label for="id_description">Notes</label>
         <textarea name="description" id="id_description" rows="2" placeholder="Optional">{{ form.description.value|default_if_none:'' }}</textarea>
       </div>
+      <div class="field">
+        <label for="id_status">On the phone</label>
+        <select name="status" id="id_status" aria-describedby="status-help">
+          {% for value, label in form.fields.status.choices %}{% if value %}<option value="{{ value }}"{% if form.status.value == value %} selected{% endif %}>{{ label }}</option>{% endif %}{% endfor %}
+        </select>
+        <span class="help" id="status-help">Pinned shows on the home screen; Active under Show all; Archived not at all.</span>
+      </div>
     </div>
     <ol class="items" id="items" aria-label="Exercises in this workout"></ol>
     <input type="hidden" name="items" id="id_items">

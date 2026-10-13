@@ -31,6 +31,8 @@ def serialize_workout(workout: Workout) -> dict[str, Any]:
         "rest": workout.rest_seconds,
         "rounds": workout.rounds,
         "roundRest": workout.round_rest_seconds,
+        "status": workout.status,
+        "createdAt": workout.created_at.isoformat(),
         "updatedAt": workout.updated_at.isoformat(),
         "items": [
             {
@@ -51,10 +53,10 @@ def serialize_workout(workout: Workout) -> dict[str, Any]:
 @require_GET
 @login_required_json
 def workouts(request: HttpRequest) -> HttpResponse:
-    """Return the types, equipment icons and the user's active workouts."""
+    """Return the types, equipment icons and the user's pinned and active workouts."""
     qs = (
         Workout.objects.for_user(signed_in_user(request))
-        .active()
+        .on_phone()
         .prefetch_related("items__exercise__types", "items__exercise__muscles")
     )
     return JsonResponse(

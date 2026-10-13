@@ -94,7 +94,6 @@ body.planner { margin: 0; background: var(--ground); color: var(--ink); font-fam
 .planner .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; }
 .planner .side { font-family: var(--f-mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; white-space: nowrap; }
 .planner .tag-src { font-family: var(--f-mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); background: var(--accent-soft); border-radius: 4px; padding: 2px 6px; white-space: nowrap; }
-.planner .tag-off { font-family: var(--f-mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: var(--surface-2); border-radius: 4px; padding: 2px 6px; }
 
 /* ---------- Panels and lists ---------- */
 .planner .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-panel); min-width: 0; }
@@ -108,7 +107,16 @@ body.planner { margin: 0; background: var(--ground); color: var(--ink); font-fam
 .planner .list .actions { display: flex; gap: 6px; justify-content: flex-end; }
 .planner .list .actions form { margin: 0; }
 .planner .list .row.off .nm, .planner .list .row.off .strip { opacity: .5; }
-.planner .wl > .row { grid-template-columns: minmax(200px, 1.2fr) minmax(200px, 2fr) 100px 60px 90px 150px; }
+.planner .wl > .row { grid-template-columns: minmax(200px, 1.2fr) minmax(200px, 2fr) 100px 60px 90px 230px; }
+.planner .wgroup { display: flex; flex-direction: column; gap: 10px; }
+.planner .wghead, .planner .wgroup > summary { display: flex; align-items: baseline; gap: 12px; }
+.planner .wgroup .meta { color: var(--muted); font-size: 14px; }
+.planner .wgroup h2 { font-size: 20px; font-weight: 800; font-stretch: 82%; }
+.planner .wgroup > summary { cursor: pointer; list-style: none; }
+.planner .wgroup > summary::-webkit-details-marker { display: none; }
+.planner .wgroup > summary::before { content: "▸"; display: inline-block; color: var(--muted); transition: transform .15s; }
+.planner .wgroup[open] > summary::before { transform: rotate(90deg); }
+.planner .wgroup > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .planner .xl > .row { grid-template-columns: minmax(180px, 1.2fr) minmax(120px, .8fr) minmax(160px, 1.4fr) 70px 80px 90px; }
 .planner .empty { padding: 40px 20px; text-align: center; color: var(--muted); display: flex; flex-direction: column; gap: 12px; align-items: center; }
 .planner .toolbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }

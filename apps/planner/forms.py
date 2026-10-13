@@ -33,12 +33,18 @@ class WorkoutForm(forms.ModelForm):
         """Form metadata."""
 
         model = Workout
-        fields = ["name", "description", "rest_seconds", "rounds", "round_rest_seconds"]
+        fields = ["name", "description", "rest_seconds", "rounds", "round_rest_seconds", "status"]
         widgets = {"description": forms.Textarea(attrs={"rows": 2})}
 
     def __init__(self, *args: Any, owner: AbstractBaseUser, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.owner = owner
+        # Left out of a post, the workout keeps the status it has.
+        self.fields["status"].required = False
+
+    def clean_status(self) -> str:
+        """Return the posted status, or the workout's current one when none was sent."""
+        return str(self.cleaned_data.get("status") or self.instance.status)
 
     def clean_items(self) -> list[tuple[Exercise, int]]:
         """Return the items as ``[(exercise, seconds)]``, from the owner's library only."""

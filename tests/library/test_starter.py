@@ -25,6 +25,8 @@ def test_install_is_safe_to_run_twice(user: Any) -> None:
     # Recorded as the starter library.
     assert set(Exercise.objects.for_user(user).values_list("source", flat=True)) == {"seed"}
     assert workout.source == "seed"
+    # Pinned, so a new account's home screen isn't empty.
+    assert workout.status == "pinned"
 
 
 def test_install_tags_kit_and_holds(user: Any) -> None:
