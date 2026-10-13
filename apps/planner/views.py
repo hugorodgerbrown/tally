@@ -58,6 +58,25 @@ def _wants_json(request: HttpRequest) -> bool:
 # ---------- workouts ----------
 
 
+def round_lines(segments: list[tuple[str, int]]) -> list[dict[str, Any]]:
+    """Split a workout's steps into one line per round, each ending at its round break.
+
+    Every line is drawn to the same scale: ``width`` is its share, as a CSS
+    percentage, of the longest line.
+    """
+    lines: list[list[tuple[str, int]]] = [[]]
+    for kind, seconds in segments:
+        lines[-1].append((kind, seconds))
+        if kind == "round":
+            lines.append([])
+    lines = [line for line in lines if line]
+    longest = max((sum(s for _, s in line) for line in lines), default=0) or 1
+    return [
+        {"segments": line, "width": f"{100 * sum(s for _, s in line) / longest:.1f}"}
+        for line in lines
+    ]
+
+
 @login_required
 def workout_list(request: HttpRequest) -> HttpResponse:
     """List the user's workouts with their make-up, length and use."""
@@ -79,7 +98,7 @@ def workout_list(request: HttpRequest) -> HttpResponse:
         row = {
             "workout": w,
             "items": items,
-            "segments": segs,
+            "lines": round_lines(segs),
             "total": sum(s for _, s in segs),
             "types": sorted(types, key=lambda t: t.order),
         }

@@ -11,6 +11,7 @@ from django.utils import timezone
 
 from apps.library import timeline
 from apps.library.models import Exercise, MuscleGroup, Source, Workout, WorkoutStatus
+from apps.planner.views import round_lines
 from tests.factories import (
     ActivitySessionFactory,
     ExerciseFactory,
@@ -367,8 +368,8 @@ def test_list_groups_pinned_then_newest_then_archived(signed_in: Client, user: A
     }
     html = response.content.decode()
     assert '<details class="wgroup">' in html
-    for action in ("Unpin", "Pin", "Restore", "Archive"):
-        assert f">{action}<" in html
+    for action in ("Edit", "Copy", "Unpin", "Pin", "Restore", "Archive"):
+        assert f'aria-label="{action} ' in html
 
 
 def test_the_form_sets_status_and_keeps_it_when_left_out(signed_in: Client, user: Any) -> None:
@@ -675,3 +676,26 @@ def test_builder_query_count(
         ExerciseFactory.create(owner=user)
     with django_assert_num_queries(9):
         signed_in.get(reverse("planner:workout_new"))
+
+
+def test_round_lines_puts_each_round_on_its_own_line_to_one_scale() -> None:
+    """Each line ends at its round break; widths are shares of the longest line."""
+    segs = [("ready", 5), ("work", 40), ("round", 55), ("work", 40), ("round", 55), ("work", 40)]
+    lines = round_lines(segs)
+    assert [line["segments"] for line in lines] == [
+        [("ready", 5), ("work", 40), ("round", 55)],
+        [("work", 40), ("round", 55)],
+        [("work", 40)],
+    ]
+    assert [line["width"] for line in lines] == ["100.0", "95.0", "40.0"]
+    assert round_lines([("ready", 5), ("work", 40)]) == [
+        {"segments": [("ready", 5), ("work", 40)], "width": "100.0"}
+    ]
+
+
+def test_list_draws_a_strip_line_per_round(signed_in: Client, user: Any) -> None:
+    """A three-round workout gets three strip lines."""
+    WorkoutItemFactory.create(workout__owner=user, workout__rounds=3)
+    html = signed_in.get(reverse("planner:workouts")).content.decode()
+    assert html.count('class="strip mini"') == 3
+    assert "one line per round" in html

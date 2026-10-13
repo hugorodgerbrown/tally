@@ -58,6 +58,10 @@ body.planner { margin: 0; background: var(--ground); color: var(--ink); font-fam
 .planner .icon-btn { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--ink); display: inline-grid; place-items: center; cursor: pointer; padding: 0; flex: none; }
 .planner .icon-btn:hover { background: var(--surface-2); }
 .planner .icon-btn svg { width: 14px; height: 14px; }
+.planner .list .actions .icon-btn { width: 32px; height: 32px; color: var(--muted); }
+.planner .list .actions .icon-btn:hover { color: var(--ink); }
+.planner .list .actions .icon-btn svg { width: 16px; height: 16px; }
+.planner .list .actions .icon-btn.on { color: var(--accent); }
 .planner .icon-btn.bare { border-color: transparent; background: transparent; color: var(--muted); }
 .planner .icon-btn.bare:hover { color: var(--ink); background: var(--surface-2); }
 .planner .icon-btn:disabled { opacity: .3; cursor: default; background: transparent; }
@@ -106,8 +110,9 @@ body.planner { margin: 0; background: var(--ground); color: var(--ink); font-fam
 .planner .list .num { font-size: 14px; text-align: right; }
 .planner .list .actions { display: flex; gap: 6px; justify-content: flex-end; }
 .planner .list .actions form { margin: 0; }
+.planner .wl .actions { justify-content: flex-start; }
 .planner .list .row.off .nm, .planner .list .row.off .strip { opacity: .5; }
-.planner .wl > .row { grid-template-columns: minmax(200px, 1.2fr) minmax(200px, 2fr) 100px 60px 90px 230px; }
+.planner .wl > .row { grid-template-columns: minmax(200px, 1.2fr) minmax(200px, 2fr) 100px 60px 90px 152px; }
 .planner .wgroup { display: flex; flex-direction: column; gap: 10px; }
 .planner .wghead, .planner .wgroup > summary { display: flex; align-items: baseline; gap: 12px; }
 .planner .wgroup .meta { color: var(--muted); font-size: 14px; }
@@ -130,6 +135,7 @@ body.planner { margin: 0; background: var(--ground); color: var(--ink); font-fam
 .planner .strip .switch { background: var(--switch); }
 .planner .strip .ready { background: var(--ready); }
 .planner .strip .round { background: var(--round); }
+.planner .strips { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .planner .strip.mini { height: 8px; gap: 1px; border-radius: 3px; }
 .planner .strip.mid { height: 26px; }
 .planner .axis { display: flex; justify-content: space-between; font-family: var(--f-mono); font-size: 11.5px; color: var(--muted); margin-top: 6px; }

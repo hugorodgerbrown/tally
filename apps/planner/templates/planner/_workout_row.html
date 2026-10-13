@@ -6,19 +6,19 @@
         <span class="dots dots--gap">{% for t in r.types %}<i data-css="background:{{ t.colour }}" title="{{ t.name }}"></i>{% endfor %}</span>
         {% if w.source == "claude" %}<span class="tag-src" title="Made by Claude through the connector">Claude</span>{% endif %}</div>
     </div>
-    {% include "planner/_strip.html" with segments=r.segments size="mini" label="Interval sequence" %}
+    <div class="strips" role="img" aria-label="Interval sequence{% if w.rounds > 1 %}, one line per round{% endif %}">{% for line in r.lines %}<div class="strip mini" data-css="width:{{ line.width }}%">{% for kind, seconds in line.segments %}<span class="{{ kind }}" data-css="flex:{{ seconds }}"></span>{% endfor %}</div>{% endfor %}</div>
     <span class="num">{{ r.total|duration }}</span>
     <span class="num">{{ w.times_done|default:"–" }}</span>
     <span class="num">{% if w.last_done %}{{ w.last_done|date:"j M" }}{% else %}Never{% endif %}</span>
     <div class="actions">
-      <a class="btn btn-quiet btn-sm" href="{% url 'planner:workout_edit' w.uuid %}">Edit</a>
-      <form method="post" action="{% url 'planner:workout_duplicate' w.uuid %}">{% csrf_token %}<button class="btn btn-quiet btn-sm" type="submit">Copy</button></form>
+      <a class="icon-btn" href="{% url 'planner:workout_edit' w.uuid %}" aria-label="Edit {{ w.name }}" title="Edit">{% include "planner/_icon.html" with name="edit" %}</a>
+      <form method="post" action="{% url 'planner:workout_duplicate' w.uuid %}">{% csrf_token %}<button class="icon-btn" type="submit" aria-label="Copy {{ w.name }}" title="Copy">{% include "planner/_icon.html" with name="copy" %}</button></form>
       <form method="post" action="{% url 'planner:workout_status' w.uuid %}">{% csrf_token %}
-        {% if w.status == "pinned" %}<button class="btn btn-quiet btn-sm" type="submit" name="status" value="active" title="Move under Show all on the phone">Unpin</button>
-        {% elif w.status == "active" %}<button class="btn btn-quiet btn-sm" type="submit" name="status" value="pinned" title="Pin to the phone's home screen">Pin</button>
-        {% else %}<button class="btn btn-quiet btn-sm" type="submit" name="status" value="active" title="Send back to the phone, under Show all">Restore</button>{% endif %}
+        {% if w.status == "pinned" %}<button class="icon-btn on" type="submit" name="status" value="active" aria-label="Unpin {{ w.name }}" title="Unpin: move under Show all on the phone">{% include "planner/_icon.html" with name="pinned" %}</button>
+        {% elif w.status == "active" %}<button class="icon-btn" type="submit" name="status" value="pinned" aria-label="Pin {{ w.name }}" title="Pin to the phone's home screen">{% include "planner/_icon.html" with name="pin" %}</button>
+        {% else %}<button class="icon-btn" type="submit" name="status" value="active" aria-label="Restore {{ w.name }}" title="Restore: back on the phone, under Show all">{% include "planner/_icon.html" with name="restore" %}</button>{% endif %}
       </form>
-      {% if w.status != "archived" %}<form method="post" action="{% url 'planner:workout_status' w.uuid %}">{% csrf_token %}<button class="btn btn-quiet btn-sm" type="submit" name="status" value="archived" title="Take off the phone">Archive</button></form>{% endif %}
+      {% if w.status != "archived" %}<form method="post" action="{% url 'planner:workout_status' w.uuid %}">{% csrf_token %}<button class="icon-btn" type="submit" name="status" value="archived" aria-label="Archive {{ w.name }}" title="Archive: take off the phone">{% include "planner/_icon.html" with name="archive" %}</button></form>{% endif %}
     </div>
   </div>
 {% endwith %}
