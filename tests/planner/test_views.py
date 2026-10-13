@@ -271,6 +271,14 @@ def test_list_pages_render(signed_in: Client, legs: Workout) -> None:
     assert "Split squat" in signed_in.get(reverse("planner:exercises")).content.decode()
 
 
+def test_exercise_list_edit_is_an_icon(signed_in: Client, squat: Exercise) -> None:
+    """Each exercise row edits through a labelled pencil icon, not a named button."""
+    html = signed_in.get(reverse("planner:exercises")).content.decode()
+    edit = reverse("planner:exercise_edit", args=[squat.uuid])
+    assert f'<a class="icon-btn" href="{edit}" aria-label="Edit {squat.name}" title="Edit">' in html
+    assert ">Edit</a>" not in html
+
+
 def test_workout_list_counts_sessions(signed_in: Client, user: Any, legs: Workout) -> None:
     """Each row carries how often the workout was done, and its length."""
     ActivitySessionFactory.create(owner=user, workout=legs)

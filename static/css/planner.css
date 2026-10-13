@@ -124,6 +124,7 @@ body.planner { margin: 0; background: var(--ground); color: var(--ink); font-fam
 .planner .wgroup[open] > summary::before { content: "▾"; }
 .planner .wgroup > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .planner .xl > .row { grid-template-columns: minmax(180px, 1.2fr) minmax(120px, .8fr) minmax(160px, 1.4fr) 70px 80px 90px; }
+.planner .xl .meta, .planner .xl .nums { display: contents; }
 .planner .empty { padding: 40px 20px; text-align: center; color: var(--muted); display: flex; flex-direction: column; gap: 12px; align-items: center; }
 .planner .toolbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .planner .toolbar .search { max-width: 280px; }
@@ -237,6 +238,16 @@ body.planner { margin: 0; background: var(--ground); color: var(--ink); font-fam
   .planner .wl .n-time { color: var(--ink); }
   .planner .wl .n-done::before { content: "Done "; }
   .planner .wl .n-last::before { content: "Last "; }
+  /* An exercise row on a phone: name with the edit icon beside it, types
+   * and muscles on one line, then default length and use on one line. */
+  .planner .xl > .row { grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; }
+  .planner .xl .meta, .planner .xl .nums { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; }
+  .planner .xl .actions { grid-column: 2; grid-row: 1; align-self: start; gap: 4px; }
+  .planner .xl .n-types { display: inline-flex; flex-wrap: wrap; gap: 2px 12px; }
+  .planner .xl .n-types br, .planner .xl .n-muscles.none { display: none; }
+  .planner .xl .num { font-size: 13px; color: var(--muted); white-space: nowrap; }
+  .planner .xl .n-dur { color: var(--ink); }
+  .planner .xl .n-used::before { content: "Workouts "; }
   .planner .item { grid-template-columns: 20px 20px minmax(0, 1fr) 92px; }
   .planner .item .sidecell { display: none; }
   .planner .item .tools { grid-column: 3 / -1; }
