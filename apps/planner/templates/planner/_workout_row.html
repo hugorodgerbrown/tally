@@ -7,9 +7,9 @@
         {% if w.source == "claude" %}<span class="tag-src" title="Made by Claude through the connector">Claude</span>{% endif %}</div>
     </div>
     <div class="strips" role="img" aria-label="Interval sequence{% if w.rounds > 1 %}, one line per round{% endif %}">{% for line in r.lines %}<div class="strip mini">{% for kind, seconds in line %}<span class="{{ kind }}" data-css="flex:{{ seconds }}"></span>{% endfor %}</div>{% endfor %}</div>
-    <span class="num">{{ r.total|duration }}</span>
-    <span class="num">{{ w.times_done|default:"–" }}</span>
-    <span class="num">{% if w.last_done %}{{ w.last_done|date:"j M" }}{% else %}Never{% endif %}</span>
+    <div class="nums"><span class="num n-time">{{ r.total|duration }}</span>
+    <span class="num n-done">{{ w.times_done|default:"–" }}</span>
+    <span class="num n-last">{% if w.last_done %}{{ w.last_done|date:"j M" }}{% else %}Never{% endif %}</span></div>
     <div class="actions">
       <a class="icon-btn" href="{% url 'planner:workout_edit' w.uuid %}" aria-label="Edit {{ w.name }}" title="Edit">{% include "planner/_icon.html" with name="edit" %}</a>
       <form method="post" action="{% url 'planner:workout_duplicate' w.uuid %}">{% csrf_token %}<button class="icon-btn" type="submit" aria-label="Copy {{ w.name }}" title="Copy">{% include "planner/_icon.html" with name="copy" %}</button></form>
