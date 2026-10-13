@@ -49,9 +49,13 @@ class Command(BaseCommand):
                 f"{len(workouts)} unused workouts to archive (dry run; pass --commit)."
             )
             return
-        # update() leaves updated_at alone: archiving isn't an edit to the workout.
-        archived = Workout.objects.filter(pk__in=[w.pk for w in workouts]).update(
-            status=WorkoutStatus.ARCHIVED
+        # Re-apply the rule in the update, so a workout pinned, edited or done since
+        # the list was read is left alone. update() leaves updated_at as it is:
+        # archiving isn't an edit to the workout.
+        archived = (
+            Workout.objects.unused_from_claude(cutoff)
+            .filter(pk__in=[w.pk for w in workouts])
+            .update(status=WorkoutStatus.ARCHIVED)
         )
         logger.info("Archived %d unused workouts made by Claude", archived)
         if options["verbosity"] > 0:

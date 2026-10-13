@@ -1,6 +1,6 @@
 """Tests for the archive_unused_workouts command."""
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 from io import StringIO
 from typing import Any
 
@@ -8,7 +8,7 @@ import pytest
 from django.core.management import call_command
 from django.utils import timezone
 
-from apps.library.models import Source, Workout, WorkoutStatus
+from apps.library.models import Source, Workout, WorkoutQuerySet, WorkoutStatus
 from tests.factories import ActivitySessionFactory, WorkoutFactory
 
 pytestmark = pytest.mark.django_db
@@ -68,3 +68,22 @@ def test_commit_is_quiet_at_verbosity_zero(workouts: dict[str, Workout]) -> None
     call_command("archive_unused_workouts", "--commit", verbosity=0, stdout=out)
     assert out.getvalue() == ""
     assert statuses()["Stale"] == "archived"
+
+
+def test_commit_rechecks_the_rule_when_it_archives(
+    workouts: dict[str, Workout], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A workout pinned after the list was read is not archived."""
+    real = Workout.objects.unused_from_claude
+    calls: list[datetime] = []
+
+    def pin_after_listing(cutoff: datetime) -> WorkoutQuerySet:
+        """Return the rule's queryset; pin Stale once the list has been read."""
+        if calls:
+            Workout.objects.filter(name="Stale").update(status=WorkoutStatus.PINNED)
+        calls.append(cutoff)
+        return real(cutoff)
+
+    monkeypatch.setattr(Workout.objects, "unused_from_claude", pin_after_listing)
+    call_command("archive_unused_workouts", "--commit", stdout=StringIO())
+    assert statuses()["Stale"] == "pinned"
