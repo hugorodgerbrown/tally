@@ -238,12 +238,14 @@ def test_month_and_earlier_periods(signed_in: Client, user: Any, today: dt.date)
         ({"from": "not a date"}, "This week"),
         ({"from": "2030-01-01"}, "This week"),
         ({"period": "month", "from": "2030-01-01"}, "This month"),
+        ({"from": "0001-01-01"}, "Week of 27 Dec 1999"),
+        ({"period": "month", "from": "0001-01-01"}, "January 2000"),
     ],
 )
 def test_bad_or_future_periods_fall_back(
     signed_in: Client, today: dt.date, query: dict[str, str], heading: str
 ) -> None:
-    """An unknown period is a week, and a date that isn't one or is in the future is today."""
+    """Unknown periods are weeks; bad or future dates are today; early ones are 1 Jan 2000."""
     html = signed_in.get(reverse("activity:report"), query).content.decode()
     assert f"<h1>{heading}</h1>" in html
 
@@ -275,3 +277,17 @@ def test_report_is_a_mode(signed_in: Client, today: dt.date) -> None:
     assert f'<a href="{reverse("planner:workouts")}">Manage</a>' in modes
     assert '<span aria-current="page">Report</span>' in modes
     assert 'aria-current="page">Week</a>' in html
+
+
+def test_effort_is_compared_when_both_periods_have_it(
+    signed_in: Client, user: Any, today: dt.date
+) -> None:
+    """Average effort gets a comparison only when both periods were rated."""
+    squat = make_exercise(user, "Squat", ["strength"], ["Glutes"])
+    log(user, TODAY, [(squat, 60)], effort=8)
+    html = signed_in.get(reverse("activity:report")).content.decode()
+    assert "than the week before</small>" in html
+    assert "higher than the week before" not in html  # last week had no rating
+    log(user, dt.date(2026, 10, 6), [(squat, 60)], effort=6)
+    html = signed_in.get(reverse("activity:report")).content.decode()
+    assert "2 higher than the week before" in html

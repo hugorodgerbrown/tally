@@ -54,7 +54,7 @@ def test_existing_rows_go_to_the_superuser_and_keep_their_history() -> None:
     )
 
     new = _migrate(_latest())
-    exercise = new.get_model("library", "Exercise").objects.get()
+    exercise = new.get_model("library", "Exercise").objects.get(name="Plank")
     assert exercise.owner_id == hugo.pk
     assert new.get_model("library", "Workout").objects.get().owner_id == hugo.pk
     item = new.get_model("library", "WorkoutItem").objects.get()
@@ -105,3 +105,33 @@ def test_shown_workouts_are_pinned_and_hidden_ones_archived_and_back() -> None:
     flags = dict(back.get_model("library", "Workout").objects.values_list("name", "is_active"))
     assert flags == {"Shown": True, "Hidden": False, "New": True}
     _migrate(_latest())
+
+
+@pytest.mark.django_db(transaction=True)
+def test_balance_tops_up_existing_libraries() -> None:
+    """Accounts with a library get the two balance exercises, unless they have one by name."""
+    old = _migrate([("library", "0011_remove_workout_is_active")])
+    user_model = old.get_model("auth", "User")
+    exercise_model = old.get_model("library", "Exercise")
+    # A transactional test's flush can take the data migration's types with it.
+    old.get_model("library", "ExerciseType").objects.get_or_create(
+        slug="strength", defaults={"name": "Strength"}
+    )
+    one = user_model.objects.create(username="one", email="one@example.com")
+    two = user_model.objects.create(username="two", email="two@example.com")
+    user_model.objects.create(username="empty", email="empty@example.com")
+    exercise_model.objects.create(owner=one, name="Plank")
+    exercise_model.objects.create(owner=two, name="Single-leg stand", default_duration=99)
+
+    new = _migrate(_latest())
+    exercises = new.get_model("library", "Exercise").objects
+    assert set(exercises.filter(owner_id=one.pk).values_list("name", flat=True)) == {
+        "Plank",
+        "Single-leg stand",
+        "Single-leg deadlift",
+    }
+    deadlift = exercises.get(owner_id=one.pk, name="Single-leg deadlift")
+    assert {t.slug for t in deadlift.types.all()} == {"balance", "strength"}
+    assert exercises.get(owner_id=two.pk, name="Single-leg stand").default_duration == 99
+    assert exercises.filter(owner_id=two.pk).count() == 2
+    assert exercises.count() == 5

@@ -29,6 +29,8 @@ logger = logging.getLogger(__name__)
 # How many periods the trend shows, ending with the one on screen.
 TREND = {"week": 8, "month": 6}
 TOP_EXERCISES = 8
+# Report goes back no further than this, so stepping back can't leave the calendar.
+EARLIEST = dt.date(2000, 1, 1)
 UNKNOWN_COLOUR = "var(--muted)"
 
 
@@ -53,7 +55,7 @@ def _period(request: HttpRequest, today: dt.date) -> rpt.Period:
         day = dt.date.fromisoformat(request.GET.get("from", ""))
     except ValueError:
         day = today
-    return rpt.Period.containing(kind, min(day, today))  # type: ignore[arg-type]
+    return rpt.Period.containing(kind, min(max(day, EARLIEST), today))  # type: ignore[arg-type]
 
 
 def _bars(rows: list[tuple[str, float, str]]) -> list[dict[str, Any]]:
@@ -66,13 +68,20 @@ def _bars(rows: list[tuple[str, float, str]]) -> list[dict[str, Any]]:
     ]
 
 
-def _change(now: float, before: float, unit: str, noun: str) -> str:
-    """Describe ``now`` against ``before``: 12 min more than the week before."""
-    diff = now - before
+def _change(now: float | None, before: float | None, unit: str, noun: str) -> str | None:
+    """Describe ``now`` against ``before``: 12 min more than the week before.
+
+    ``unit`` is time, count or rating; with nothing to compare, return None.
+    """
+    if now is None or before is None:
+        return None
+    diff = round(now - before, 1)
     if not diff:
         return f"Same as the {noun} before"
     if unit == "time":
         return f"{duration(abs(diff))} {'more' if diff > 0 else 'less'} than the {noun} before"
+    if unit == "rating":
+        return f"{abs(diff):g} {'higher' if diff > 0 else 'lower'} than the {noun} before"
     return f"{abs(diff):g} {'more' if diff > 0 else 'fewer'} than the {noun} before"
 
 
@@ -124,7 +133,11 @@ def report(request: HttpRequest) -> HttpResponse:
                 now.active_days,
                 _change(now.active_days, before.active_days, "count", noun),
             ),
-            ("Average effort", now.average_effort, None),
+            (
+                "Average effort",
+                now.average_effort,
+                _change(now.average_effort, before.average_effort, "rating", noun),
+            ),
         ],
         "by_type": _bars(by_type),
         "by_muscle": _bars([(m, s, "") for m, s in now.seconds_by_muscle.items()]),
