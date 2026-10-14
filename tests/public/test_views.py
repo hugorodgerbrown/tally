@@ -87,32 +87,40 @@ def test_home_opens_the_app_when_signed_in(signed_in: Client) -> None:
 
 
 def test_home_shows_the_product_with_demo_data(client: Client) -> None:
-    """The builder's own make-up panel and strip, drawn with a demo workout, not a picture."""
+    """The phone's own finish screen, drawn by activity.css with a demo workout, not a picture."""
     content = client.get(reverse("public:home")).content.decode()
-    assert 'class="showcase"' in content
-    assert 'class="makeup"' in content
-    assert 'class="strip mid"' in content
-    assert views.DEMO_NAME in content
-    assert "<img" not in content.split('class="showcase"')[1].split("</figure>")[0]
+    showcase = content.split('class="showcase"')[1].split("</figure>")[0]
+    assert "css/activity.css" in content
+    assert 'id="app" class="embedded"' in showcase
+    assert 'class="scr s-done"' in showcase
+    assert 'class="tbar"' in showcase
+    assert 'class="mus"' in showcase
+    assert views.DEMO_NAME in showcase
+    assert "7 min 50 s" in showcase
+    assert "<img" not in showcase
 
 
-def test_demo_workout_matches_the_builder() -> None:
-    """The demo is timed by timeline.segments, as the builder and the phone time it."""
-    demo = views.demo_workout()
-    assert demo["exercises"] == len(views.DEMO_ITEMS)
-    assert demo["total"] == sum(seconds for _kind, seconds in demo["segments"])
-    assert demo["minutes"] * 60 + demo["seconds"] == demo["total"]
-    assert ("switch", 5) in demo["segments"]  # Split squat runs per side
-    assert demo["working"] < demo["total"]
+def test_demo_report_matches_the_phone() -> None:
+    """Time by type is split evenly, time by muscle counts in full, as engine.js does it."""
+    report = views.demo_report()
+    assert report["worked"] == 470  # Split squat is worked once per side
+    assert sum(t["seconds"] for t in report["types"]) == report["worked"]
+    assert [t["name"] for t in report["types"]] == ["Strength", "Fitness", "Aerobic"]
+    assert report["types"][0]["seconds"] == 385
+    assert report["types"][0]["colour"].startswith("#")
+    assert report["muscles"][0] == {"name": "Glutes", "seconds": 320, "percent": 100}
+    assert len(report["muscles"]) == views.DEMO_MUSCLES
 
 
-def test_demo_workout_saves_nothing() -> None:
+def test_demo_report_saves_nothing() -> None:
     """Drawing the front page writes no rows."""
+    from apps.activity.models import ActivitySession
     from apps.library.models import Exercise, Workout
 
-    views.demo_workout()
+    views.demo_report()
     assert not Workout.objects.exists()
     assert not Exercise.objects.exists()
+    assert not ActivitySession.objects.exists()
 
 
 def test_home_shows_the_connector(client: Client, with_mcp: str) -> None:

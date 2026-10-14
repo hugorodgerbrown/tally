@@ -1,13 +1,13 @@
 {% extends "public_base.html" %}
 {% load static planner %}
 {# The front page, in the shape every Titan app shares (DESIGN.md, "The front page"). #}
-{% block title %}{{ pwa.name }}: build it once, train hands free{% endblock %}
+{% block title %}{{ pwa.name }}: every interval timed, every minute tallied{% endblock %}
 {% block description %}Put an interval workout together on your computer. Your phone counts down, beeps and moves on, so you never touch it mid-set.{% endblock %}
-{% block share_title %}Build it once. Train hands free.{% endblock %}
+{% block share_title %}Every interval timed. Every minute tallied.{% endblock %}
 {% block share_description %}Put an interval workout together on your computer. Your phone counts down, beeps and moves on, so you never touch it mid-set.{% endblock %}
-{% block share_image_alt %}Build it once. Train hands free. Beside it, a workout's every interval to scale, in the phone's colours.{% endblock %}
+{% block share_image_alt %}Every interval timed. Every minute tallied. Beside it, a workout's every interval to scale, in the phone's colours.{% endblock %}
 {% block extra_js %}
-  <link rel="stylesheet" href="{% static 'css/planner.css' %}">
+  <link rel="stylesheet" href="{% static 'css/activity.css' %}">
   <script src="{% static 'js/styles.js' %}" defer></script>
   <script src="{% static 'js/copy.js' %}" defer></script>
 {% endblock %}
@@ -15,8 +15,8 @@
   {# 2. Proposition: the promise, and one way in, named for the first job. #}
   <section class="hero stack">
     <p class="eyebrow">Interval training at home</p>
-    <h1>Build it once. Train hands free.</h1>
-    <p class="hero__lead">Put a workout together on your computer. Your phone counts down, beeps and moves on, so you never touch it mid-set.</p>
+    <h1>Every interval timed. Every minute tallied.</h1>
+    <p class="hero__lead">Your phone runs the workout hands free, then shows where the time went, by type and by muscle. Ask your AI chat to sum up any month.</p>
     {% if user.is_authenticated %}
       <a class="button button--block" href="{% url 'activity:app' %}">Open the app</a>
     {% else %}
@@ -25,19 +25,29 @@
     {% endif %}
   </section>
 
-  {# 3. The product, live: the builder's own make-up panel, drawn by planner.css with a demo workout. #}
+  {# 3. The product, live: the phone's own finish screen, drawn by activity.css with a demo workout. #}
   <figure class="showcase">
-    <div class="showcase__screen planner" inert>
-      <div class="showcase__bar">{{ demo.name }}</div>
-      <div class="makeup">
-        <span class="sub sub--first">Total time</span>
-        <div class="big">{{ demo.minutes }}<small>min</small> {{ demo.seconds }}<small>s</small></div>
-        <div class="kv"><span><b>{{ demo.exercises }}</b>exercises</span><span><b>{{ demo.working|duration }}</b>working</span><span><b>{{ demo.rounds }}</b>rounds</span></div>
-        <div>{% include "planner/_strip.html" with segments=demo.segments size="mid" label="Every interval of the workout, to scale" %}<div class="axis"><span>0:00</span><span>{{ demo.total|mmss }}</span></div></div>
-        <div class="legend legend--small"><span><i class="ph-work"></i>Work</span><span><i class="ph-rest"></i>Rest</span><span><i class="ph-switch"></i>Switch</span><span><i class="ph-ready"></i>Ready</span><span><i class="ph-round"></i>Round</span></div>
+    <div class="showcase__screen" inert>
+      <div class="showcase__bar">{{ pwa.name }} on your phone</div>
+      <div id="app" class="embedded">
+        <div class="scr s-done">
+          <div class="main">
+            <div class="eb">Workout complete</div>
+            <div class="name">{{ report.name }}</div>
+            <div class="stats"><div><b>{{ report.worked|duration }}</b>worked</div><div><b>{{ report.exercises }}/{{ report.exercises }}</b>exercises</div><div><b>{{ report.rounds }}</b>rounds</div></div>
+            <div class="sub">Where it went</div>
+            <div class="tbar">{% for type in report.types %}<span data-css="flex:{{ type.seconds }};background:{{ type.colour }}"></span>{% endfor %}</div>
+            <ul class="tleg">{% for type in report.types %}<li><i data-css="background:{{ type.colour }}"></i><span>{{ type.name }}</span><em>{{ type.seconds|mmss }}</em></li>{% endfor %}</ul>
+            <div class="sub">Muscles worked</div>
+            <ul class="mus">{% for muscle in report.muscles %}<li><span>{{ muscle.name }}</span><b><s data-css="width:{{ muscle.percent }}%"></s></b><em>{{ muscle.seconds|mmss }}</em></li>{% endfor %}</ul>
+            <div class="sub">How hard was it?</div>
+            <div class="rate">{% for n in report.effort %}<button type="button"{% if n <= report.rated %} class="on"{% endif %}>{{ n }}</button>{% endfor %}</div>
+            <div class="saved"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Saved to your log</div>
+          </div>
+        </div>
       </div>
     </div>
-    <figcaption class="showcase__caption">Every interval to scale, in the colours your phone shows: blue is work, mint is rest, orange a switch of sides, green the break between rounds.</figcaption>
+    <figcaption class="showcase__caption">What your phone shows when a workout ends: the time you worked, split by type of training and by muscle. Every session goes in your log.</figcaption>
   </figure>
 
   {# 4. How it works: three tiles. #}
@@ -54,8 +64,8 @@
     </li>
     <li class="tile">
       <svg class="tile__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M21 20H3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      <p class="tile__title">Log</p>
-      <p class="meta">Time worked, by type and muscle.</p>
+      <p class="tile__title">See</p>
+      <p class="meta">Where the time went, by type and muscle.</p>
     </li>
   </ul>
 
@@ -66,10 +76,10 @@
       <h2 id="mcp-title">Plan from your AI chat</h2>
       <p>Connect {{ pwa.name }} to Claude or ChatGPT and ask in plain words. It reads your library and log, and builds or changes workouts. It never deletes anything, and sees only your account.</p>
       <div class="chat">
-        <p class="chat__you">Build me a 15-minute kettlebell workout.</p>
-        <p class="chat__reply">Done: Kettlebell 15, five exercises, two rounds, 20 s rests. It's on your phone under Show all.</p>
-        <p class="chat__you">Pin it for this week.</p>
-        <p class="chat__reply">Pinned. It's on your phone's home screen.</p>
+        <p class="chat__you">How did my training go last month?</p>
+        <p class="chat__reply">12 sessions, 3 h 10 min worked, effort 7 on average. Mostly strength: glutes and quads led, and you did no flexibility at all.</p>
+        <p class="chat__you">Build me a 15-minute stretch for after a run, and pin it.</p>
+        <p class="chat__reply">Done: Stretch 15, six exercises, pinned to your phone's home screen.</p>
       </div>
       <p class="eyebrow">Try asking</p>
       <ul class="asks">
