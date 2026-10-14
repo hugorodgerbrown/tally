@@ -16,7 +16,6 @@ from typing import Any
 from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
-from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET
 
@@ -55,11 +54,6 @@ def _period(request: HttpRequest, today: dt.date) -> rpt.Period:
     except ValueError:
         day = today
     return rpt.Period.containing(kind, min(day, today))  # type: ignore[arg-type]
-
-
-def _url(period: rpt.Period) -> str:
-    """Return Report's address for ``period``."""
-    return f"{reverse('activity:report')}?period={period.kind}&from={period.start:%Y-%m-%d}"
 
 
 def _bars(rows: list[tuple[str, float, str]]) -> list[dict[str, Any]]:
@@ -113,10 +107,10 @@ def report(request: HttpRequest) -> HttpResponse:
         "period": period,
         "title": rpt.title(period, today),
         "range": rpt.range_label(period),
-        "previous_url": _url(previous),
-        "next_url": None if period.contains(today) else _url(period.shifted(1)),
-        "week_url": _url(rpt.Period.containing("week", min(period.last_day, today))),
-        "month_url": _url(rpt.Period.containing("month", period.start)),
+        "previous": previous,
+        "next": None if period.contains(today) else period.shifted(1),
+        "week": rpt.Period.containing("week", min(period.last_day, today)),
+        "month": rpt.Period.containing("month", period.start),
         "totals": now,
         "headline": [
             (
@@ -146,7 +140,7 @@ def report(request: HttpRequest) -> HttpResponse:
                 "seconds": s,
                 "minutes": round(s / 60),
                 "height": round(100 * s / tallest, 1),
-                "url": _url(p),
+                "period": p,
                 "current": p == period,
             }
             for p, s in trend

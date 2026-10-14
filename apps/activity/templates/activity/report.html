@@ -3,8 +3,8 @@
 {# Report: what the user trained in a week or month. Shares Manage's header and styles. #}
 {% block title %}Report · {{ pwa.name }}{% endblock %}
 {% block subnav %}
-  <a href="{{ week_url }}"{% if period.kind == "week" %} aria-current="page"{% endif %}>Week</a>
-  <a href="{{ month_url }}"{% if period.kind == "month" %} aria-current="page"{% endif %}>Month</a>
+  <a href="{% url 'activity:report' %}?period={{ week.kind }}&amp;from={{ week.start|date:'Y-m-d' }}"{% if period.kind == "week" %} aria-current="page"{% endif %}>Week</a>
+  <a href="{% url 'activity:report' %}?period={{ month.kind }}&amp;from={{ month.start|date:'Y-m-d' }}"{% if period.kind == "month" %} aria-current="page"{% endif %}>Month</a>
 {% endblock %}
 {% block content %}
 <div class="phead">
@@ -12,8 +12,8 @@
   <span class="meta">{{ range }}</span>
   <span class="spacer"></span>
   <nav class="pager" aria-label="{{ period.kind|capfirst }}s">
-    <a class="btn btn-quiet btn-sm" href="{{ previous_url }}" rel="prev">Previous {{ period.kind }}</a>
-    {% if next_url %}<a class="btn btn-quiet btn-sm" href="{{ next_url }}" rel="next">Next {{ period.kind }}</a>{% endif %}
+    <a class="btn btn-quiet btn-sm" href="{% url 'activity:report' %}?period={{ previous.kind }}&amp;from={{ previous.start|date:'Y-m-d' }}" rel="prev">Previous {{ period.kind }}</a>
+    {% if next %}<a class="btn btn-quiet btn-sm" href="{% url 'activity:report' %}?period={{ next.kind }}&amp;from={{ next.start|date:'Y-m-d' }}" rel="next">Next {{ period.kind }}</a>{% endif %}
   </nav>
 </div>
 
@@ -66,14 +66,14 @@
 {% endif %}
 {% else %}
 <div class="panel">
-  <div class="empty"><b>No sessions {% if next_url %}in this {{ period.kind }}{% else %}yet this {{ period.kind }}{% endif %}</b><span>Workouts you run on your phone show up here.</span><a class="btn btn-primary" href="{% url 'activity:app' %}">Start a workout</a></div>
+  <div class="empty"><b>No sessions {% if next %}in this {{ period.kind }}{% else %}yet this {{ period.kind }}{% endif %}</b><span>Workouts you run on your phone show up here.</span><a class="btn btn-primary" href="{% url 'activity:app' %}">Start a workout</a></div>
 </div>
 {% endif %}
 
 <section class="panel rcard" aria-labelledby="r-trend">
   <h2 id="r-trend">Minutes worked, last {{ trend|length }} {{ period.kind }}s</h2>
   <ol class="trend">{% for t in trend %}
-    <li{% if t.current %} class="on"{% endif %}><a href="{{ t.url }}"{% if t.current %} aria-current="page"{% endif %}><b><s data-css="height:{{ t.height }}%"></s></b><em><span class="visually-hidden">{{ t.seconds|duration }}</span><span aria-hidden="true">{{ t.minutes }}</span></em><span>{{ t.label }}</span></a></li>
+    <li{% if t.current %} class="on"{% endif %}><a href="{% url 'activity:report' %}?period={{ t.period.kind }}&amp;from={{ t.period.start|date:'Y-m-d' }}"{% if t.current %} aria-current="page"{% endif %}><b><s data-css="height:{{ t.height }}%"></s></b><em><span class="visually-hidden">{{ t.seconds|duration }}</span><span aria-hidden="true">{{ t.minutes }}</span></em><span>{{ t.label }}</span></a></li>
   {% endfor %}</ol>
 </section>
 {% endblock %}
