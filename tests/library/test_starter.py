@@ -16,12 +16,12 @@ pytestmark = pytest.mark.django_db
 def test_install_is_safe_to_run_twice(user: Any) -> None:
     """The second install adds nothing."""
     first = starter.install(user)
-    assert (first.exercises, first.workout) == (21, True)
+    assert (first.exercises, first.workout) == (23, True)
     workout = Workout.objects.for_user(user).get(name=starter.SAMPLE_WORKOUT)
     assert workout.items.count() == 7
     second = starter.install(user)
     assert (second.exercises, second.workout) == (0, False)
-    assert Exercise.objects.for_user(user).count() == 21
+    assert Exercise.objects.for_user(user).count() == 23
     # Recorded as the starter library.
     assert set(Exercise.objects.for_user(user).values_list("source", flat=True)) == {"seed"}
     assert workout.source == "seed"
@@ -44,7 +44,7 @@ def test_two_accounts_share_muscle_groups_not_exercises(user: Any) -> None:
     other = UserFactory.create()
     starter.install(user)
     starter.install(other)
-    assert Exercise.objects.count() == 42
+    assert Exercise.objects.count() == 46
     assert not MuscleGroup.objects.filter(owner__isnull=False).exists()
 
 
@@ -63,7 +63,7 @@ def test_command_fills_only_empty_libraries(user: Any) -> None:
     ExerciseFactory.create(owner=stocked)
     out = StringIO()
     call_command("seed_library", "--commit", stdout=out)
-    assert Exercise.objects.for_user(user).count() == 21
+    assert Exercise.objects.for_user(user).count() == 23
     assert Exercise.objects.for_user(stocked).count() == 1
     call_command("seed_library", stdout=out)
     assert "Every account already has a library" in out.getvalue()
@@ -73,7 +73,7 @@ def test_command_email_adds_what_is_missing(user: Any) -> None:
     """--email targets one account even if it has exercises."""
     ExerciseFactory.create(owner=user, name="Plank")
     call_command("seed_library", "--commit", "--email", user.email.upper(), stdout=StringIO())
-    assert Exercise.objects.for_user(user).count() == 21
+    assert Exercise.objects.for_user(user).count() == 23
 
 
 def test_command_email_must_match_an_account(db: None) -> None:

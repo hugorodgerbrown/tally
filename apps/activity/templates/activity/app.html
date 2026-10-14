@@ -18,6 +18,7 @@
        data-workouts-url="{% url 'activity:api_workouts' %}"
        data-sessions-url="{% url 'activity:api_sessions' %}"
        data-manage-url="{% url 'planner:workouts' %}"
+       data-report-url="{% url 'activity:report' %}"
        data-new-workout-url="{% url 'planner:workout_new' %}"
        data-account-url="{% url 'accounts:account' %}"
        data-sign-in-url="{% url 'accounts:sign_in' %}?next={{ request.path|urlencode }}"></div>

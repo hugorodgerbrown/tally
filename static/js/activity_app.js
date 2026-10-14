@@ -130,21 +130,21 @@
   }
 
   /* The top-right controls, the same as the planner's header: the mode
-   * switch, then Account (where Sign out is). Manage and Account need the
-   * server, so they are disabled offline; once signed out, Account becomes
-   * Sign in. */
+   * switch (Workout, Manage, Report), then Account (where Sign out is).
+   * Manage, Report and Account need the server, so they are disabled
+   * offline; once signed out, Account becomes Sign in. */
   function modeSwitch() {
     const s = window.Store.status();
     const offline = s === "offline" || !navigator.onLine;
-    const manage = offline
-      ? '<span class="mode-off" aria-disabled="true" title="Manage needs a connection">Manage</span>'
-      : `<a href="${esc(url.manageUrl)}">Manage</a>`;
+    const mode = (label, href) => offline
+      ? `<span class="mode-off" aria-disabled="true" title="${label} needs a connection">${label}</span>`
+      : `<a href="${esc(href)}">${label}</a>`;
     const account = s === "signed-out"
       ? `<a class="signout" href="${esc(url.signInUrl)}">Sign in</a>`
       : offline
         ? '<span class="signout off" aria-disabled="true" title="Account needs a connection">Account</span>'
         : `<a class="signout" href="${esc(url.accountUrl)}">Account</a>`;
-    return `<div class="hctl"><nav class="modes" aria-label="Mode"><span aria-current="page">Activity</span>${manage}</nav>${account}</div>`;
+    return `<div class="hctl"><nav class="modes" aria-label="Mode"><span aria-current="page">Workout</span>${mode("Manage", url.manageUrl)}${mode("Report", url.reportUrl)}</nav>${account}</div>`;
   }
 
   function homeScreen() {

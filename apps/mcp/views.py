@@ -26,8 +26,8 @@ SUPPORTED_VERSIONS = ("2025-11-25", "2025-06-18", "2025-03-26")
 SERVER_INFO = {"name": "tally", "title": APP_NAME, "version": "1.0.0"}
 INSTRUCTIONS = (
     f"{APP_NAME} is an interval-workout app. The signed-in user's library holds exercises, "
-    "each tagged with one or more types (aerobic, anaerobic, strength, flexibility, fitness) "
-    "and the muscle groups it works. Workouts are ordered lists of exercises with a "
+    "each tagged with one or more types (strength, flexibility, balance, aerobic, anaerobic, "
+    "fitness) and the muscle groups it works. Workouts are ordered lists of exercises with a "
     "duration each, a rest between exercises, and a number of rounds. One-sided exercises "
     "run twice, once per side. Sessions are the log of workouts done on the phone, with "
     "time worked per exercise and an optional 1-10 effort rating. Times are in seconds "

@@ -25,7 +25,7 @@ def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
     """Keep the rows data migrations made (the exercise types) across the live server's flush.
 
     live_server flushes the database after each test, which would take the
-    five exercise types with it, and the starter library needs them.
+    six exercise types with it, and the starter library needs them.
     pytest-django decides what to serialise at collection, so this is a
     marker rather than a fixture.
     """

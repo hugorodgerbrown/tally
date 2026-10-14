@@ -22,13 +22,15 @@ apps/public/     the public pages: /, /terms/, /privacy/, /help/;
                  each body is one _<name>_body.html, also served as Markdown
 apps/pwa/        /app/manifest.webmanifest, /app/sw.js, /app/offline/;
                  conf.py holds the app's identity, SCOPE and the precache list
-apps/library/    ExerciseType (shared), MuscleGroup (shared, or private to
+apps/library/    ExerciseType (shared, six), MuscleGroup (shared, or private to
                  an owner), Exercise, Workout, WorkoutItem (owned);
-                 starter.py installs the 21-exercise starter library on
+                 starter.py installs the 23-exercise starter library on
                  every new account; timeline.py mirrors engine.js
-apps/activity/   the phone app at /app/ (one page, static/js/activity_*.js
-                 + engine.js), its JSON API under /app/api/, and the logged
-                 ActivitySession / SessionEntry / DiscardedSession;
+apps/activity/   the phone app at /app/ (Workout mode: one page,
+                 static/js/activity_*.js + engine.js), its JSON API under
+                 /app/api/, Report at /app/report/ (report.py: the
+                 week/month totals training_summary also uses), and the
+                 logged ActivitySession / SessionEntry / DiscardedSession;
                  retired.py keeps the pre-template addresses working
 apps/planner/    build workouts and exercises: /app/workouts/, /app/exercises/
 apps/design/     the design page (/app/design/, staff only): every token

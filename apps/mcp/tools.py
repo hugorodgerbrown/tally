@@ -12,7 +12,6 @@ model should see and correct.
 
 import datetime as dt
 import uuid
-from collections import defaultdict
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
@@ -23,6 +22,7 @@ from django.db import transaction
 from django.db.models import Count, Max, Prefetch, Q, QuerySet
 from django.utils import timezone
 
+from apps.activity import report
 from apps.activity.models import ActivitySession, SessionEntry
 from apps.library import timeline
 from apps.library.models import (
@@ -370,13 +370,7 @@ def _date_range(args: Args) -> tuple[dt.datetime | None, dt.datetime | None]:
 
 def _sessions(user: AbstractBaseUser, args: Args) -> QuerySet[ActivitySession]:
     """Return the user's sessions in the arguments' date range."""
-    start, end = _date_range(args)
-    qs = ActivitySession.objects.for_user(user)
-    if start:
-        qs = qs.filter(started_at__gte=start)
-    if end:
-        qs = qs.filter(started_at__lt=end)
-    return qs
+    return report.sessions_between(user, *_date_range(args))
 
 
 # ---------- read tools ----------
@@ -530,46 +524,21 @@ def list_sessions(user: AbstractBaseUser, args: Args) -> Result:
 )
 def training_summary(user: AbstractBaseUser, args: Args) -> Result:
     """Return the user's totals for a period, split by type, muscle, movement and exercise."""
-    sessions = list(_sessions(user, args))
-    entries = SessionEntry.objects.filter(session__in=sessions).prefetch_related(
-        "exercise__types", "exercise__muscles"
-    )
-    by_type: dict[str, float] = defaultdict(float)
-    by_muscle: dict[str, int] = defaultdict(int)
-    by_exercise: dict[str, int] = defaultdict(int)
-    by_movement: dict[str, int] = defaultdict(int)
-    for entry in entries:
-        by_exercise[entry.exercise_name] += entry.seconds_worked
-        if entry.exercise is None:
-            by_type["unknown"] += entry.seconds_worked
-            by_movement["unknown"] += entry.seconds_worked
-            continue
-        by_movement[entry.exercise.movement] += entry.seconds_worked
-        types = entry.exercise.types.all()
-        for t in types:
-            by_type[t.slug] += entry.seconds_worked / len(types)
-        for m in entry.exercise.muscles.all():
-            by_muscle[m.name] += entry.seconds_worked
-    efforts = [s.effort for s in sessions if s.effort is not None]
-
-    def ranked(totals: dict[str, int] | dict[str, float]) -> dict[str, int]:
-        """Return the totals rounded, largest first."""
-        return {k: round(v) for k, v in sorted(totals.items(), key=lambda kv: -kv[1])}
-
+    totals = report.totals(user, *_date_range(args))
     return {
         "start_date": args["start_date"],
         "end_date": args["end_date"],
-        "sessions": len(sessions),
-        "completed_sessions": sum(s.completed for s in sessions),
-        "active_days": len({timezone.localdate(s.started_at) for s in sessions}),
-        "seconds_worked": sum(s.seconds_worked for s in sessions),
-        "average_effort": round(sum(efforts) / len(efforts), 1) if efforts else None,
-        "seconds_by_type": ranked(by_type),
-        "seconds_by_muscle": ranked(by_muscle),
-        "seconds_by_movement": ranked(by_movement),
-        "seconds_by_exercise": ranked(by_exercise),
+        "sessions": totals.sessions,
+        "completed_sessions": totals.completed_sessions,
+        "active_days": totals.active_days,
+        "seconds_worked": totals.seconds_worked,
+        "average_effort": totals.average_effort,
+        "seconds_by_type": report.ranked(totals.seconds_by_type),
+        "seconds_by_muscle": report.ranked(totals.seconds_by_muscle),
+        "seconds_by_movement": report.ranked(totals.seconds_by_movement),
+        "seconds_by_exercise": report.ranked(totals.seconds_by_exercise),
         "unused_types": sorted(
-            set(ExerciseType.objects.values_list("slug", flat=True)) - set(by_type)
+            set(ExerciseType.objects.values_list("slug", flat=True)) - set(totals.seconds_by_type)
         ),
     }
 
