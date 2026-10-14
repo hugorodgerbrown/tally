@@ -12,7 +12,9 @@ it close to the template so `copier update --trust` stays a clean merge.
 config/          settings (one module, env-driven), urls, wsgi/asgi
 apps/core/       BaseModel, IdempotencyMiddleware + IdempotencyRecord,
                  decorators (require_htmx, login_required_json), rate
-                 limits, safe_next, livez and healthz
+                 limits, safe_next, livez and healthz; analytics.py puts
+                 fivebar's tag on every page while FIVEBAR_DOMAIN is set,
+                 and marks events (a sign-up) for static/js/analytics.js
 apps/accounts/   sign-up (/signup/) and sign-in by emailed link or code
                  (SignInRequest), passkeys (Passkey), the passkey nudge at
                  /app/welcome/, sign-out, /app/account/ (docs/accounts.md)
@@ -29,6 +31,8 @@ apps/activity/   the phone app at /app/ (one page, static/js/activity_*.js
                  ActivitySession / SessionEntry / DiscardedSession;
                  retired.py keeps the pre-template addresses working
 apps/planner/    build workouts and exercises: /app/workouts/, /app/exercises/
+apps/design/     the design page (/app/design/, staff only): every token
+                 and every component state (DESIGN.md)
 apps/mcp/        the MCP endpoint (/mcp) and its tools; auth is mcp-auth.
                  privacy_policy, terms_of_service and help return the
                  public pages as Markdown (apps/public/pages.py);
@@ -37,9 +41,11 @@ apps/mcp/        the MCP endpoint (/mcp) and its tools; auth is mcp-auth.
 templates/       base.html (the app, /app/), public_base.html, includes
 static/js/       plain JavaScript, classic scripts, no build step
 static/css/      tokens.css (Tally's tokens and fonts), app.css (template
-                 components), planner.css (scoped .planner), activity.css
+                 components, the design system's tokens mapped to Tally's;
+                 DESIGN.md), planner.css (scoped .planner), activity.css
                  (scoped #app)
-docs/            accounts, testing, pwa, security, performance, decisions/
+docs/            accounts, testing, onboarding-tour, pwa, security,
+                 performance, decisions/
 .claude/skills/  writing the Titan docs kept in Linear (research, user
                  testing script, blog post), each with a length setting
 ```
@@ -86,8 +92,10 @@ queryset, a factory in `tests/factories.py`, and tests. Use `uuid`, never
   which `static/js/styles.js` applies through the CSSOM.
 - Every query for exercises, workouts or sessions is scoped to the signed-in
   user (`for_user`, `signed_in_user`); another account's uuid is a 404.
-- Style with the tokens in `static/css/app.css`; add a component class
-  there rather than one-off values.
+- Follow [DESIGN.md](DESIGN.md) on every UI change: check the design
+  page (`/app/design/`) first, use tokens and never raw values, show every
+  new component and state on the page, and delete dead CSS.
+  `tests/test_design.py` enforces it (on app.css).
 - A page should work without JavaScript; JavaScript makes it better.
 - Signed-in pages live under `/app/` (the installed app's scope) and
   extend `base.html`; public pages sit outside it and extend
@@ -111,6 +119,42 @@ No passwords: email link or code, then passkeys. Read
 [docs/accounts.md](docs/accounts.md) before touching sign-in. Views never
 send mail; they enqueue a task (`apps/accounts/tasks.py`).
 
+## Onboarding tour
+
+Every app ships a first-run tour, offered after an account's first sign-in
+and again from the account page. Write the script in
+`docs/onboarding-tour.md` and agree it before building. The tour runs on a
+private demo copy made for the one person taking it, never on their real
+data; real taps move it on, and nothing in it saves. Each page gets an
+intro, then zoom-ins on its parts, then a real tap to the next page; it
+ends on the person's first real action. Measure it in fivebar with
+`Tour started`, `Tour ended`, `Tour finished` and that first action. Why:
+[docs/decisions/every-app-has-an-onboarding-tour.md](docs/decisions/every-app-has-an-onboarding-tour.md).
+
+## Linear
+
+Every Titan app has a Linear project, Tally, in the Titan
+team (issue keys `RAS-`), and every change maps to an issue there: one
+issue per PR, one PR per issue. Why:
+[docs/decisions/every-change-starts-as-a-linear-issue.md](docs/decisions/every-change-starts-as-a-linear-issue.md).
+
+- If the project doesn't exist yet (a new app), create it in the Titan
+  team first, named after the app, then file the first issue in it.
+- The issue is the sign-off. Before writing code, Claude creates it in
+  the app's project with the scope: what changes, what doesn't, how
+  we'll know it's done, and the decision behind it. Work starts once the
+  person agrees the scope, not before.
+- If the scope changes during the work, say so on the issue before the
+  PR goes up, so the issue records what was built and why.
+- The PR title is `RAS-42: what it does` and its body starts
+  `Closes RAS-42`, so Linear links the two and closes the issue on merge.
+- Reversing an earlier decision is a new issue that links the old one
+  and says why it changed. Never rewrite the old issue: the history is
+  the point.
+- Dependabot's PRs are the one exception: they need no issue.
+- Without the Linear MCP server, say so and give the issue as Markdown
+  for the person to file; don't start unticketed work.
+
 ## Tests
 
 Three layers, top-down, stop at the first that can hold the assertion:
@@ -120,8 +164,9 @@ Coverage floor 90%. Full rules: [docs/testing.md](docs/testing.md).
 
 ## Before opening a PR
 
-Run `uv run tox` and fix every failure. Record a non-obvious architectural
-choice in `docs/decisions/`.
+Run `uv run tox` and fix every failure. Check the PR names its Linear
+issue (above). Record a non-obvious architectural choice in
+`docs/decisions/`.
 
 ## Invariants
 

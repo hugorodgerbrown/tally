@@ -1,0 +1,57 @@
+#!/usr/bin/env python3
+"""Draw a placeholder share card: the promise beside a sketch of the product.
+
+The card is what a link to the site unfurls as in a chat (DESIGN.md, "The
+front page"): 1200×630, the proposition on the left and the product on the
+right. This draws the app's name and description on the brand colour, and
+a card of blank rows where the product goes. Replace it with the real
+thing before launch: the front page's promise beside its live component.
+
+It never overwrites: the project template runs it on every copy and
+update, so an app that predates the card gets one, and one that has its
+own keeps it. Needs Pillow, which the project doesn't depend on:
+
+    uv run --no-project --with pillow python bin/make-share-card "My Project" "#1d4ed8" "One line"
+"""
+
+import sys
+import textwrap
+from pathlib import Path
+
+from PIL import Image, ImageDraw, ImageFont
+
+OUT = Path(__file__).resolve().parent.parent / "static" / "img" / "share-card.png"
+WIDTH, HEIGHT = 1200, 630
+WHITE = "#ffffff"
+ROW = "#d9dde3"
+
+
+def draw(name: str, colour: str, description: str) -> Image.Image:
+    """Return the card: name and description left, a sketch of the product right."""
+    image = Image.new("RGB", (WIDTH, HEIGHT), colour)
+    pen = ImageDraw.Draw(image)
+    title = ImageFont.load_default(size=72)
+    body = ImageFont.load_default(size=34)
+    pen.text((72, 150), name, fill=WHITE, font=title)
+    for i, line in enumerate(textwrap.wrap(description, width=26)[:5]):
+        pen.text((72, 270 + i * 48), line, fill=WHITE, font=body)
+    # The product: a card with a few rows, standing in for the live component.
+    pen.rounded_rectangle((680, 90, 1128, 540), radius=28, fill=WHITE)
+    for i in range(4):
+        top = 140 + i * 96
+        pen.rounded_rectangle((720, top, 1088 - (i % 2) * 90, top + 22), radius=11, fill=ROW)
+        pen.rounded_rectangle((720, top + 38, 860, top + 52), radius=7, fill=ROW)
+    return image
+
+
+def main() -> None:
+    """Write static/img/share-card.png, unless the app already has one."""
+    if OUT.exists():
+        return
+    name, colour, description = sys.argv[1], sys.argv[2], sys.argv[3]
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    draw(name, colour, description).save(OUT, optimize=True)
+
+
+if __name__ == "__main__":
+    main()

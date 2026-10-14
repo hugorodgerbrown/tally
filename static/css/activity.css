@@ -9,12 +9,16 @@
   --round-ink: #FFFFFF; --round-fill: rgba(0, 30, 15, .22);
   --paused: #2B2E3A; --paused-ink: #EEF0F6;
   --done: #12142A; --done-ink: #FFFFFF; --done-hi: #F7C948; --done-danger: #FF8A70;
-  color-scheme: dark;
 }
+html:has(> body.activity), #app { color-scheme: dark; }
 #app, #app * { box-sizing: border-box; }
 html:has(> body.activity), body.activity { margin: 0; height: 100%; background: var(--done); color: var(--done-ink); font-family: var(--f-ui); -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
 #app a { color: inherit; }
 #app { position: fixed; inset: 0; container-type: inline-size; }
+/* A screen drawn inside another page (the front page's report), at the
+ * height of its content. */
+#app.embedded { position: relative; inset: auto; margin-inline: calc(-1 * var(--space-lg)); background: var(--done); }
+#app.embedded .scr { height: auto; }
 
 #app .scr { position: relative; height: 100%; overflow: hidden; display: flex; flex-direction: column; user-select: none; -webkit-user-select: none;
   padding: calc(env(safe-area-inset-top, 0px) + 6cqw) calc(env(safe-area-inset-right, 0px) + 7cqw) calc(env(safe-area-inset-bottom, 0px) + 7cqw) calc(env(safe-area-inset-left, 0px) + 7cqw);

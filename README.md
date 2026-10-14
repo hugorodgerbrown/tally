@@ -83,6 +83,13 @@ the app labels (`library`, `activity`) and tables are unchanged.
 ## Deploy to Render
 
 `render.yaml` is a Blueprint for the web service and a daily clean-up job.
+[titan](https://github.com/hugorodgerbrown/django-titan-template/tree/main/titan)
+sets everything up: run `titan deploy tally` once the repo is on GitHub. Both services read their
+settings from two env groups, `titan` (shared by every Titan app) and
+`tally` (this app's own). titan makes both before the Blueprint
+is deployed.
+
+By hand instead:
 
 1. Create a database and role for the project on your Postgres instance.
 2. In Render, New → Blueprint, pick this repository, and enter

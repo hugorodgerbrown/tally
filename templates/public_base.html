@@ -1,15 +1,26 @@
-{% load static %}<!doctype html>
+{% load static share site_footer %}<!doctype html>
 {# The public pages: home, terms, privacy and signing in. No service worker, no outbox. #}
 <html lang="en-GB">
   <head>
     {% include "includes/_head.html" %}
     <title>{% block title %}{{ pwa.name }}{% endblock %}</title>
     <meta name="description" content="{% block description %}{{ pwa.name }}{% endblock %}">
+    {# How a link to this page unfurls in a chat (DESIGN.md, "The front page"). No og:url: the chat already has the link, and a sign-in link's address is its token. #}
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="{{ pwa.name }}">
+    <meta property="og:title" content="{% block share_title %}{{ pwa.name }}{% endblock %}">
+    <meta property="og:description" content="{% block share_description %}{{ pwa.description }}{% endblock %}">
+    <meta property="og:image" content="{% absolute_static 'img/share-card.png' %}">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="{% block share_image_alt %}{{ pwa.description }}{% endblock %}">
+    <meta name="twitter:card" content="summary_large_image">
     {% block extra_js %}{% endblock %}
   </head>
   <body>
     <header class="app-header">
-      <a class="app-header__name" href="{% url 'public:home' %}">{{ pwa.name }}</a>
+      <a class="app-header__name" href="{% url 'public:home' %}"><img class="app-header__icon" src="{% static 'icons/icon-192.png' %}" alt="" width="28" height="28">{{ pwa.name }}</a>
       {% if user.is_authenticated %}
         <a class="app-header__link" href="{% url 'activity:app' %}">Open the app</a>
       {% else %}
@@ -19,6 +30,6 @@
     <main class="app-main">
       {% block content %}{% endblock %}
     </main>
-    {% include "includes/_footer.html" %}
+    {% site_footer %}
   </body>
 </html>

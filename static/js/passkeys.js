@@ -88,10 +88,11 @@
       return;
     }
     if (result.status === 404 && result.data.credentialId) {
-      // Deleted here but still on the device: ask the device to forget it.
+      // Deleted here but still on the device: ask the device to forget it,
+      // under the RP ID the ceremony used (it can be a parent domain).
       const PKC = self.PublicKeyCredential;
       if (typeof PKC.signalUnknownCredential === 'function') {
-        PKC.signalUnknownCredential({ rpId: location.hostname, credentialId: result.data.credentialId }).catch(() => undefined);
+        PKC.signalUnknownCredential({ rpId: options.data.rpId || location.hostname, credentialId: result.data.credentialId }).catch(() => undefined);
       }
       showError(section, "That passkey isn't on your account any more. Sign in with your email.");
       return;

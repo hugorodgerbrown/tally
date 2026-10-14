@@ -27,6 +27,7 @@ urlpatterns = [
     path("app/", include("apps.pwa.urls")),
     path("app/", include("apps.activity.urls")),
     path("app/", include("apps.planner.urls")),
+    path("app/", include("apps.design.urls")),
     path("", include("mcp_auth.urls")),
     path("mcp", mcp, name="mcp"),
     # Before the move to /app/: retire the old service workers and send old

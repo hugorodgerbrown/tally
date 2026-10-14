@@ -11,7 +11,9 @@ from apps.pwa import conf
 # depends on all of it arriving, so it stays small. Tally raised the
 # template's 150 KB to 160 KB: its phone app (activity_app.js, engine.js,
 # activity.css, about 56 KB) is the offline shell itself, not an extra.
-PRECACHE_BUDGET_BYTES = 160_000
+# 165 KB since RAS-45: the template's app.css grew by its shared front-page
+# and design-system components, which every Titan app's shell carries.
+PRECACHE_BUDGET_BYTES = 165_000
 
 
 def test_precached_shell_fits_the_budget() -> None:

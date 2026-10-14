@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+{% load static %}
+{# The design system (DESIGN.md): every token, read from app.css, and every component in each of its states. A component added to app.css goes here in the same change; tests/test_design.py fails until it does. #}
+{% block title %}Design system · {{ pwa.name }}{% endblock %}
+{% block extra_js %}<script src="{% static 'js/design.js' %}" defer></script>{% endblock %}
+{% block content %}
+  <header class="stack">
+    <h1>Design system</h1>
+    <p class="meta">Tokens read from static/css/app.css, and every component in each state. The rules are in DESIGN.md.</p>
+  </header>
+
+  <section class="card stack" aria-labelledby="ds-colour">
+    <h2 id="ds-colour">Colour</h2>
+    <ul class="ds-grid">
+      {% for token in families.colour %}
+        <li class="ds-token">
+          <span class="ds-swatch" data-token="{{ token.name }}" data-paint="background"></span>
+          <code>{{ token.name }}</code>
+          <span class="meta"><span data-token-value="{{ token.name }}">{{ token.value }}</span></span>
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="card stack" aria-labelledby="ds-type">
+    <h2 id="ds-type">Type</h2>
+    <ul class="item-list">
+      {% for token in families.type %}
+        <li class="item">
+          <p class="ds-sample" data-token="{{ token.name }}" data-paint="size">Plan the day</p>
+          <span class="meta"><code>{{ token.name }}</code> <span data-token-value="{{ token.name }}">{{ token.value }}</span></span>
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="card stack" aria-labelledby="ds-space">
+    <h2 id="ds-space">Space</h2>
+    <ul class="item-list">
+      {% for token in families.space %}
+        <li class="item">
+          <span class="ds-bar" data-token="{{ token.name }}" data-paint="width"></span>
+          <span class="meta"><code>{{ token.name }}</code> <span data-token-value="{{ token.name }}">{{ token.value }}</span></span>
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="card stack" aria-labelledby="ds-shape">
+    <h2 id="ds-shape">Shape and depth</h2>
+    <ul class="ds-grid">
+      {% for token in families.radius %}
+        <li class="ds-token">
+          <span class="ds-corner" data-token="{{ token.name }}" data-paint="radius"></span>
+          <code>{{ token.name }}</code>
+          <span class="meta"><span data-token-value="{{ token.name }}">{{ token.value }}</span></span>
+        </li>
+      {% endfor %}
+      {% for token in families.shadow %}
+        <li class="ds-token">
+          <span class="ds-depth" data-token="{{ token.name }}" data-paint="shadow"></span>
+          <code>{{ token.name }}</code>
+          <span class="meta"><span data-token-value="{{ token.name }}">{{ token.value }}</span></span>
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="card stack" aria-labelledby="ds-other">
+    <h2 id="ds-other">Fonts and layout</h2>
+    <ul class="item-list">
+      {% for token in families.other %}
+        <li class="item">
+          <code>{{ token.name }}</code>
+          <span class="meta"><span data-token-value="{{ token.name }}">{{ token.value }}</span></span>
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="card stack" aria-labelledby="ds-buttons">
+    <h2 id="ds-buttons">Buttons</h2>
+    <div class="ds-row">
+      <button class="button" type="button">Primary</button>
+      <button class="button button--secondary" type="button">Secondary</button>
+      <button class="button button--quiet" type="button">Quiet</button>
+      <button class="button" type="button" disabled>Disabled</button>
+    </div>
+    <p class="meta">A button row: a primary and its alternative, side by side, wrapping on a phone.</p>
+    <div class="button-row">
+      <button class="button" type="button">Approve</button>
+      <button class="button button--secondary" type="button">Cancel</button>
+    </div>
+  </section>
+
+  <section class="card stack" aria-labelledby="ds-forms">
+    <h2 id="ds-forms">Forms</h2>
+    <label class="field">
+      <span class="field__label">A field</span>
+      <input type="text" value="Some text">
+    </label>
+    <label class="field">
+      <span class="field__label">A field with an error</span>
+      <input type="email" value="not an email">
+    </label>
+    <ul class="errorlist"><li>Enter a valid email address.</li></ul>
+    <p class="form-error">That code has expired. Ask for a new one.</p>
+    <label class="field">
+      <span class="field__label">A code, as one field</span>
+      <input class="input--code" type="text" value="123456">
+    </label>
+    <div class="field">
+      <span class="field__label">A code, as six boxes</span>
+      <div class="code-boxes" role="group" aria-label="Code">
+        <input class="code-box" type="text" value="1" aria-label="Digit 1">
+        <input class="code-box" type="text" value="2" aria-label="Digit 2">
+        <input class="code-box" type="text" aria-label="Digit 3">
+        <input class="code-box" type="text" aria-label="Digit 4">
+        <input class="code-box" type="text" aria-label="Digit 5">
+        <input class="code-box" type="text" aria-label="Digit 6">
+      </div>
+    </div>
+  </section>
+
+  <section class="card stack" aria-labelledby="ds-messages">
+    <h2 id="ds-messages">Messages</h2>
+    <p class="notice">A notice: something to know, not an error.</p>
+    <p class="meta">Meta: secondary text, dates, counts.</p>
+  </section>
+
+  <section class="card stack" aria-labelledby="ds-lists">
+    <h2 id="ds-lists">Lists</h2>
+    <ul class="item-list">
+      <li class="item">
+        <div>
+          <p class="item__title">An item</p>
+          <p class="meta">With its meta line</p>
+        </div>
+        <button class="button button--quiet" type="button">Action</button>
+      </li>
+      <li class="item">
+        <div>
+          <p class="item__title">Another item</p>
+          <p class="meta">Rows are ruled between, not around</p>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <section class="card stack" aria-labelledby="ds-pages">
+    <h2 id="ds-pages">Public pages</h2>
+    <p class="meta">The front page's sections, in order (DESIGN.md, "The front page").</p>
+    <div class="hero stack">
+      <p class="eyebrow">An eyebrow</p>
+      <h1>A hero: the promise</h1>
+      <p class="hero__lead">The lead under it, on the homepage.</p>
+      <a class="button button--block" href="#ds-pages">One primary action</a>
+      <p class="hero__note">A note that removes the doubt.</p>
+    </div>
+    <figure class="showcase">
+      <div class="showcase__screen">
+        <p class="showcase__bar">The app's name</p>
+        <p class="meta">The app's own component, with demo data</p>
+      </div>
+      <figcaption class="showcase__caption">A caption saying how to read it.</figcaption>
+    </figure>
+    <ul class="tiles">
+      <li class="tile"><svg class="tile__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/></svg><p class="tile__title">A tile</p><p class="meta">Icon, verb, one line.</p></li>
+      <li class="tile"><svg class="tile__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/></svg><p class="tile__title">Three of them</p><p class="meta">Side by side when there's room.</p></li>
+      <li class="tile"><svg class="tile__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/></svg><p class="tile__title">How it works</p><p class="meta">Optional.</p></li>
+    </ul>
+    <div class="chat">
+      <p class="chat__you">A question to the AI chat</p>
+      <p class="chat__reply">Its answer, from the app's tools.</p>
+    </div>
+    <ul class="asks"><li>Things to try asking</li><li>Quoted, not tapped</li></ul>
+    <p class="copy-field"><code class="copy-field__value">https://example.com/mcp</code><button class="button button--secondary" type="button">Copy</button></p>
+    <dl class="facts">
+      <div class="fact"><dt class="fact__label">true numbers</dt><dd class="fact__value">3</dd></div>
+      <div class="fact"><dt class="fact__label">doubts left</dt><dd class="fact__value">0</dd></div>
+      <div class="fact"><dt class="fact__label">optional</dt><dd class="fact__value">1</dd></div>
+    </dl>
+    <div class="closing stack">
+      <h2>The closing action</h2>
+      <a class="button button--block" href="#ds-pages">The same primary action</a>
+    </div>
+    <div class="prose">
+      <h2>Prose</h2>
+      <p>Terms, privacy and help are prose: headings and paragraphs with room between them.</p>
+      <ul><li>And lists.</li></ul>
+      <h3>A sub-heading</h3>
+      <ol><li>And steps, numbered.</li></ol>
+    </div>
+  </section>
+
+  <section class="card stack" aria-labelledby="ds-footer">
+    <h2 id="ds-footer">Site footer and links</h2>
+    <p class="meta">The website's pages end with the footer, {% templatetag openblock %} site_footer {% templatetag closeblock %}; the app has none and lists the same links on its account page, {% templatetag openblock %} site_links {% templatetag closeblock %}. Both are set in apps/public/conf.py.</p>
+    <footer class="site-footer">
+      <nav class="site-footer__links" aria-label="Sample"><a href="#ds-footer">Links</a><a href="#ds-footer">that wrap</a><a href="#ds-footer">44px to tap</a></nav>
+      <p class="site-footer__legal">© The year and the holder. All rights reserved.</p>
+    </footer>
+    <ul class="site-links">
+      <li><a href="#ds-footer">The same links</a></li>
+      <li><a href="#ds-footer">one to a row</a></li>
+    </ul>
+  </section>
+{% endblock %}

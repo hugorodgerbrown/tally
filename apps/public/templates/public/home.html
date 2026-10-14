@@ -1,33 +1,116 @@
 {% extends "public_base.html" %}
-{% load static %}
-{% block title %}{{ pwa.name }}{% endblock %}
-{% block description %}{{ pwa.description }}{% endblock %}
+{% load static planner %}
+{# The front page, in the shape every Titan app shares (DESIGN.md, "The front page"). #}
+{% block title %}{{ pwa.name }}: timed and tallied{% endblock %}
+{% block description %}Interval workouts your phone runs hands free, with every minute logged by type and by muscle.{% endblock %}
+{% block share_title %}Timed and tallied.{% endblock %}
+{% block share_description %}Say hi to your new AI trainer.{% endblock %}
+{% block share_image_alt %}Timed and tallied. Beside it, the phone's report after a workout: time by type and by muscle.{% endblock %}
+{% block extra_js %}
+  <link rel="stylesheet" href="{% static 'css/activity.css' %}">
+  <script src="{% static 'js/styles.js' %}" defer></script>
+  <script src="{% static 'js/copy.js' %}" defer></script>
+{% endblock %}
 {% block content %}
+  {# 2. Proposition: the promise, and one way in, named for the first job. #}
   <section class="hero stack">
-    <img class="hero__icon" src="{% static 'icons/icon-192.png' %}" alt="" width="96" height="96">
-    <h1>{{ pwa.name }}</h1>
-    <p class="hero__lead">Interval workouts, hands free.</p>
-    <div class="button-row">
-      {% if user.is_authenticated %}
-        <a class="button" href="{% url 'activity:app' %}">Start a workout</a>
-        <a class="button button--secondary" href="{% url 'planner:workouts' %}">Manage workouts</a>
-      {% else %}
-        <a class="button" href="{% url 'accounts:sign_up' %}">Create an account</a>
-        <a class="button button--secondary" href="{% url 'accounts:sign_in' %}">Sign in</a>
-      {% endif %}
+    <p class="eyebrow">Interval training at home</p>
+    <h1>Timed and tallied.</h1>
+    <p class="hero__lead">Say hi to your new AI trainer.</p>
+    {% if user.is_authenticated %}
+      <a class="button button--block" href="{% url 'activity:app' %}">Open the app</a>
+    {% else %}
+      <a class="button button--block" href="{% url 'accounts:sign_in' %}?next={% url 'planner:workout_new' %}">Build a workout</a>
+      <p class="hero__note">Sign in with your email, no password.</p>
+    {% endif %}
+  </section>
+
+  {# 3. The product, live: the phone's own finish screen, drawn by activity.css with a demo workout. #}
+  <figure class="showcase">
+    <div class="showcase__screen" inert>
+      <div class="showcase__bar">{{ pwa.name }} on your phone</div>
+      <div id="app" class="embedded">
+        <div class="scr s-done">
+          <div class="main">
+            <div class="eb">Workout complete</div>
+            <div class="name">{{ report.name }}</div>
+            <div class="stats"><div><b>{{ report.worked|duration }}</b>worked</div><div><b>{{ report.exercises }}/{{ report.exercises }}</b>exercises</div><div><b>{{ report.rounds }}</b>rounds</div></div>
+            <div class="sub">Where it went</div>
+            <div class="tbar">{% for type in report.types %}<span data-css="flex:{{ type.seconds }};background:{{ type.colour }}"></span>{% endfor %}</div>
+            <ul class="tleg">{% for type in report.types %}<li><i data-css="background:{{ type.colour }}"></i><span>{{ type.name }}</span><em>{{ type.seconds|mmss }}</em></li>{% endfor %}</ul>
+            <div class="sub">Muscles worked</div>
+            <ul class="mus">{% for muscle in report.muscles %}<li><span>{{ muscle.name }}</span><b><s data-css="width:{{ muscle.percent }}%"></s></b><em>{{ muscle.seconds|mmss }}</em></li>{% endfor %}</ul>
+            <div class="sub">How hard was it?</div>
+            <div class="rate">{% for n in report.effort %}<button type="button"{% if n <= report.rated %} class="on"{% endif %}>{{ n }}</button>{% endfor %}</div>
+            <div class="saved"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Saved to your log</div>
+          </div>
+        </div>
+      </div>
     </div>
+    <figcaption class="showcase__caption">What your phone shows when a workout ends: the time you worked, split by type of training and by muscle. Every session goes in your log.</figcaption>
+  </figure>
+
+  {# 4. How it works: three tiles, one for each of the app's three views. #}
+  <ul class="tiles" aria-label="How it works">
+    <li class="tile">
+      <svg class="tile__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H4zM9 20h6M12 16v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <p class="tile__title">Build</p>
+      <p class="meta">Create custom exercises and workouts.</p>
+    </li>
+    <li class="tile">
+      <svg class="tile__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2h8a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zM12 8v4l2 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <p class="tile__title">Workout</p>
+      <p class="meta">Use the intuitive full-screen interval timer.</p>
+    </li>
+    <li class="tile">
+      <svg class="tile__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M21 20H3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <p class="tile__title">Review</p>
+      <p class="meta">Drill down into your exercise patterns.</p>
+    </li>
+  </ul>
+
+  {% if mcp_url %}
+    {# 5. From your AI chat. Every question below is one the connector's tools answer. #}
+    <section class="card stack" id="mcp" aria-labelledby="mcp-title">
+      <p class="eyebrow">Plan from your AI chat</p>
+      <h2 id="mcp-title">Ask Claude to set up your workout</h2>
+      <p>Connect {{ pwa.name }} to Claude or ChatGPT and just ask. It never deletes anything, and sees only your account.</p>
+      <div class="chat">
+        <p class="chat__you">Set me up a 20-minute kettlebell workout for tomorrow morning.</p>
+        <p class="chat__reply">Done: Kettlebell 20, five exercises, two rounds. It's pinned to your phone.</p>
+        <p class="chat__you">And how did last month go?</p>
+        <p class="chat__reply">12 sessions, 3 h 10 min worked. Mostly strength, and no flexibility at all.</p>
+      </div>
+      <p class="eyebrow">Try asking</p>
+      <ul class="asks">
+        <li>How much did I train last month, and what did I skip?</li>
+        <li>Build me a 20-minute mobility workout for after a run</li>
+        <li>Add a third round to Kettlebell 20 and cut the rests to 15 seconds</li>
+        <li>Archive the workouts I haven't done since the summer</li>
+      </ul>
+      <p class="meta">Add this address as a connector, then sign in:</p>
+      <p class="copy-field">
+        <code class="copy-field__value" id="mcp-url">{{ mcp_url }}</code>
+        <button class="button button--secondary" type="button" data-copy="{{ mcp_url }}" data-copy-target="mcp-url" data-copied-label="Copied" hidden>Copy</button>
+      </p>
+      <p><a href="{% url 'public:help' %}#use-with-ai">How to add it to Claude or ChatGPT</a></p>
+    </section>
+  {% endif %}
+
+  {# 6. Facts: three true numbers, each removing a doubt. #}
+  <dl class="facts">
+    <div class="fact"><dt class="fact__label">starter exercises</dt><dd class="fact__value">21</dd></div>
+    <div class="fact"><dt class="fact__label">sample workout</dt><dd class="fact__value">1</dd></div>
+    <div class="fact"><dt class="fact__label">passwords</dt><dd class="fact__value">0</dd></div>
+  </dl>
+
+  {# 7. Closing action: the promise again, and the same way in. #}
+  <section class="closing stack">
+    <h2>Set it up once, then just train.</h2>
+    {% if user.is_authenticated %}
+      <a class="button button--block" href="{% url 'activity:app' %}">Open the app</a>
+    {% else %}
+      <a class="button button--block" href="{% url 'accounts:sign_in' %}?next={% url 'planner:workout_new' %}">Build a workout</a>
+    {% endif %}
   </section>
-  <section class="card stack">
-    <h2>Build on the desktop, train on the phone</h2>
-    <p>Put a workout together from a library of exercises, with rests and rounds, and see exactly what it will play. On the phone it runs full screen with a countdown and beeps, so you never touch it mid-set.</p>
-  </section>
-  <section class="card stack">
-    <h2>An honest log</h2>
-    <p>Only the time you actually work is logged, split by exercise type and muscle group, with an optional effort score. It works offline and sends the log when you're back.</p>
-  </section>
-  <section class="card stack">
-    <h2>Ask Claude</h2>
-    <p>Add {{ pwa.name }} to Claude as a connector, and Claude can read your library and log, review a month of training, and build or change workouts for you.</p>
-  </section>
-  <p class="meta">To install {{ pwa.name }} on your phone, open Start a workout, then add it to your Home Screen.</p>
 {% endblock %}
