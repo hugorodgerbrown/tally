@@ -38,7 +38,8 @@ templates/       base.html (the app, /app/), public_base.html, includes
 static/js/       plain JavaScript, classic scripts, no build step
 static/css/      tokens.css (Tally's tokens and fonts), app.css (template
                  components), planner.css (scoped .planner), activity.css
-                 (scoped #app)
+                 (scoped #app), home.css (scoped .home, the home page)
+static/img/      the home page's product screenshots (WebP, from a demo account)
 docs/            accounts, testing, pwa, security, performance, decisions/
 .claude/skills/  writing the Titan docs kept in Linear (research, user
                  testing script, blog post), each with a length setting

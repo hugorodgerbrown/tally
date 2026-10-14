@@ -2,32 +2,88 @@
 {% load static %}
 {% block title %}{{ pwa.name }}{% endblock %}
 {% block description %}{{ pwa.description }}{% endblock %}
+{# The home page's own stylesheet and the copy button; public_base has no CSS block. #}
+{% block extra_js %}
+  <link rel="stylesheet" href="{% static 'css/home.css' %}">
+  <script src="{% static 'js/copy.js' %}" defer></script>
+{% endblock %}
 {% block content %}
-  <section class="hero stack">
-    <img class="hero__icon" src="{% static 'icons/icon-192.png' %}" alt="" width="96" height="96">
-    <h1>{{ pwa.name }}</h1>
-    <p class="hero__lead">Interval workouts, hands free.</p>
-    <div class="button-row">
-      {% if user.is_authenticated %}
-        <a class="button" href="{% url 'activity:app' %}">Start a workout</a>
-        <a class="button button--secondary" href="{% url 'planner:workouts' %}">Manage workouts</a>
-      {% else %}
-        <a class="button" href="{% url 'accounts:sign_up' %}">Create an account</a>
-        <a class="button button--secondary" href="{% url 'accounts:sign_in' %}">Sign in</a>
-      {% endif %}
+<div class="home">
+  <section class="home-hero">
+    <p class="home-eyebrow">For interval training at home</p>
+    <h1>Build it once. Train hands free.</h1>
+    <p class="home-hero__lead">Put a workout together on your computer. On your phone it counts down, beeps and moves on, so you never touch it mid-set.</p>
+    {% if user.is_authenticated %}
+      <a class="home-button home-button--light" href="{% url 'activity:app' %}">Start a workout</a>
+      <p class="home-hero__note"><a href="{% url 'planner:workouts' %}">Manage workouts</a></p>
+    {% else %}
+      <a class="home-button home-button--light" href="{% url 'accounts:sign_up' %}">Create an account</a>
+      <p class="home-hero__note">Sign in with your email. No password.</p>
+    {% endif %}
+  </section>
+
+  <figure class="home-shot">
+    <img class="home-shot__desk" src="{% static 'img/home-builder.webp' %}" width="1280" height="740" alt="The workout builder: the exercise library, the workout's exercises with rests, and its total time and make-up.">
+    <img class="home-shot__phone" src="{% static 'img/home-timer.webp' %}" width="400" height="866" alt="The phone mid-workout: Kettlebell swing, 26 seconds left, Goblet squat next.">
+    <figcaption>Kettlebell 20 in the builder, and 26 seconds into its first swing on the phone.</figcaption>
+  </figure>
+
+  <ul class="home-tiles">
+    <li>
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
+      <b>Build on the desk</b>
+      <span>Exercises, rests and rounds</span>
+    </li>
+    <li>
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M12 8v4l2 2"/></svg>
+      <b>Train hands free</b>
+      <span>A countdown and beeps</span>
+    </li>
+    <li>
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+      <b>Log the real work</b>
+      <span>By type and muscle</span>
+    </li>
+  </ul>
+
+  <section class="home-panel home-mcp">
+    <p class="home-eyebrow">Or just ask</p>
+    <h2>Plan from your AI chat</h2>
+    <p>Connect {{ pwa.name }} to Claude and ask in plain words. It reads your library and log, and builds or changes workouts. It never deletes anything.</p>
+    <div class="home-chat" role="group" aria-label="An example conversation">
+      <p class="home-chat__ask">Build me a 15-minute kettlebell workout.</p>
+      <p class="home-chat__answer">Done: Kettlebell 15, five exercises, two rounds, 20 s rests. It's on your phone under Show all.</p>
+      <p class="home-chat__ask">Pin it for this week.</p>
+      <p class="home-chat__answer">Pinned. It's on your phone's home screen.</p>
+    </div>
+    <p class="home-eyebrow home-eyebrow--muted">Try asking</p>
+    <ul class="home-asks">
+      <li>“How much did I train last month, and what did I skip?”</li>
+      <li>“Build me a 20-minute mobility workout for after a run.”</li>
+      <li>“Add a third round to Kettlebell 20 and cut the rests to 15 seconds.”</li>
+      <li>“Archive the workouts I haven't done since the summer.”</li>
+    </ul>
+    <p class="meta">Add this as a connector in Claude, or any app that takes MCP connectors, then sign in:</p>
+    <div class="home-url">
+      <code id="mcp-url">{{ request.scheme }}://{{ request.get_host }}/mcp</code>
+      <button class="home-url__copy" type="button" data-copy="mcp-url" aria-label="Copy the address" title="Copy" hidden>{% include "planner/_icon.html" with name="copy" %}</button>
     </div>
   </section>
-  <section class="card stack">
-    <h2>Build on the desktop, train on the phone</h2>
-    <p>Put a workout together from a library of exercises, with rests and rounds, and see exactly what it will play. On the phone it runs full screen with a countdown and beeps, so you never touch it mid-set.</p>
+
+  <dl class="home-stats">
+    <div><dt>starter exercises</dt><dd>21</dd></div>
+    <div><dt>sample workout</dt><dd>1</dd></div>
+    <div><dt>passwords</dt><dd>0</dd></div>
+  </dl>
+
+  <section class="home-close">
+    <h2>Set it up once, then just train</h2>
+    {% if user.is_authenticated %}
+      <a class="home-button" href="{% url 'activity:app' %}">Start a workout</a>
+    {% else %}
+      <a class="home-button" href="{% url 'accounts:sign_up' %}">Create an account</a>
+    {% endif %}
+    <p class="meta">To install {{ pwa.name }} on your phone, open Start a workout, then add it to your Home Screen.</p>
   </section>
-  <section class="card stack">
-    <h2>An honest log</h2>
-    <p>Only the time you actually work is logged, split by exercise type and muscle group, with an optional effort score. It works offline and sends the log when you're back.</p>
-  </section>
-  <section class="card stack">
-    <h2>Ask Claude</h2>
-    <p>Add {{ pwa.name }} to Claude as a connector, and Claude can read your library and log, review a month of training, and build or change workouts for you.</p>
-  </section>
-  <p class="meta">To install {{ pwa.name }} on your phone, open Start a workout, then add it to your Home Screen.</p>
+</div>
 {% endblock %}
