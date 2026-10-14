@@ -15,6 +15,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.utils.csp import CSP
 from mcp_auth.conf import oauth2_settings
 
+from apps.core import analytics
 from apps.pwa import conf as pwa_conf
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -67,17 +68,22 @@ SILENCED_SYSTEM_CHECKS = [
     "oauth2_provider.W008",
 ]
 
+# Visitor counts by fivebar: off unless set, to the domain the site was
+# added to fivebar under (titan sets it at go-live). See apps/core/analytics.py.
+FIVEBAR_DOMAIN: str = config("FIVEBAR_DOMAIN", default="")
+
 # Content Security Policy: everything from this origin, nothing inline.
 # There is no inline <script> anywhere; the launch-screen gate is a tiny
 # blocking file instead, so the policy needs no nonce. htmx's eval and
-# injected indicator styles are turned off in base.html to match.
+# injected indicator styles are turned off in base.html to match. The one
+# other origin is fivebar's, and only while FIVEBAR_DOMAIN is set.
 SECURE_CSP = {
     "default-src": [CSP.SELF],
-    "script-src": [CSP.SELF],
+    "script-src": [CSP.SELF, *analytics.csp_sources(FIVEBAR_DOMAIN)],
     "style-src": [CSP.SELF],
     "img-src": [CSP.SELF, "data:"],
     "font-src": [CSP.SELF],
-    "connect-src": [CSP.SELF],
+    "connect-src": [CSP.SELF, *analytics.csp_sources(FIVEBAR_DOMAIN)],
     "worker-src": [CSP.SELF],
     "manifest-src": [CSP.SELF],
     "object-src": [CSP.NONE],
@@ -104,6 +110,7 @@ INSTALLED_APPS = [
     "apps.library",
     "apps.activity",
     "apps.planner",
+    "apps.design",
     # Before mcp_auth so the project's own templates win.
     "apps.mcp",
     "mcp_auth",
@@ -137,6 +144,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "apps.pwa.context_processors.pwa",
+                "apps.core.analytics.analytics",
             ],
         },
     },
@@ -217,9 +225,10 @@ DEFAULT_FROM_EMAIL: str = config(
 )
 
 # Background tasks (django.tasks). Email is sent from a task so a slow mail
-# server never holds a request; the immediate backend runs it in-process.
-# Swap in a queue-backed backend (and a worker) when the volume needs one.
-TASKS = {"default": {"BACKEND": "django.tasks.backends.immediate.ImmediateBackend"}}
+# server never holds a request: the thread backend runs each task on its own
+# thread in this process and returns at once (tests run them inline). Swap in
+# a queue-backed backend (and a worker) when the volume needs one.
+TASKS = {"default": {"BACKEND": "apps.core.task_backends.ThreadBackend"}}
 
 # Rate limits count per client address. Behind Render's proxy the client is
 # the last X-Forwarded-For entry; locally there is no proxy.

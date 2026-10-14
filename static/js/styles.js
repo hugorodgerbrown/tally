@@ -4,7 +4,7 @@
  * The CSP forbids inline style attributes, but a few styles are data:
  * an exercise type's colour (stored with the type), the width of a bar,
  * the share of a strip a segment takes. Markup carries them as
- * `data-css="background:#F7C948;flex:40"` instead, and this script sets
+ * `data-css="background:var(--ready);flex:40"` instead, and this script sets
  * them through the CSSOM, which the CSP allows. It watches the page, so
  * markup added later (the builder, the phone app) is styled as it lands.
  *

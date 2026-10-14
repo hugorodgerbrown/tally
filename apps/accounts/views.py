@@ -41,6 +41,7 @@ from apps.accounts import passkeys, sign_in
 from apps.accounts.forms import CodeForm, EmailForm
 from apps.accounts.models import Passkey, SignInRequest
 from apps.accounts.tasks import send_sign_in_email
+from apps.core import analytics
 from apps.core.decorators import login_required_json, signed_in_user
 from apps.core.ratelimit import client_ip, over_limit
 from apps.core.redirects import safe_next
@@ -67,11 +68,15 @@ def _complete_sign_in(request: HttpRequest, sign_in_request: SignInRequest) -> H
     user = sign_in.user_for(sign_in_request)
     if user is None:
         return render(request, "accounts/account_disabled.html", status=403)
+    # No sign-in before this one: the account was made just now (or by
+    # createsuperuser and never used), which fivebar counts as a sign-up.
+    first = user.last_login is None
     login(request, user, backend=_BACKEND)
     request.session.pop(SESSION_REQUEST, None)
     request.session.pop(SESSION_EMAIL, None)
     request.session.pop(SESSION_PURPOSE, None)
-    return redirect(safe_next(request, sign_in_request.next_url))
+    url = safe_next(request, sign_in_request.next_url)
+    return redirect(analytics.mark(url, analytics.SIGNED_UP) if first else url)
 
 
 def _email_link_and_code(

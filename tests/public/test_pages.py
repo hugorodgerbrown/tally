@@ -33,7 +33,10 @@ def test_markdown_carries_the_same_words_as_the_page(client: Client, name: str) 
 
 
 def test_to_markdown(settings: Any) -> None:
-    """Headings, paragraphs, lists, bold and absolute links; other markup keeps its text."""
+    """Headings, paragraphs, lists, bold and absolute links; other markup keeps its text.
+
+    A button's label is dropped: "Copy" means nothing outside the page.
+    """
     settings.SITE_URL = "https://example.test"
     html = """
       <h1>Title</h1>
@@ -42,6 +45,7 @@ def test_to_markdown(settings: Any) -> None:
       <h2>List</h2>
       <ul><li><strong>One</strong>, first</li><li>Two <span>spans</span></li></ul>
       <p>See <a href="/help/">help</a> or <a href="https://other.test/x">elsewhere</a>.</p>
+      <p class="copy-field"><code>https://example.test/mcp</code><button>Copy</button></p>
       <p></p>
       <div>loose text is dropped</div>
     """
@@ -56,4 +60,6 @@ def test_to_markdown(settings: Any) -> None:
         "- Two spans\n"
         "\n"
         "See [help](https://example.test/help/) or [elsewhere](https://other.test/x).\n"
+        "\n"
+        "https://example.test/mcp\n"
     )

@@ -1,6 +1,7 @@
+{# The website's footer, drawn by {% site_footer %} (apps/public/templatetags/site_footer.py) from apps/public/conf.py: DESIGN.md, "The website has a footer; the app has its links". #}
 <footer class="site-footer">
-  <a href="{% url 'public:home' %}">{{ pwa.name }}</a>
-  <a href="{% url 'public:terms' %}">Terms</a>
-  <a href="{% url 'public:privacy' %}">Privacy</a>
-  <a href="{% url 'public:help' %}">Help</a>
+  <nav class="site-footer__links" aria-label="Site">
+    {% for anchor in anchors %}{{ anchor }}{% endfor %}
+  </nav>
+  <p class="site-footer__legal">© {{ year }} {{ holder }}. All rights reserved.</p>
 </footer>

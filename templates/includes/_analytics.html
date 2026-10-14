@@ -1,0 +1,3 @@
+{% load static %}{# fivebar's tag, on every page while FIVEBAR_DOMAIN is set (apps/core/analytics.py). Keep async; never bundle or copy the script. analytics.js sends the events the server marks. #}
+{% if analytics.domain %}<script async data-domain="{{ analytics.domain }}"{% if analytics.path %} data-path="{{ analytics.path }}"{% endif %} src="{{ analytics.script }}"></script>
+<script src="{% static 'js/analytics.js' %}" defer></script>{% endif %}

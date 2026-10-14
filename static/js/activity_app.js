@@ -26,7 +26,7 @@
   const fmtLeft = (s) => fmtL(Math.ceil(s - 1e-9));
   const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c) => (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16)));
   const typeName = (slug) => (typeInfo[slug] ? typeInfo[slug].name : slug);
-  const typeColour = (slug) => (typeInfo[slug] ? typeInfo[slug].colour : "#999");
+  const typeColour = (slug) => (typeInfo[slug] ? typeInfo[slug].colour : "var(--muted)");
 
   const I = {
     play: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12.5-7.5z" fill="currentColor"/></svg>',

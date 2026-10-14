@@ -1,0 +1,5 @@
+{# The footer's links, for the app's account page, drawn by {% site_links %}. The app has no footer: DESIGN.md, "The website has a footer; the app has its links". #}
+<ul class="site-links">
+  {% for anchor in anchors %}<li>{{ anchor }}</li>{% endfor %}
+</ul>
+<p class="meta">© {{ year }} {{ holder }}. All rights reserved.</p>

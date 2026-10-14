@@ -1,43 +1,60 @@
 /*
- * static/js/copy.js — a Copy button for a piece of text on the page.
+ * static/js/copy.js — a copy button for an address shown on the page.
  *
- *   <code id="mcp-url">https://…/mcp</code>
- *   <button data-copy="mcp-url" hidden>…</button>
- *
- * The button ships hidden, so without JavaScript (or without the
- * Clipboard API) the text is simply there to select. With them, the
- * button shows, copies the element's text and says "Copied" for a moment.
+ * Without this file the address is plain text to select, and the button
+ * stays hidden. With it, the button shows, and tapping it puts
+ * ``data-copy`` on the clipboard and says "Copied" for two seconds
+ * (``data-copied-label``). Where the clipboard is refused, the address is
+ * selected so the next tap is the phone's own Copy.
  */
 (function () {
   'use strict';
 
-  function wire(button) {
-    const target = document.getElementById(button.getAttribute('data-copy'));
-    if (!target || !navigator.clipboard) return;
-    const label = button.getAttribute('aria-label');
-    button.hidden = false;
-    button.addEventListener('click', async () => {
-      try {
-        await navigator.clipboard.writeText(target.textContent.trim());
-        button.setAttribute('aria-label', 'Copied');
-        button.title = 'Copied';
-        button.classList.add('is-done');
-        setTimeout(() => {
-          button.setAttribute('aria-label', label);
-          button.title = 'Copy';
-          button.classList.remove('is-done');
-        }, 2000);
-      } catch (error) {
-        // Denied or unavailable: the text is still there to select.
-      }
+  const SHOWN_MS = 2000;
+
+  function selectText(element) {
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
+
+  async function copy(button) {
+    const target = button.dataset.copyTarget && document.getElementById(button.dataset.copyTarget);
+    try {
+      await navigator.clipboard.writeText(button.dataset.copy);
+    } catch (error) {
+      if (target) selectText(target);
+      return false;
+    }
+    if (!('label' in button.dataset)) button.dataset.label = button.textContent;
+    button.textContent = button.dataset.copiedLabel || 'Copied';
+    clearTimeout(button.copyTimer);
+    button.copyTimer = setTimeout(function () {
+      button.textContent = button.dataset.label;
+    }, SHOWN_MS);
+    return true;
+  }
+
+  function enhance(root) {
+    root.querySelectorAll('[data-copy]').forEach(function (button) {
+      button.hidden = false;
     });
   }
 
-  function init() {
-    document.querySelectorAll('[data-copy]').forEach(wire);
+  document.addEventListener('click', function (event) {
+    const button = event.target.closest && event.target.closest('[data-copy]');
+    if (button) copy(button);
+  });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () {
+      enhance(document);
+    });
+  } else {
+    enhance(document);
   }
 
-  self.Copy = Object.freeze({ init });
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
-  else init();
+  self.CopyButton = { copy: copy, enhance: enhance, SHOWN_MS: SHOWN_MS };
 })();

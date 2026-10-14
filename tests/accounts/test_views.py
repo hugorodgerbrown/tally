@@ -147,6 +147,26 @@ def test_next_from_elsewhere_is_ignored(client: Client) -> None:
     assert client.post(link)["Location"] == reverse("activity:app")
 
 
+def test_a_first_sign_in_is_marked_as_a_sign_up(client: Client, settings: Any) -> None:
+    """With fivebar on, a new account's redirect carries #signed-up; the next sign-in doesn't."""
+    settings.FIVEBAR_DOMAIN = "example.ultraniche.ai"
+    request_email(client)
+    _, code = emailed()
+    assert client.post(CODE, {"code": code})["Location"] == reverse("activity:app") + "#signed-up"
+
+    again = Client()
+    request_email(again)
+    _, code = emailed()
+    assert again.post(CODE, {"code": code})["Location"] == reverse("activity:app")
+
+
+def test_no_sign_up_mark_while_fivebar_is_off(client: Client) -> None:
+    """Off, a new account's redirect is unchanged."""
+    request_email(client)
+    link, _ = emailed()
+    assert client.post(link)["Location"] == reverse("activity:app")
+
+
 # ---------- the code ----------
 
 

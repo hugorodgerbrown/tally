@@ -16,7 +16,11 @@
 <p>One cookie keeps you signed in, and one protects forms from forgery. There are no analytics or advertising cookies.</p>
 <h2>Claude and other apps</h2>
 <p>If you connect Claude, it reads and changes your library and log on your behalf, under Anthropic's terms. Nothing is shared with it until you approve the connection, and you can disconnect it at any time.</p>
+{% if analytics.domain %}
+<h2>Visitor counts</h2>
+<p>We count visits with <strong>fivebar</strong>, which sets no cookies. For each page you open it receives the page, the page you came from, your browser, device type and country, and when you create an account. It keeps daily totals only, which can't be traced back to you; your IP address and browser details tell visitors apart for one day and are not kept. Addresses that hold a sign-in link or a record are counted without it. See <a href="https://fiveb.ar/privacy">fivebar's privacy policy</a>.</p>
+{% endif %}
 <h2>Who else sees it</h2>
-<p>Our hosting and email providers process data on our behalf. We don't sell it or share it with anyone else. Other accounts never see your library or log.</p>
+<p>Our hosting and email providers{% if analytics.domain %}, and fivebar for visitor counts,{% endif %} process data on our behalf. We don't sell it or share it with anyone else. Other accounts never see your library or log.</p>
 <h2>Your rights</h2>
 <p>You can ask for a copy of your data, or for your account and everything in it to be deleted.</p>

@@ -13,7 +13,7 @@
 
   const lib = new Map(data.library.map((e) => [e.id, e]));
   const types = new Map(data.types.map((t) => [t.slug, t]));
-  const colour = (slug) => (types.get(slug) || {}).colour || "#999";
+  const colour = (slug) => (types.get(slug) || {}).colour || "var(--muted)";
   // Server-drawn SVG for the exercise's kit; nothing for bodyweight.
   const kit = new Map((data.equipment || []).map((e) => [e.slug, e.svg]));
   const kitIcon = (slug) => kit.get(slug) || "";

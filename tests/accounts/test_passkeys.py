@@ -194,12 +194,14 @@ def sign_in_with(client: Client, credential: Any, next_url: str = "") -> Any:
     return answer(client, credential, next_url)
 
 
-def test_sign_in_options_allow_any_passkey(client: Client) -> None:
+def test_sign_in_options_allow_any_passkey(client: Client, settings: Any) -> None:
     """No allowCredentials: the browser offers every passkey it holds for this site."""
     options = client.post(reverse("accounts:passkey_sign_in_options")).json()
     assert options["challenge"]
     assert not options.get("allowCredentials")
     assert options["userVerification"] == "required"
+    # passkeys.js signals an unknown passkey under this RP ID.
+    assert options["rpId"] == settings.WEBAUTHN_RP_ID
 
 
 def test_passkey_signs_in_its_owner(client: Client, verified_sign_in: None) -> None:

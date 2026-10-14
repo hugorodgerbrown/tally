@@ -1,8 +1,9 @@
 # Changes here will be overwritten by Copier; do not edit by hand.
-_commit: 261f739
+_commit: 2d58690
 _src_path: gh:hugorodgerbrown/django-titan-template
 author_email: hugo@rodger-brown.com
 author_name: Hugo Rodger-Brown
+copyright_holder: Hugo Rodger-Brown
 description: Interval workouts built from a library of exercises, run hands-free on
     a phone
 include_mcp: true

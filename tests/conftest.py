@@ -7,6 +7,18 @@ from django.test import Client
 
 from tests.factories import UserFactory
 
+IMMEDIATE = {"default": {"BACKEND": "django.tasks.backends.immediate.ImmediateBackend"}}
+
+
+@pytest.fixture(autouse=True)
+def _tasks_run_inline(settings: Any) -> None:
+    """Run tasks in the test's own thread, so their email is sent before the response.
+
+    The app runs them on threads (apps.core.task_backends); its own tests
+    put that backend back.
+    """
+    settings.TASKS = IMMEDIATE
+
 
 @pytest.fixture
 def user(db: None) -> Any:

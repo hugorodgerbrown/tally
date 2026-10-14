@@ -57,7 +57,7 @@ describe('sign in', () => {
     const signal = vi.fn(() => Promise.resolve());
     globalThis.PublicKeyCredential = { signalUnknownCredential: signal };
     globalThis.fetch = vi.fn((url) =>
-      url === '/o' ? respond(200, { challenge: 'AQID' }) : respond(404, { error: 'unknown_passkey', credentialId: 'cred' })
+      url === '/o' ? respond(200, { challenge: 'AQID', rpId: 'example.com' }) : respond(404, { error: 'unknown_passkey', credentialId: 'cred' })
     );
     await load(SIGN_IN);
     const section = document.querySelector('[data-passkey-sign-in]');
@@ -69,7 +69,8 @@ describe('sign in', () => {
     const [, verify] = globalThis.fetch.mock.calls;
     expect(JSON.parse(verify[1].body)).toEqual({ credential: { id: 'cred' }, next: '/app/' });
     expect(verify[1].headers['X-CSRFToken']).toBe('token');
-    expect(signal).toHaveBeenCalledWith({ rpId: location.hostname, credentialId: 'cred' });
+    // The RP ID the passkey was made for, which can be a parent of this host.
+    expect(signal).toHaveBeenCalledWith({ rpId: 'example.com', credentialId: 'cred' });
     expect(section.querySelector('[data-passkey-error]').textContent).toMatch(/isn't on your account/);
   });
 });

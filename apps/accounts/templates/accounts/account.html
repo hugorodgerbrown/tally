@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static site_footer %}
 {% block title %}Account · {{ pwa.name }}{% endblock %}
 {% block extra_js %}
   <script src="{% static 'js/webauthn_json.js' %}" defer></script>
@@ -13,6 +13,7 @@
       {% csrf_token %}
       <button class="button button--secondary" type="submit">Sign out</button>
     </form>
+    {% if user.is_staff %}<p><a href="{% url 'design:index' %}">Design system</a></p>{% endif %}
   </section>
   <section class="card stack" data-passkey-register
            data-options-url="{% url 'accounts:passkey_register_options' %}"
@@ -49,5 +50,9 @@
     <h2>Claude</h2>
     <p>Add Tally to Claude as a connector, at <strong>{{ request.scheme }}://{{ request.get_host }}/mcp</strong>, and Claude can read your library and log, and add or change exercises and workouts.</p>
     <p><a href="{% url 'oauth2_provider:connected-apps' %}">Connected apps</a></p>
+  {# The app has no footer, so its links are here (DESIGN.md). #}
+  <section class="card stack">
+    <h2>About {{ pwa.name }}</h2>
+    {% site_links %}
   </section>
 {% endblock %}
