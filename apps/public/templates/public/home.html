@@ -2,10 +2,10 @@
 {% load static planner %}
 {# The front page, in the shape every Titan app shares (DESIGN.md, "The front page"). #}
 {% block title %}{{ pwa.name }}: every interval timed, every minute tallied{% endblock %}
-{% block description %}Put an interval workout together on your computer. Your phone counts down, beeps and moves on, so you never touch it mid-set.{% endblock %}
+{% block description %}Interval workouts your phone runs hands free, with every minute logged by type and by muscle.{% endblock %}
 {% block share_title %}Every interval timed. Every minute tallied.{% endblock %}
-{% block share_description %}Put an interval workout together on your computer. Your phone counts down, beeps and moves on, so you never touch it mid-set.{% endblock %}
-{% block share_image_alt %}Every interval timed. Every minute tallied. Beside it, a workout's every interval to scale, in the phone's colours.{% endblock %}
+{% block share_description %}No taps. No counting. Just the work.{% endblock %}
+{% block share_image_alt %}Every interval timed. Every minute tallied. Beside it, the phone's report after a workout: time by type and by muscle.{% endblock %}
 {% block extra_js %}
   <link rel="stylesheet" href="{% static 'css/activity.css' %}">
   <script src="{% static 'js/styles.js' %}" defer></script>
@@ -16,7 +16,7 @@
   <section class="hero stack">
     <p class="eyebrow">Interval training at home</p>
     <h1>Every interval timed. Every minute tallied.</h1>
-    <p class="hero__lead">Your phone runs the workout hands free, then shows where the time went, by type and by muscle. Ask your AI chat to sum up any month.</p>
+    <p class="hero__lead">No taps. No counting. Just the work.</p>
     {% if user.is_authenticated %}
       <a class="button button--block" href="{% url 'activity:app' %}">Open the app</a>
     {% else %}
