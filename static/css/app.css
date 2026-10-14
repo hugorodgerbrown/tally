@@ -183,7 +183,7 @@ a { color: var(--brand); }
 .showcase__caption { margin-top: var(--space-sm); color: var(--text-2); font-size: var(--type-sm); }
 
 /* How it works: three tiles, one under another on a phone. */
-.tiles { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-md); }
+.tiles { list-style: none; margin-inline: 0; margin-bottom: 0; padding: 0; display: grid; gap: var(--space-md); }
 .tile {
   background: var(--card);
   border: 1px solid var(--border);
@@ -231,7 +231,8 @@ a { color: var(--brand); }
 
 /* Facts: three true numbers, each removing a doubt ("0 passwords"). */
 .facts {
-  margin: 0;
+  margin-inline: 0;
+  margin-bottom: 0;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-sm);

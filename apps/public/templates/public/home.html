@@ -50,36 +50,17 @@
     <figcaption class="showcase__caption">What your phone shows when a workout ends: the time you worked, split by type of training and by muscle. Every session goes in your log.</figcaption>
   </figure>
 
-  {# 4. How it works: three tiles. #}
-  <ul class="tiles" aria-label="How it works">
-    <li class="tile">
-      <svg class="tile__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H4zM9 20h6M12 16v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <p class="tile__title">Build</p>
-      <p class="meta">Pick exercises, set rests and rounds.</p>
-    </li>
-    <li class="tile">
-      <svg class="tile__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2h8a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zM12 8v4l2 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <p class="tile__title">Train</p>
-      <p class="meta">A countdown and beeps. No taps mid-set.</p>
-    </li>
-    <li class="tile">
-      <svg class="tile__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M21 20H3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      <p class="tile__title">See</p>
-      <p class="meta">Where the time went, by type and muscle.</p>
-    </li>
-  </ul>
-
   {% if mcp_url %}
-    {# 5. From your AI chat. Every question below is one the connector's tools answer. #}
+    {# 4. From your AI chat, hoisted above the tiles: it is the quickest way in. Every question below is one the connector's tools answer. #}
     <section class="card stack" id="mcp" aria-labelledby="mcp-title">
-      <p class="eyebrow">Or just ask</p>
-      <h2 id="mcp-title">Plan from your AI chat</h2>
-      <p>Connect {{ pwa.name }} to Claude or ChatGPT and ask in plain words. It reads your library and log, and builds or changes workouts. It never deletes anything, and sees only your account.</p>
+      <p class="eyebrow">Plan from your AI chat</p>
+      <h2 id="mcp-title">Ask Claude to set up your workout</h2>
+      <p>Connect {{ pwa.name }} to Claude or ChatGPT and just ask. It never deletes anything, and sees only your account.</p>
       <div class="chat">
-        <p class="chat__you">How did my training go last month?</p>
-        <p class="chat__reply">12 sessions, 3 h 10 min worked, effort 7 on average. Mostly strength: glutes and quads led, and you did no flexibility at all.</p>
-        <p class="chat__you">Build me a 15-minute stretch for after a run, and pin it.</p>
-        <p class="chat__reply">Done: Stretch 15, six exercises, pinned to your phone's home screen.</p>
+        <p class="chat__you">Set me up a 20-minute kettlebell workout for tomorrow morning.</p>
+        <p class="chat__reply">Done: Kettlebell 20, five exercises, two rounds. It's pinned to your phone.</p>
+        <p class="chat__you">And how did last month go?</p>
+        <p class="chat__reply">12 sessions, 3 h 10 min worked. Mostly strength, and no flexibility at all.</p>
       </div>
       <p class="eyebrow">Try asking</p>
       <ul class="asks">
@@ -96,6 +77,25 @@
       <p><a href="{% url 'public:help' %}#use-with-ai">How to add it to Claude or ChatGPT</a></p>
     </section>
   {% endif %}
+
+  {# 5. How it works: three tiles, one for each of the app's three views. #}
+  <ul class="tiles" aria-label="How it works">
+    <li class="tile">
+      <svg class="tile__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H4zM9 20h6M12 16v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <p class="tile__title">Build it</p>
+      <p class="meta">Pick from your exercises. Set the work, rest and rounds.</p>
+    </li>
+    <li class="tile">
+      <svg class="tile__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2h8a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zM12 8v4l2 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <p class="tile__title">Run it</p>
+      <p class="meta">Your phone counts you through every interval, hands free.</p>
+    </li>
+    <li class="tile">
+      <svg class="tile__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M21 20H3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <p class="tile__title">Review it</p>
+      <p class="meta">See where the time went, by type and by muscle.</p>
+    </li>
+  </ul>
 
   {# 6. Facts: three true numbers, each removing a doubt. #}
   <dl class="facts">
