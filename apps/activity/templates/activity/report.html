@@ -1,0 +1,79 @@
+{% extends "planner/base.html" %}
+{% load planner %}
+{# Report: what the user trained in a week or month. Shares Manage's header and styles. #}
+{% block title %}Report · {{ pwa.name }}{% endblock %}
+{% block subnav %}
+  <a href="{% url 'activity:report' %}?period={{ week.kind }}&amp;from={{ week.start|date:'Y-m-d' }}"{% if period.kind == "week" %} aria-current="page"{% endif %}>Week</a>
+  <a href="{% url 'activity:report' %}?period={{ month.kind }}&amp;from={{ month.start|date:'Y-m-d' }}"{% if period.kind == "month" %} aria-current="page"{% endif %}>Month</a>
+{% endblock %}
+{% block content %}
+<div class="phead">
+  <h1>{{ title }}</h1>
+  <span class="meta">{{ range }}</span>
+  <span class="spacer"></span>
+  <nav class="pager" aria-label="{{ period.kind|capfirst }}s">
+    <a class="btn btn-quiet btn-sm" href="{% url 'activity:report' %}?period={{ previous.kind }}&amp;from={{ previous.start|date:'Y-m-d' }}" rel="prev">Previous {{ period.kind }}</a>
+    {% if next %}<a class="btn btn-quiet btn-sm" href="{% url 'activity:report' %}?period={{ next.kind }}&amp;from={{ next.start|date:'Y-m-d' }}" rel="next">Next {{ period.kind }}</a>{% endif %}
+  </nav>
+</div>
+
+{% if totals.sessions %}
+<section class="panel rhead" aria-label="Totals">
+  {% for label, value, change in headline %}
+  <div class="stat{% if forloop.first %} stat--lead{% endif %}">
+    <span class="lbl">{{ label }}</span>
+    <b>{{ value|default_if_none:"–" }}</b>
+    {% if change %}<small>{{ change }}</small>{% endif %}
+  </div>
+  {% endfor %}
+</section>
+
+<div class="rgrid">
+  <section class="panel rcard" aria-labelledby="r-type">
+    <h2 id="r-type">By type</h2>
+    <p class="help">An exercise's time is shared evenly between its types.</p>
+    <ul class="bars rbars">{% for b in by_type %}
+      <li><span>{{ b.label }}</span><b><s data-css="width:{{ b.width }}%;background:{{ b.colour }}"></s></b><em>{{ b.seconds|duration }}</em></li>
+    {% endfor %}</ul>
+  </section>
+  <section class="panel rcard" aria-labelledby="r-muscle">
+    <h2 id="r-muscle">By muscle group</h2>
+    <p class="help">An exercise counts in full for every muscle it works, so these add up to more than the time worked.</p>
+    <ul class="bars rbars">{% for b in by_muscle %}
+      <li><span>{{ b.label }}</span><b><s data-css="width:{{ b.width }}%"></s></b><em>{{ b.seconds|duration }}</em></li>
+    {% empty %}<li class="none">No muscle groups on these exercises.</li>{% endfor %}</ul>
+  </section>
+  <section class="panel rcard" aria-labelledby="r-move">
+    <h2 id="r-move">By movement</h2>
+    <ul class="bars rbars">{% for b in by_movement %}
+      <li><span>{{ b.label }}</span><b><s data-css="width:{{ b.width }}%"></s></b><em>{{ b.seconds|duration }}</em></li>
+    {% endfor %}</ul>
+  </section>
+  <section class="panel rcard" aria-labelledby="r-ex">
+    <h2 id="r-ex">Top exercises</h2>
+    <ul class="bars rbars">{% for b in by_exercise %}
+      <li><span>{{ b.label }}</span><b><s data-css="width:{{ b.width }}%"></s></b><em>{{ b.seconds|duration }}</em></li>
+    {% endfor %}</ul>
+  </section>
+</div>
+
+{% if untrained_types or untrained_muscles %}
+<section class="panel rcard" aria-labelledby="r-gaps">
+  <h2 id="r-gaps">Not trained this {{ period.kind }}</h2>
+  {% if untrained_types %}<div class="chips">{% for t in untrained_types %}<span class="tchip"><i data-css="background:{{ t.colour }}"></i>{{ t.name }}</span>{% endfor %}</div>{% endif %}
+  {% if untrained_muscles %}<div class="chips">{% for m in untrained_muscles %}<span class="tchip mchip">{{ m.name }}</span>{% endfor %}</div>{% endif %}
+</section>
+{% endif %}
+{% else %}
+<div class="panel">
+  <div class="empty"><b>No sessions {% if next %}in this {{ period.kind }}{% else %}yet this {{ period.kind }}{% endif %}</b><span>Workouts you run on your phone show up here.</span><a class="btn btn-primary" href="{% url 'activity:app' %}">Start a workout</a></div>
+</div>
+{% endif %}
+
+<section class="panel rcard" aria-labelledby="r-trend">
+  <h2 id="r-trend">Minutes worked, last {{ trend|length }} {{ period.kind }}s</h2>
+  <ol class="trend">{% for t in trend %}
+    <li{% if t.current %} class="on"{% endif %}><a href="{% url 'activity:report' %}?period={{ t.period.kind }}&amp;from={{ t.period.start|date:'Y-m-d' }}"{% if t.current %} aria-current="page"{% endif %}><b><s data-css="height:{{ t.height }}%"></s></b><em><span class="visually-hidden">{{ t.seconds|duration }}</span><span aria-hidden="true">{{ t.minutes }}</span></em><span>{{ t.label }}</span></a></li>
+  {% endfor %}</ol>
+</section>
+{% endblock %}

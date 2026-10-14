@@ -17,7 +17,12 @@ def test_app_needs_sign_in(client: Client) -> None:
 def test_app_shell_carries_its_addresses(signed_in: Client) -> None:
     """The page hands the scripts their URLs, rather than the scripts hard-coding them."""
     content = signed_in.get(reverse("activity:app")).content.decode()
-    for name in ("activity:api_workouts", "activity:api_sessions", "planner:workouts"):
+    for name in (
+        "activity:api_workouts",
+        "activity:api_sessions",
+        "planner:workouts",
+        "activity:report",
+    ):
         assert reverse(name) in content
     assert "js/activity_store.js" in content
     assert "js/activity_app.js" in content

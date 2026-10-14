@@ -126,20 +126,20 @@ html:has(> body.activity), body.activity { margin: 0; height: 100%; background: 
 #app .backlink { display: inline-flex; align-items: center; gap: 1cqw; font-size: 3.8cqw; font-weight: 600; text-decoration: none; opacity: .7; align-self: flex-start; }
 #app .backlink svg { width: 4.6cqw; height: 4.6cqw; }
 
-#app .hrow { display: flex; align-items: center; justify-content: space-between; gap: 4cqw; }
-#app .modes { display: inline-flex; padding: .8cqw; border-radius: 99px; background: rgba(255, 255, 255, .08); font-size: 3.4cqw; font-weight: 700; }
-#app .modes > * { padding: 1.4cqw 3.6cqw; border-radius: 99px; text-decoration: none; color: inherit; opacity: .7; }
+#app .hrow { display: flex; align-items: center; justify-content: space-between; gap: 3cqw; }
+#app .modes { display: inline-flex; padding: .8cqw; border-radius: 99px; background: rgba(255, 255, 255, .08); font-size: 3.2cqw; font-weight: 700; }
+#app .modes > * { padding: 1.4cqw 2.2cqw; border-radius: 99px; text-decoration: none; color: inherit; opacity: .7; }
 #app .modes [aria-current] { background: var(--done-ink); color: var(--done); opacity: 1; }
 #app .modes .mode-off { opacity: .3; }
 #app .modes a:focus-visible { outline: .6cqw solid var(--done-hi); outline-offset: .4cqw; }
-#app .hctl { display: flex; align-items: center; gap: 3cqw; }
+#app .hctl { display: flex; align-items: center; gap: 2cqw; }
 #app .tvbtn { display: inline-flex; align-items: center; gap: 1.2cqw; border: 0; border-radius: 99px; padding: 1.4cqw 2.8cqw; background: rgba(255, 255, 255, .08); color: inherit; font: inherit; font-size: 3.4cqw; font-weight: 700; cursor: pointer; opacity: .85; }
 #app .tvbtn svg { width: 4.4cqw; height: 4.4cqw; }
 #app .tvbtn[aria-pressed="true"] { background: var(--done-hi); color: var(--done); opacity: 1; }
 #app .tvbtn:focus-visible { outline: .6cqw solid var(--done-hi); outline-offset: .4cqw; }
 #app .s-sum .hrow { align-self: stretch; }
 #app .hctl form { margin: 0; }
-#app .signout { background: none; border: 0; color: inherit; font: inherit; font-size: 3.4cqw; font-weight: 700; opacity: .7; text-decoration: none; cursor: pointer; padding: 1.4cqw 1cqw; }
+#app .signout { background: none; border: 0; color: inherit; font: inherit; font-size: 3.2cqw; font-weight: 700; opacity: .7; text-decoration: none; cursor: pointer; padding: 1.4cqw .6cqw; }
 #app .signout.off { opacity: .3; cursor: default; }
 #app .signout:focus-visible { outline: .6cqw solid var(--done-hi); outline-offset: .4cqw; }
 #app .wlist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3cqw; }

@@ -28,7 +28,7 @@ class ExerciseTypeQuerySet(models.QuerySet["ExerciseType"]):
 
 
 class ExerciseType(BaseModel):
-    """A training category: aerobic, anaerobic, strength, flexibility, fitness."""
+    """A training category: strength, flexibility, balance, aerobic, anaerobic, fitness."""
 
     slug = models.SlugField(unique=True)
     name = models.CharField(max_length=50)

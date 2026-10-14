@@ -69,7 +69,7 @@ def test_the_code_creates_the_account_and_suggests_a_passkey(client: Client) -> 
     response = client.post(CODE, {"code": code})
     assert response["Location"] == WELCOME
     user = get_user_model().objects.get(username="new@example.com")
-    assert Exercise.objects.for_user(user).count() == 21
+    assert Exercise.objects.for_user(user).count() == 23
     page = client.get(WELCOME).content.decode()
     assert "Add a passkey" in page
     assert f'data-next="{reverse("activity:app")}"' in page

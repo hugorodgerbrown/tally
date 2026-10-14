@@ -1,4 +1,4 @@
-"""The starter library every new account gets: 21 exercises and one workout.
+"""The starter library every new account gets: 23 exercises and one workout.
 
 Called from sign-up (``apps.accounts.sign_in.user_for``) when an account is
 created, and from ``manage.py seed_library`` for accounts that predate it.
@@ -47,11 +47,13 @@ EXERCISES = [
     ("Mountain climbers", ["aerobic", "fitness"], ["Core", "Shoulders", "Hip flexors"], False, 30),
     ("Jumping jacks", ["aerobic"], ["Calves", "Shoulders"], False, 45),
     ("High knees", ["aerobic", "anaerobic"], ["Hip flexors", "Quads", "Calves"], False, 30),
+    ("Single-leg stand", ["balance"], ["Calves", "Core"], True, 30),
+    ("Single-leg deadlift", ["balance", "strength"], ["Hamstrings", "Glutes", "Core"], True, 40),
 ]
 
 EQUIPMENT = {"Kettlebell swing": "kettlebell", "Goblet squat": "kettlebell"}
 
-STATIC = {"Child's pose", "Downward dog", "Pigeon pose", "Plank", "Side plank"}
+STATIC = {"Child's pose", "Downward dog", "Pigeon pose", "Plank", "Side plank", "Single-leg stand"}
 
 MORNING_MOBILITY = [
     ("90/90 hip switch", 45),

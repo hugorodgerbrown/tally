@@ -65,6 +65,13 @@ def test_home_has_one_promise(client: Client) -> None:
     assert h1.group(1) != conf.APP_NAME
 
 
+def test_home_tiles_match_the_three_modes(client: Client) -> None:
+    """How it works has one tile per mode, in the app's order: Workout, Manage, Report."""
+    content = client.get(reverse("public:home")).content.decode()
+    titles = re.findall(r'<p class="tile__title">([^<]*)</p>', content)
+    assert titles == ["Workout", "Manage", "Report"]
+
+
 def test_home_offers_one_way_in(client: Client) -> None:
     """Signed out, both primary actions go to sign in, onwards to the first job."""
     content = client.get(reverse("public:home")).content.decode()

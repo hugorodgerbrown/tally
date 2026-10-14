@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
-{# The desktop planner: Tally's own header and layout, inside the installed app's scope. #}
+{# Manage and Report: Tally's own header and layout, inside the installed app's scope. #}
 {% block title %}{{ pwa.name }}{% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'css/planner.css' %}">{% endblock %}
 {% block extra_js %}<script src="{% static 'js/styles.js' %}" defer></script>{% endblock %}
@@ -11,13 +11,15 @@
       <a class="eb" href="{% url 'planner:workouts' %}">{{ pwa.name }}</a>
       <div class="hctl">
         {% include "includes/_outbox_status.html" %}
-        <nav class="modes" aria-label="Mode"><a href="{% url 'activity:app' %}">Activity</a><span aria-current="page">Manage</span></nav>
+        <nav class="modes" aria-label="Mode"><a href="{% url 'activity:app' %}">Workout</a>{% if mode == "report" %}<a href="{% url 'planner:workouts' %}">Manage</a><span aria-current="page">Report</span>{% else %}<span aria-current="page">Manage</span><a href="{% url 'activity:report' %}">Report</a>{% endif %}</nav>
         <a class="signout" href="{% url 'accounts:account' %}">Account</a>
       </div>
     </div>
     <nav class="nav" aria-label="Main">
+      {% block subnav %}
       <a href="{% url 'planner:workouts' %}"{% if nav == "workouts" %} aria-current="page"{% endif %}>Workouts</a>
       <a href="{% url 'planner:exercises' %}"{% if nav == "exercises" %} aria-current="page"{% endif %}>Exercises</a>
+      {% endblock %}
     </nav>
   </header>
 {% endblock %}

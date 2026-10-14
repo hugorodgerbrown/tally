@@ -29,15 +29,16 @@ from tests.factories import (
 pytestmark = pytest.mark.django_db
 
 
-def test_the_five_types_are_made_by_migration() -> None:
-    """The data migration makes the five types, keyed by slug."""
-    assert set(ExerciseType.objects.all().by_slug()) == {
-        "aerobic",
-        "anaerobic",
+def test_the_six_types_are_made_by_migration() -> None:
+    """The data migrations make the six types, balance after flexibility."""
+    assert list(ExerciseType.objects.values_list("slug", flat=True)) == [
         "strength",
         "flexibility",
+        "balance",
+        "aerobic",
+        "anaerobic",
         "fitness",
-    }
+    ]
 
 
 def test_model_names(user: Any) -> None:

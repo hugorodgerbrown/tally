@@ -296,7 +296,9 @@ def test_header_matches_activity_mode(signed_in: Client, name: str, section: str
     """The top row holds the wordmark, the mode switch and the account link."""
     html = signed_in.get(reverse(name)).content.decode()
     top = html[html.index('<div class="hrow">') : html.index('<nav class="nav"')]
+    assert f'<a href="{reverse("activity:app")}">Workout</a>' in top
     assert '<span aria-current="page">Manage</span>' in top
+    assert f'<a href="{reverse("activity:report")}">Report</a>' in top
     assert f'href="{reverse("accounts:account")}"' in top
     assert f'aria-current="page">{section}</a>' in html
 

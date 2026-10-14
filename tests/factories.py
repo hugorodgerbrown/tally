@@ -54,7 +54,7 @@ class PasskeyFactory(factory.django.DjangoModelFactory):
 
 
 def exercise_type(slug: str) -> ExerciseType:
-    """Return one of the five types the data migration made (aerobic, strength, ...)."""
+    """Return one of the six types the data migrations made (aerobic, strength, ...)."""
     return ExerciseType.objects.get(slug=slug)
 
 
