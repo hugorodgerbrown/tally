@@ -1,11 +1,11 @@
 {% extends "public_base.html" %}
 {% load static planner %}
 {# The front page, in the shape every Titan app shares (DESIGN.md, "The front page"). #}
-{% block title %}{{ pwa.name }}: every interval timed, every minute tallied{% endblock %}
+{% block title %}{{ pwa.name }}: timed and tallied{% endblock %}
 {% block description %}Interval workouts your phone runs hands free, with every minute logged by type and by muscle.{% endblock %}
-{% block share_title %}Every interval timed. Every minute tallied.{% endblock %}
-{% block share_description %}No taps. No counting. Just the work.{% endblock %}
-{% block share_image_alt %}Every interval timed. Every minute tallied. Beside it, the phone's report after a workout: time by type and by muscle.{% endblock %}
+{% block share_title %}Timed and tallied.{% endblock %}
+{% block share_description %}Say hi to your new AI trainer.{% endblock %}
+{% block share_image_alt %}Timed and tallied. Beside it, the phone's report after a workout: time by type and by muscle.{% endblock %}
 {% block extra_js %}
   <link rel="stylesheet" href="{% static 'css/activity.css' %}">
   <script src="{% static 'js/styles.js' %}" defer></script>
@@ -15,8 +15,8 @@
   {# 2. Proposition: the promise, and one way in, named for the first job. #}
   <section class="hero stack">
     <p class="eyebrow">Interval training at home</p>
-    <h1>Every interval timed. Every minute tallied.</h1>
-    <p class="hero__lead">No taps. No counting. Just the work.</p>
+    <h1>Timed and tallied.</h1>
+    <p class="hero__lead">Say hi to your new AI trainer.</p>
     {% if user.is_authenticated %}
       <a class="button button--block" href="{% url 'activity:app' %}">Open the app</a>
     {% else %}
