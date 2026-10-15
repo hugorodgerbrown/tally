@@ -29,7 +29,7 @@ class Command(BaseCommand):
         """List, and with --commit fill, the accounts."""
         users = get_user_model().objects.filter(is_active=True).order_by("-id")
         if options["email"]:
-            users = users.filter(email__iexact=options["email"].strip().lower())
+            users = users.for_email(options["email"])
             if not users.exists():
                 raise CommandError(f"No active account has the email {options['email']}.")
         else:
@@ -39,8 +39,8 @@ class Command(BaseCommand):
         if not total:
             self.stdout.write("Every account already has a library.")
             return
-        for n, user in enumerate(users.only("pk", "email").iterator(), start=1):
-            label = f"{total - n + 1}: account {user.pk} {user.email}"
+        for n, user in enumerate(users.only("pk", "masked_email").iterator(), start=1):
+            label = f"{total - n + 1}: account {user.pk} {user.masked_email}"
             if not options["commit"]:
                 self.stdout.write(f"{label} (dry run; pass --commit)")
                 continue

@@ -15,11 +15,16 @@ BEFORE = [("library", "0005_exercise_movement"), ("activity", "0002_discardedses
 
 
 def _migrate(targets: list[tuple[str, str]]) -> Any:
-    """Migrate to ``targets``; return the historical apps at that state."""
+    """Migrate to ``targets``; return the historical apps at that state.
+
+    Accounts stay at their latest: the user table only ever moves forwards
+    (accounts.0002 renames it), and nothing here depends on its history.
+    """
     executor = MigrationExecutor(connection)
     executor.loader.build_graph()
     executor.migrate(targets)
-    return executor.loader.project_state(targets).apps
+    accounts = [n for n in executor.loader.graph.leaf_nodes() if n[0] == "accounts"]
+    return executor.loader.project_state(targets + accounts).apps
 
 
 def _latest() -> list[tuple[str, str]]:
@@ -32,7 +37,7 @@ def _latest() -> list[tuple[str, str]]:
 def test_existing_rows_go_to_the_superuser_and_keep_their_history() -> None:
     """Exercises, workouts and sessions all end up owned by the existing account."""
     old = _migrate(BEFORE)
-    user_model = old.get_model("auth", "User")
+    user_model = old.get_model("accounts", "User")
     user_model.objects.create(username="someone", email="someone@example.com")
     hugo = user_model.objects.create(username="hugo", is_superuser=True, is_staff=True)
     exercise = old.get_model("library", "Exercise").objects.create(name="Plank")
@@ -89,7 +94,7 @@ STATUS_BEFORE = [("library", "0009_source")]
 def test_shown_workouts_are_pinned_and_hidden_ones_archived_and_back() -> None:
     """is_active true becomes pinned and false archived; going back reverses it."""
     old = _migrate(STATUS_BEFORE)
-    owner = old.get_model("auth", "User").objects.create(username="hugo")
+    owner = old.get_model("accounts", "User").objects.create(username="hugo")
     workouts = old.get_model("library", "Workout").objects
     workouts.create(owner=owner, name="Shown", is_active=True, uuid=uuid.uuid4())
     workouts.create(owner=owner, name="Hidden", is_active=False, uuid=uuid.uuid4())
@@ -111,7 +116,7 @@ def test_shown_workouts_are_pinned_and_hidden_ones_archived_and_back() -> None:
 def test_balance_tops_up_existing_libraries() -> None:
     """Accounts with a library get the two balance exercises, unless they have one by name."""
     old = _migrate([("library", "0011_remove_workout_is_active")])
-    user_model = old.get_model("auth", "User")
+    user_model = old.get_model("accounts", "User")
     exercise_model = old.get_model("library", "Exercise")
     # A transactional test's flush can take the data migration's types with it.
     old.get_model("library", "ExerciseType").objects.get_or_create(

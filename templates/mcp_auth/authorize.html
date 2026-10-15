@@ -1,0 +1,5 @@
+{% extends "mcp_auth/authorize.html" %}
+{# mcp_auth's shared consent page, in this app's words: override only its blocks. #}
+{% block title %}Connect {{ application.name|default:"an app" }} · {{ pwa.name }}{% endblock %}
+{% block heading %}Connect {{ application.name|default:"this app" }} to {{ pwa.name }}?{% endblock %}
+{% block description %}It will be able to read your exercises, workouts and logged sessions, and add and change your exercises and workouts. It can't delete anything, and it only sees your own account.{% endblock %}

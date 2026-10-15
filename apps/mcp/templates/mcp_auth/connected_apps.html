@@ -1,6 +1,7 @@
-{% extends "mcp_auth/base.html" %}
-{% block page_title %}Connected apps{% endblock %}
-{% block body %}
+{% extends "public_base.html" %}
+{# Tally's own list of connected apps, in its card and item styles (the consent page is templates/mcp_auth/). #}
+{% block title %}Connected apps · {{ pwa.name }}{% endblock %}
+{% block content %}
   <section class="card stack">
     <h1>Connected apps</h1>
     {% if apps %}
