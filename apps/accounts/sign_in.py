@@ -142,7 +142,8 @@ def _adopt_account(request: SignInRequest) -> Any | None:
     username is the other form (the key, or the address). Either is given
     the request's username, masked address and email (blank unless
     addresses are kept). Where addresses aren't kept, only accounts made
-    with one still have it, so there are few to look through.
+    with one still have it (in ``email``, or in the username when
+    ``createsuperuser`` was given no email), so there are few to look through.
     """
     user_model = get_user_model()
     if request.email:
@@ -150,12 +151,14 @@ def _adopt_account(request: SignInRequest) -> Any | None:
             Q(email__iexact=request.email) | Q(username=request.email_key)
         )
     else:
-        candidates = user_model.objects.exclude(email="")
+        # A key has no "@", so this finds only accounts not keyed yet.
+        candidates = user_model.objects.filter(~Q(email="") | Q(username__contains="@"))
     user = next(
         (
             u
             for u in candidates.order_by("pk")
-            if u.username == request.email_key or username_for(u.email) == _username(request)
+            if u.username == request.email_key
+            or username_for(u.email or u.username) == _username(request)
         ),
         None,
     )
@@ -174,7 +177,9 @@ def account_exists(email: str) -> bool:
         return True
     # One createsuperuser made, not yet adopted (``_adopt_account``).
     address = normalise_email(email)
-    return bool(User.objects.filter(Q(email__iexact=address) | Q(username=address)).exists())
+    return bool(
+        User.objects.filter(Q(email__iexact=address) | Q(username__iexact=address)).exists()
+    )
 
 
 def user_for(request: SignInRequest) -> Any | None:

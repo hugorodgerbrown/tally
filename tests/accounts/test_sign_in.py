@@ -121,6 +121,20 @@ def test_a_createsuperuser_account_is_found_by_email_then_keyed() -> None:
     assert sign_in.user_for(request) == admin
 
 
+def test_a_createsuperuser_account_with_no_email_is_found_by_its_username() -> None:
+    """An account createsuperuser made with the address only as its username is adopted."""
+    admin = get_user_model().objects.create_superuser("Boss@example.com", "")
+    assert sign_in.account_exists("boss@example.com")
+    request, _, _ = sign_in.issue("boss@example.com")
+    assert sign_in.user_for(request) == admin
+    admin.refresh_from_db()
+    assert (admin.username, admin.masked_email) == (
+        email_key("boss@example.com"),
+        "b•••@example.com",
+    )
+    assert get_user_model().objects.count() == 1
+
+
 def test_keeping_addresses_stores_them(settings: Any) -> None:
     """With ACCOUNTS_KEEP_EMAIL the address is the username and the email, and is masked too."""
     settings.ACCOUNTS_KEEP_EMAIL = True
