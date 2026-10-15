@@ -7,6 +7,7 @@ that the earliest account. Muscle groups stay shared (no owner).
 
 import uuid
 
+from django.conf import settings
 from django.db import migrations
 
 
@@ -20,7 +21,7 @@ def fill(apps, schema_editor):
     Workout = apps.get_model("library", "Workout")
     if not (Exercise.objects.exists() or Workout.objects.exists()):
         return
-    User = apps.get_model("auth", "User")
+    User = apps.get_model(*settings.AUTH_USER_MODEL.split("."))
     owner = (
         User.objects.filter(is_superuser=True, is_active=True).order_by("pk").first()
         or User.objects.order_by("pk").first()

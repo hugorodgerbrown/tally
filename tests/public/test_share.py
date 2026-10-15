@@ -62,3 +62,14 @@ def test_no_tag_repeats_the_address(client: Client) -> None:
     content = client.get(reverse("accounts:sign_in_link", args=["secret-token"])).content.decode()
     assert 'property="og:url"' not in content
     assert "secret-token" not in content
+
+
+@pytest.mark.parametrize(
+    ("name", "title"),
+    [("help", "Help with"), ("terms", "terms"), ("privacy", "privacy notice")],
+)
+def test_each_page_shares_its_own_title(client: Client, name: str, title: str) -> None:
+    """A shared link to help, terms or privacy says which page it is."""
+    content = client.get(reverse(f"public:{name}")).content.decode()
+    [shared] = re.findall(r'<meta property="og:title" content="([^"]*)"', content)
+    assert title in shared

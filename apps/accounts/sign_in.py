@@ -3,7 +3,9 @@
 Sign-up (/signup/) and sign-in send the same link and code. The first
 redeemed link or code for an address creates its account, with the starter
 exercise library, whichever page asked; until then nothing is stored about
-it beyond the pending request. See docs/accounts.md.
+it beyond the pending request. The address itself is stored nowhere unless
+``ACCOUNTS_KEEP_EMAIL`` is on: the request and the account hold its key and
+masked form (``apps.accounts.models``). See docs/accounts.md.
 """
 
 from __future__ import annotations
@@ -18,21 +20,25 @@ from typing import Any
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import transaction
-from django.db.models import F
+from django.db.models import F, Q
 from django.utils import timezone
 from django.utils.crypto import salted_hmac
 
-from apps.accounts.models import SignInRequest
+from apps.accounts.models import (
+    ReviewerAccount,
+    SignInRequest,
+    User,
+    email_key,
+    kept_email,
+    mask_email,
+    normalise_email,
+    username_for,
+)
 from apps.library import starter
 
 logger = logging.getLogger(__name__)
 
 CODE_DIGITS = 6
-
-
-def normalise_email(email: str) -> str:
-    """Return ``email`` as stored and looked up: trimmed and lowercased."""
-    return email.strip().lower()
 
 
 def _hash_token(token: str) -> str:
@@ -47,20 +53,32 @@ def _hash_code(request_uuid: str, code: str) -> str:
     ).hexdigest()
 
 
+def reviewer_code(email: str) -> str | None:
+    """Return the fixed code if ``email`` is a reviewer account's, else None.
+
+    Reviewers have no inbox to read, so their address is sent no email and
+    signs in with the code staff set up in the admin (see docs/accounts.md).
+    """
+    return ReviewerAccount.objects.for_email(email).values_list("code", flat=True).first()
+
+
 def issue(email: str, next_url: str = "") -> tuple[SignInRequest, str, str]:
     """Create a sign-in request for ``email``; return it with its link token and code.
 
     Earlier unused requests for the same address stop working, so only the
-    newest email in someone's inbox signs them in.
+    newest email in someone's inbox signs them in. A reviewer account's
+    address gets its fixed code (``reviewer_code``).
     """
     email = normalise_email(email)
     token = secrets.token_urlsafe(32)
-    code = f"{secrets.randbelow(10**CODE_DIGITS):0{CODE_DIGITS}d}"
+    code = reviewer_code(email) or f"{secrets.randbelow(10**CODE_DIGITS):0{CODE_DIGITS}d}"
     now = timezone.now()
     with transaction.atomic():
         SignInRequest.objects.for_email(email).live().update(used_at=now)
         request = SignInRequest(
-            email=email,
+            email_key=email_key(email),
+            masked_email=mask_email(email),
+            email=kept_email(email),
             token_hash=_hash_token(token),
             next_url=next_url[:2048],
             expires_at=now + timedelta(seconds=settings.SIGN_IN_MAX_AGE_SECONDS),
@@ -111,31 +129,77 @@ def redeem_code(request_uuid: str, code: str) -> SignInRequest | None:
     return request
 
 
-def _find_user(email: str) -> Any | None:
-    """Return the account for ``email``: by username, or by email for ``createsuperuser`` ones."""
+def _username(request: SignInRequest) -> str:
+    """Return the username the request's account has: its key, or the kept address."""
+    return request.email or request.email_key
+
+
+def _adopt_account(request: SignInRequest) -> Any | None:
+    """Return an account stored another way for the request's address, restored now.
+
+    Two kinds: one ``createsuperuser`` made, which stores the address it is
+    given; and one made before ``ACCOUNTS_KEEP_EMAIL`` changed, whose
+    username is the other form (the key, or the address). Either is given
+    the request's username, masked address and email (blank unless
+    addresses are kept). Where addresses aren't kept, only accounts made
+    with one still have it (in ``email``, or in the username when
+    ``createsuperuser`` was given no email), so there are few to look through.
+    """
     user_model = get_user_model()
-    return (
-        user_model.objects.filter(username=email).first()
-        or user_model.objects.filter(email__iexact=email).order_by("pk").first()
+    if request.email:
+        candidates = user_model.objects.filter(
+            Q(email__iexact=request.email) | Q(username=request.email_key)
+        )
+    else:
+        # A key has no "@", so this finds only accounts not keyed yet.
+        candidates = user_model.objects.filter(~Q(email="") | Q(username__contains="@"))
+    user = next(
+        (
+            u
+            for u in candidates.order_by("pk")
+            if u.username == request.email_key
+            or username_for(u.email or u.username) == _username(request)
+        ),
+        None,
     )
+    if user is not None:
+        user.username = _username(request)
+        user.masked_email = request.masked_email
+        user.email = request.email
+        user.save(update_fields=["username", "masked_email", "email"])
+        logger.info("accounts.restored user=%s", user.pk)
+    return user
 
 
 def account_exists(email: str) -> bool:
-    """Return whether ``email`` already has an account."""
-    return _find_user(normalise_email(email)) is not None
+    """Return whether ``email`` already has an account (sign-up then sends the sign-in email)."""
+    if User.objects.for_email(email).exists():
+        return True
+    # One createsuperuser made, not yet adopted (``_adopt_account``).
+    address = normalise_email(email)
+    return bool(
+        User.objects.filter(Q(email__iexact=address) | Q(username__iexact=address)).exists()
+    )
 
 
 def user_for(request: SignInRequest) -> Any | None:
     """Return the account for a redeemed request, creating it on first sign-in.
 
     Returns None for a deactivated account: it can't be signed back in by
-    email. Existing accounts are found by username (the email, for accounts
-    made here) or by email (for ones made with ``createsuperuser``).
+    email. Accounts are found by username (``username_for``), or, the first
+    time after ``createsuperuser`` or a change to ``ACCOUNTS_KEEP_EMAIL``,
+    as ``_adopt_account`` says.
     """
-    email = request.email
-    user = _find_user(email)
+    user_model = get_user_model()
+    user = user_model.objects.filter(username=_username(request)).first()
     if user is None:
-        user = get_user_model()(username=email, email=email)
+        user = _adopt_account(request)
+    if user is None:
+        user = user_model(
+            username=_username(request),
+            email=request.email,
+            masked_email=request.masked_email,
+        )
         user.set_unusable_password()
         user.save()
         logger.info("accounts.created user=%s", user.pk)

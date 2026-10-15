@@ -24,6 +24,10 @@ services:
         sync: false
       - key: DJANGO_SECRET_KEY
         generateValue: true
+      # Finds every account by its email address (docs/accounts.md). Made
+      # once; never change it, and keep a copy outside Render.
+      - key: ACCOUNTS_EMAIL_KEY
+        generateValue: true
       - key: DJANGO_DEBUG
         value: "0"
       # The public address (https://tally.example.com): links in emails and
@@ -62,6 +66,12 @@ services:
         sync: false
       - key: DJANGO_SECRET_KEY
         sync: false
+      # The system checks need it; the web service's value.
+      - key: ACCOUNTS_EMAIL_KEY
+        fromService:
+          type: web
+          name: tally
+          envVarKey: ACCOUNTS_EMAIL_KEY
       - key: DJANGO_DEBUG
         value: "0"
       - key: PYTHON_VERSION

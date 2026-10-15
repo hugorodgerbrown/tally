@@ -19,6 +19,7 @@ jobs:
       DJANGO_DEBUG: "0"
       DJANGO_SSL_REDIRECT: "0"
       DJANGO_SECRET_KEY: lighthouse-only-0123456789-abcdefghijklmnopqrstuvwxyz-ABCDEFGH
+      ACCOUNTS_EMAIL_KEY: lighthouse-only-email-key
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7

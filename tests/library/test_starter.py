@@ -69,10 +69,11 @@ def test_command_fills_only_empty_libraries(user: Any) -> None:
     assert "Every account already has a library" in out.getvalue()
 
 
-def test_command_email_adds_what_is_missing(user: Any) -> None:
-    """--email targets one account even if it has exercises."""
+def test_command_email_adds_what_is_missing(db: None) -> None:
+    """--email targets one account, found by its address's key, even if it has exercises."""
+    user = UserFactory.create(address="person@example.com")
     ExerciseFactory.create(owner=user, name="Plank")
-    call_command("seed_library", "--commit", "--email", user.email.upper(), stdout=StringIO())
+    call_command("seed_library", "--commit", "--email", "Person@Example.com", stdout=StringIO())
     assert Exercise.objects.for_user(user).count() == 23
 
 

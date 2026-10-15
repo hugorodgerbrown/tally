@@ -51,11 +51,11 @@ def signed_in_user(client: Client) -> Any:
 
 
 def test_sign_in_page_offers_email_and_passkey(client: Client) -> None:
-    """The page has the email field (with passkey autofill) and the hidden passkey card."""
+    """The page has the email field and the hidden passkey card, which asks only when pressed."""
     response = client.get(SIGN_IN, {"next": "/app/account/"})
     content = response.content.decode()
     assert response.status_code == 200
-    assert 'autocomplete="email webauthn"' in content
+    assert 'autocomplete="email"' in content
     assert "data-passkey-sign-in" in content
     assert 'value="/app/account/"' in content
 
@@ -77,7 +77,9 @@ def test_sign_in_emails_a_link_and_a_code(client: Client) -> None:
     assert code in message.subject
     assert link.startswith("/signin/link/")
     page = client.get(CODE)
-    assert b"walker@example.com" in page.content
+    assert "w•••@example.com" in page.content.decode()
+    assert b"walker@example.com" not in page.content
+    assert "walker@example.com" not in str(dict(client.session.items()))
 
 
 def test_a_bad_email_is_refused(client: Client) -> None:
@@ -111,14 +113,16 @@ def test_link_asks_for_a_click_then_signs_in(client: Client) -> None:
     other_browser = Client()
     page = other_browser.get(link)
     assert page.status_code == 200
-    assert b"walker@example.com" in page.content
+    assert "w•••@example.com" in page.content.decode()
+    assert b"walker@example.com" not in page.content
     assert signed_in_user(other_browser) is None
 
     response = other_browser.post(link)
     assert response["Location"] == "/app/account/"
     user = signed_in_user(other_browser)
     assert user is not None
-    assert user.email == "walker@example.com"
+    assert user.masked_email == "w•••@example.com"
+    assert user.email == ""
 
 
 def test_a_used_link_has_expired(client: Client) -> None:
@@ -132,7 +136,7 @@ def test_a_used_link_has_expired(client: Client) -> None:
 
 def test_a_link_for_a_closed_account_does_not_sign_in(client: Client) -> None:
     """An inactive account gets the closed page."""
-    UserFactory.create(email="walker@example.com", is_active=False)
+    UserFactory.create(address="walker@example.com", is_active=False)
     request_email(client)
     link, _ = emailed()
     response = client.post(link)
@@ -236,11 +240,11 @@ def test_admin_refuses_signed_in_non_staff(signed_in: Client) -> None:
 
 
 def test_account_page_lists_my_passkeys(signed_in: Client, user: Any) -> None:
-    """The account page shows my email and my passkeys, nobody else's."""
+    """The account page shows my masked address and my passkeys, nobody else's."""
     PasskeyFactory.create(user=user, name="My phone")
     PasskeyFactory.create(name="Someone else's")
     content = signed_in.get(reverse("accounts:account")).content.decode()
-    assert user.email in content
+    assert f"Signed in as</span><br><strong>{user.masked_email}</strong>" in content
     assert "My phone" in content
     assert "Someone else" not in content
     assert "data-sign-out" in content

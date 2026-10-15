@@ -16,12 +16,17 @@ NOT_ON_PAGE: dict[str, str] = {
     "htmx-indicator": "htmx's own request state",
     "htmx-request": "htmx's own request state",
     "outbox-status": "the frame of every page; shown while writes wait to send",
+    "mcp-auth": "mcp_auth's consent page, which only an OAuth request opens",
+    "mcp-auth-account": "mcp_auth's consent page, which only an OAuth request opens",
+    "mcp-auth-cancel": "mcp_auth's consent page, which only an OAuth request opens",
 }
 
 # Classes a framework puts on elements (no template here names them), so the
 # dead-CSS check counts them as used.
 ADDED_BY_FRAMEWORKS: dict[str, str] = {
     "errorlist": "Django renders it round a form's errors",
+    "mcp-auth-account": "mcp_auth's consent page: its Signed in as line",
+    "mcp-auth-cancel": "mcp_auth's consent page: its Cancel button",
 }
 
 # Scripts and stylesheets a page under /app/ loads that aren't precached,

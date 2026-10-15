@@ -10,7 +10,7 @@ device PIN). From then on they sign in with the passkey, or by email.
                        │    next = /app/welcome/ ─▶ Add a passkey / Not now)
                  ┌─────▼────── /signin/ ─────────────┐
                  │  email ──▶ SignInRequest (hashes)  │──▶ email: link + 6-digit code
-                 │  passkey button / autofill         │
+                 │  passkey button                    │
                  └──────┬─────────────────────┬──────┘
           link, any browser                code, this browser only
    /signin/link/<token>/ ── Continue (POST)    /signin/code/ ── POST code
@@ -29,7 +29,8 @@ device PIN). From then on they sign in with the passkey, or by email.
 | `apps/accounts/passkeys.py` | WebAuthn options and verification (py_webauthn) |
 | `apps/accounts/views.py` | The sign-up, sign-in, code, link, welcome, sign-out, account and passkey endpoints |
 | `apps/accounts/tasks.py` | `send_sign_in_email`, enqueued by the view (`django.tasks`) |
-| `apps/accounts/models.py` | `SignInRequest`, `Passkey` |
+| `apps/accounts/models.py` | `User`, `SignInRequest`, `Passkey`, `ReviewerAccount`; `email_key()` and `mask_email()` |
+| `apps/accounts/checks.py` | Fails the system checks (so `migrate`, so a deploy) without `ACCOUNTS_EMAIL_KEY` |
 | `static/js/passkeys.js`, `webauthn_json.js` | The browser side of both ceremonies |
 | `static/js/code_input.js` | The code as six digit boxes; a pasted or autofilled code fills them all |
 | `apps/core/ratelimit.py` | Cache-backed limits on emails, codes and passkey challenges |
@@ -43,9 +44,25 @@ device PIN). From then on they sign in with the passkey, or by email.
   share the rate limits. The welcome page sends anyone who already has a
   passkey straight on to the app.
 - **The account is made on first use.** The first redeemed link or code
-  for an address, from either page, creates the account (`username` and `email` both the lowercased address,
-  no usable password). Nothing about an address is stored before then
-  except the pending request.
+  for an address, from either page, creates the account (no usable
+  password) with the starter library. Nothing about an address is stored
+  before then except the pending request.
+- **No address is kept.** The account's `username` is `email_key(address)`,
+  an HMAC-SHA256 of the lower-cased address keyed with `ACCOUNTS_EMAIL_KEY`,
+  and `email` is blank. `masked_email` (`h•••@example.com`) is what the
+  account page, the code and link pages and passkeys show. The request holds
+  the same key and masked address; the address itself is only the sign-in
+  task's argument, in memory while the email is sent. Set
+  `ACCOUNTS_KEEP_EMAIL = True` to keep it as the username and email too, for
+  an app that emails people later; the privacy notice follows the setting.
+  Why: docs/decisions/accounts-keep-a-key-not-an-email-address.md.
+- **Accounts made before the key.** Tally had live accounts when the key
+  arrived, so `accounts.0003` keyed them in place: each one's username
+  became the key of its address, its masked address was set and the
+  address blanked. Why: docs/decisions/tally-keys-its-existing-accounts.md.
+- **Never change `ACCOUNTS_EMAIL_KEY`.** It is not `SECRET_KEY`, which can
+  be rotated freely. Changing or losing this one cuts every account off from
+  its address. Render generates it once; keep a copy.
 - **Link and code, either once.** Each email carries a link and a six-digit
   code, valid for `SIGN_IN_MAX_AGE_SECONDS` (15 minutes). Asking again ends
   the earlier request, so only the newest email works. Only hashes are
@@ -83,9 +100,11 @@ device PIN). From then on they sign in with the passkey, or by email.
   device it was made on ("Passkey on iPhone").
 - Discoverable credentials with user verification required: a passkey alone
   signs someone in, so it has to be the person, not just the device.
-- Sign-in needs no email: the browser offers every passkey it holds for the
-  site, from the button or from the email field's autofill (conditional
-  mediation).
+- Sign-in needs no email: pressing "Sign in with a passkey" makes the
+  browser offer every passkey it holds for the site. Nothing asks before
+  the button is pressed: no autofill (conditional mediation) request on
+  page load, which some browsers and password managers show as a prompt
+  nobody asked for.
 - A passkey deleted here but still on a device answers 404 with its id;
   the page asks the browser to forget it (`signalUnknownCredential`).
 - `WEBAUTHN_RP_ID` is the site's host name and `WEBAUTHN_ORIGINS` its
@@ -100,11 +119,41 @@ device PIN). From then on they sign in with the passkey, or by email.
 ## Staff and the admin
 
 The admin's password form redirects to `/signin/`. Make the first
-superuser with your email as the username, then sign in by email:
+superuser with your email, then sign in by email: that first sign-in finds
+the account by the address `createsuperuser` stored, then keys it and
+blanks the address like any other.
 
 ```bash
 uv run python manage.py createsuperuser --username you@example.com --email you@example.com
 ```
+
+The admin lists accounts by masked address. Type a whole address into the
+user search to find its account (the search turns it into the username).
+
+## Reviewer accounts
+
+App directories (OpenAI's for ChatGPT, Anthropic's for Claude) review an
+app by signing in to a test account, and refuse one that needs an inbox, an
+SMS or any other verification step. A reviewer account is an address that
+signs in with a fixed code instead:
+
+1. In the admin, add a **Reviewer account** with an address that has no
+   mailbox behind it, such as `reviewer@<slug>.ultraniche.ai`. Its six-digit
+   code is made when you save it.
+2. Give the reviewers the address, the code, and: "Enter the email on the
+   sign-in page, then type the code on the next page. No email is sent."
+3. After the review, select the account and run **Give the selected
+   accounts a new code**, or delete it.
+
+- **Nothing else changes.** The reviewer uses `/signin/` and
+  `/signin/code/` like anyone else. `sign_in.issue()` gives that address's
+  request the fixed code, and the view sends it no email. The account
+  itself is made on first sign-in, as for anyone.
+- **Same limits.** Five wrong codes end a request, and an address gets five
+  requests an hour, so the code can't be guessed in any useful time.
+- **The code is kept as it is,** not hashed like an emailed code, so staff
+  can read it in the admin. It is a shared test credential for an account
+  with no one's data in it, not a person's secret.
 
 ## Email
 

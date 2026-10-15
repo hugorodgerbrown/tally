@@ -45,6 +45,7 @@ def page_as_markdown(name: str) -> dict[str, str]:
         "pwa": identity(),
         "analytics": {"domain": settings.FIVEBAR_DOMAIN, "script": SCRIPT, "path": ""},
         "mcp_url": mcp_url(),
+        "keeps_email": settings.ACCOUNTS_KEEP_EMAIL,
     }
     html = render_to_string(page.template, context)
     return {

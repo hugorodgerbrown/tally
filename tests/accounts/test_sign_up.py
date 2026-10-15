@@ -59,7 +59,7 @@ def test_sign_up_emails_a_link_and_code_worded_for_a_new_account(client: Client)
     assert "sign-up code" in message.subject
     assert "Finish creating your" in str(message.body)
     assert "Create account" in client.get(CODE).content.decode()
-    assert not get_user_model().objects.filter(username="new@example.com").exists()
+    assert not get_user_model().objects.for_email("new@example.com").exists()
 
 
 def test_the_code_creates_the_account_and_suggests_a_passkey(client: Client) -> None:
@@ -68,7 +68,9 @@ def test_the_code_creates_the_account_and_suggests_a_passkey(client: Client) -> 
     _, code = emailed()
     response = client.post(CODE, {"code": code})
     assert response["Location"] == WELCOME
-    user = get_user_model().objects.get(username="new@example.com")
+    user = get_user_model().objects.for_email("new@example.com").get()
+    assert user.email == ""
+    assert user.masked_email == "n•••@example.com"
     assert Exercise.objects.for_user(user).count() == 23
     page = client.get(WELCOME).content.decode()
     assert "Add a passkey" in page

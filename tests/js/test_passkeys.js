@@ -75,30 +75,19 @@ describe('sign in', () => {
   });
 });
 
-describe('autofill and the button together', () => {
-  it('sends their requests one at a time', async () => {
-    let release;
-    const first = new Promise((resolve) => {
-      release = resolve;
-    });
+describe('on page load', () => {
+  it('asks for no passkey until the button is pressed', async () => {
     globalThis.PublicKeyCredential = { isConditionalMediationAvailable: () => Promise.resolve(true) };
-    globalThis.fetch = vi.fn((url) => {
-      if (globalThis.fetch.mock.calls.length === 1) return first.then(() => respond(200, { challenge: 'AQID' }));
-      return url === '/o' ? respond(200, { challenge: 'BAUG' }) : respond(400, {});
-    });
-    navigator.credentials.get = vi.fn(() => new Promise(() => {})); // autofill waits for the user
+    globalThis.fetch = vi.fn(() => respond(200, { challenge: 'AQID' }));
     await load(SIGN_IN);
     await flush();
-    expect(globalThis.fetch).toHaveBeenCalledTimes(1); // autofill's options, still in flight
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+    expect(navigator.credentials.get).not.toHaveBeenCalled();
 
     document.querySelector('[data-passkey-button]').click();
     await flush();
-    expect(globalThis.fetch).toHaveBeenCalledTimes(1); // the button's waits its turn
-
-    release();
-    await flush();
-    await flush();
-    expect(globalThis.fetch).toHaveBeenCalledTimes(2);
+    expect(navigator.credentials.get).toHaveBeenCalledTimes(1);
+    expect(navigator.credentials.get.mock.calls[0][0].mediation).toBeUndefined();
   });
 });
 

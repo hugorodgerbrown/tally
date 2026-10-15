@@ -11,7 +11,7 @@ Public (outside the installed app's /app/ scope):
 
 In the app:
   /app/welcome/                          after sign-up: suggests adding a passkey
-  /app/account/                          email and passkeys
+  /app/account/                          who you're signed in as, and passkeys
   /app/account/passkeys/options/         POST: registration challenge (JSON)
   /app/account/passkeys/                 POST: verify and save (JSON)
   /app/account/passkeys/<uuid>/delete/   POST
@@ -49,9 +49,10 @@ from apps.core.redirects import safe_next
 logger = logging.getLogger(__name__)
 
 # The session remembers which request this browser started, so the code
-# only works here.
+# only works here, and the masked address, for "check your email" (never
+# the address itself).
 SESSION_REQUEST = "accounts.sign_in_request"
-SESSION_EMAIL = "accounts.sign_in_email"
+SESSION_EMAIL_HINT = "accounts.sign_in_email_hint"
 # "sign_up" when the request came from /signup/, so the code page says
 # "Create account" rather than "Sign in".
 SESSION_PURPOSE = "accounts.sign_in_purpose"
@@ -73,7 +74,7 @@ def _complete_sign_in(request: HttpRequest, sign_in_request: SignInRequest) -> H
     first = user.last_login is None
     login(request, user, backend=_BACKEND)
     request.session.pop(SESSION_REQUEST, None)
-    request.session.pop(SESSION_EMAIL, None)
+    request.session.pop(SESSION_EMAIL_HINT, None)
     request.session.pop(SESSION_PURPOSE, None)
     url = safe_next(request, sign_in_request.next_url)
     return redirect(analytics.mark(url, analytics.SIGNED_UP) if first else url)
@@ -100,9 +101,11 @@ def _email_link_and_code(
         purpose = "sign_in"
     sign_in_request, token, code = sign_in.issue(email, next_url)
     link = settings.SITE_URL + reverse("accounts:sign_in_link", args=[token])
-    send_sign_in_email.enqueue(email=email, link=link, code=code, purpose=purpose)
+    # A reviewer account has no inbox: the reviewer types its fixed code.
+    if sign_in.reviewer_code(email) is None:
+        send_sign_in_email.enqueue(email=email, link=link, code=code, purpose=purpose)
     request.session[SESSION_REQUEST] = str(sign_in_request.uuid)
-    request.session[SESSION_EMAIL] = email
+    request.session[SESSION_EMAIL_HINT] = sign_in_request.masked_email
     request.session[SESSION_PURPOSE] = purpose
     return redirect("accounts:sign_in_code")
 
@@ -167,7 +170,7 @@ def sign_in_code(request: HttpRequest) -> HttpResponse:
             )
     context = {
         "form": form,
-        "email": request.session.get(SESSION_EMAIL, ""),
+        "masked_email": request.session.get(SESSION_EMAIL_HINT, ""),
         "minutes": _minutes(),
         "signing_up": request.session.get(SESSION_PURPOSE) == "sign_up",
     }
@@ -184,7 +187,7 @@ def sign_in_link(request: HttpRequest, token: str) -> HttpResponse:
             return render(
                 request, "accounts/link_invalid.html", {"minutes": _minutes()}, status=410
             )
-        return render(request, "accounts/sign_in_link.html", {"email": pending.email})
+        return render(request, "accounts/sign_in_link.html", {"masked_email": pending.masked_email})
 
     redeemed = sign_in.redeem_token(token)
     if redeemed is None:
@@ -299,12 +302,12 @@ def welcome(request: HttpRequest) -> HttpResponse:
 @require_GET
 @login_required
 def account(request: HttpRequest) -> HttpResponse:
-    """The signed-in user's email address and passkeys."""
+    """Who the user is signed in as (the masked address), and their passkeys."""
     user = signed_in_user(request)
     return render(
         request,
         "accounts/account.html",
-        {"passkeys": Passkey.objects.for_user(user), "email": getattr(user, "email", "")},
+        {"passkeys": Passkey.objects.for_user(user), "signed_in_as": str(user)},
     )
 
 

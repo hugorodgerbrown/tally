@@ -1,0 +1,4 @@
+{% extends "public_base.html" %}
+{# mcp_auth's pages (consent, connected apps) in the public pages' layout; app.css styles them under .mcp-auth. #}
+{% block title %}{% block mcp_title %}Connect an app{% endblock %} · {{ pwa.name }}{% endblock %}
+{% block content %}<div class="mcp-auth">{% block body %}{% endblock %}</div>{% endblock %}

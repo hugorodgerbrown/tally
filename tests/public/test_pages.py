@@ -63,3 +63,19 @@ def test_to_markdown(settings: Any) -> None:
         "\n"
         "https://example.test/mcp\n"
     )
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("keeps_email", [False, True])
+def test_the_privacy_notice_says_what_is_kept(
+    client: Client, settings: Any, keeps_email: bool
+) -> None:
+    """The page and the MCP text follow ACCOUNTS_KEEP_EMAIL: a key, or the address."""
+    settings.ACCOUNTS_KEEP_EMAIL = keeps_email
+    html = unescape(client.get(reverse("public:privacy")).content.decode())
+    markdown = page_as_markdown("privacy")["markdown"]
+    for text in (html, markdown):
+        assert "A masked address" in text
+        assert ("A key made from your email address" in text) is not keeps_email
+        assert ("Your address itself is never stored" in text) is not keeps_email
+        assert ("Your email address</strong>" in html) is keeps_email
