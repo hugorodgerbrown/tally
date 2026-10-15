@@ -7,6 +7,7 @@ never caches them and they never show inside the installed app.
 from collections import defaultdict
 from typing import Any
 
+from django.conf import settings
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_GET
@@ -88,7 +89,7 @@ def terms(request: HttpRequest) -> HttpResponse:
 @require_GET
 def privacy(request: HttpRequest) -> HttpResponse:
     """The privacy notice (placeholder, but true of the template as shipped)."""
-    return render(request, "public/privacy.html")
+    return render(request, "public/privacy.html", {"keeps_email": settings.ACCOUNTS_KEEP_EMAIL})
 
 
 @require_GET

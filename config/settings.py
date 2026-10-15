@@ -13,7 +13,12 @@ import dj_database_url
 from decouple import Csv, config
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.csp import CSP
-from mcp_auth.conf import oauth2_settings
+from mcp_auth.conf import (
+    CHATGPT_REDIRECT_URI_PATTERNS,
+    DEFAULT_CONSENT_FORM_ACTION,
+    DEFAULT_REDIRECT_URI_PATTERNS,
+    oauth2_settings,
+)
 
 from apps.core import analytics
 from apps.pwa import conf as pwa_conf
@@ -180,6 +185,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Sign-in is by emailed link or code, or a passkey; there are no passwords
 # outside the admin's own (unused) form. See docs/accounts.md.
+AUTH_USER_MODEL = "accounts.User"
 LOGIN_URL = "accounts:sign_in"
 LOGIN_REDIRECT_URL = "activity:app"
 LOGOUT_REDIRECT_URL = "public:home"
@@ -191,6 +197,18 @@ SESSION_COOKIE_AGE = 60 * 60 * 24 * 365
 # end a request.
 SIGN_IN_MAX_AGE_SECONDS = 15 * 60
 SIGN_IN_MAX_CODE_ATTEMPTS = 5
+
+# No email address is stored: an account is found by the address's key, an
+# HMAC made with this secret, and shows a masked address (h•••@example.com).
+# It is not SECRET_KEY, so that one can be rotated freely; changing or
+# losing this one cuts every account off, so keep a copy. titan makes it.
+# Set ACCOUNTS_KEEP_EMAIL to keep the address as well, for an app that has
+# to email people later; the privacy notice follows it. See
+# docs/decisions/accounts-keep-a-key-not-an-email-address.md.
+ACCOUNTS_EMAIL_KEY: str = config(
+    "ACCOUNTS_EMAIL_KEY", default="insecure-local-development-only" if DEBUG else ""
+)
+ACCOUNTS_KEEP_EMAIL = False
 
 # Passkeys (WebAuthn). The relying party is this site's host name; a
 # passkey only works on the host it was made for.
@@ -262,9 +280,10 @@ LOGGING = {
     "loggers": {"django.db.backends": {"level": "WARNING"}},
 }
 
-# OAuth 2.1 for the MCP endpoint, so Claude can add this project as a
-# connector. The shared Titan preset: PKCE, rotating refresh tokens, DCR and
-# CIMD, held to Claude's callbacks and loopback.
+# OAuth 2.1 for the MCP endpoint, so Claude and ChatGPT can add this project
+# as a connector (the help page gives the steps for both). The shared Titan
+# preset: PKCE, rotating refresh tokens, DCR and CIMD (ChatGPT's signed with
+# its own key), held to the callbacks below.
 # The scope keeps Tally's original name, so connections made before the move
 # onto the template still work. Any account may connect: each one only ever
 # sees its own library and log.
@@ -273,6 +292,16 @@ OAUTH2_PROVIDER = oauth2_settings(
     scope="tally",
     scope_description="Read and change your exercises, workouts and sessions",
 )
-MCP_AUTH = {"SCOPE": "tally", "CAN_CONNECT": "mcp_auth.policy.active_user"}
+MCP_AUTH = {
+    "SCOPE": "tally",
+    "CAN_CONNECT": "mcp_auth.policy.active_user",
+    # ChatGPT's callbacks as well as Claude's and loopback.
+    "REDIRECT_URI_PATTERNS": DEFAULT_REDIRECT_URI_PATTERNS + CHATGPT_REDIRECT_URI_PATTERNS,
+    "CONSENT_FORM_ACTION": [
+        *DEFAULT_CONSENT_FORM_ACTION,
+        "https://chatgpt.com",
+        "https://platform.openai.com",
+    ],
+}
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

@@ -2,6 +2,8 @@
 {% load static %}
 {% block title %}Help · {{ pwa.name }}{% endblock %}
 {% block description %}How to sign in to {{ pwa.name }}, add a passkey, install the app and use it offline.{% endblock %}
+{% block share_title %}Help with {{ pwa.name }}{% endblock %}
+{% block share_description %}How to sign in to {{ pwa.name }}, add a passkey, install the app and use it offline.{% endblock %}
 {% block extra_js %}<script src="{% static 'js/copy.js' %}" defer></script>{% endblock %}
 {% block content %}
   <article class="card prose">

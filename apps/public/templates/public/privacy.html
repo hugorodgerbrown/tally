@@ -1,6 +1,8 @@
 {% extends "public_base.html" %}
 {% block title %}Privacy · {{ pwa.name }}{% endblock %}
 {% block description %}What {{ pwa.name }} keeps about you, and why.{% endblock %}
+{% block share_title %}{{ pwa.name }}'s privacy notice{% endblock %}
+{% block share_description %}What {{ pwa.name }} keeps about you, and why.{% endblock %}
 {% block content %}
   <article class="card prose">
     {% include "public/_privacy_body.html" %}

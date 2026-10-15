@@ -1,11 +1,17 @@
 {# The privacy notice: shared by the page and apps.public.pages (the MCP tools). #}
 {# Draft: have it reviewed before Tally is offered widely. #}
+{# keeps_email is settings.ACCOUNTS_KEEP_EMAIL: the notice says what this app's code stores. #}
 <h1>Privacy notice</h1>
 <p class="meta">Last updated: October 2026</p>
 <h2>What we keep</h2>
 <ul>
-  <li><strong>Your email address</strong>, to identify your account and send you sign-in links.</li>
-  <li><strong>Sign-in requests</strong>: when you asked to sign in, and whether you did. Deleted once they expire.</li>
+{% if keeps_email %}
+  <li><strong>Your email address</strong>, to identify your account and to email you.</li>
+{% else %}
+  <li><strong>A key made from your email address</strong>: a one-way code that finds your account each time you sign in. Your address itself is never stored: it is used to send the sign-in email, then discarded.</li>
+{% endif %}
+  <li><strong>A masked address</strong>: the first letter and the domain, such as h•••@example.com, so you can see which account you're signed in to.</li>
+  <li><strong>Sign-in requests</strong>: {% if keeps_email %}the address{% else %}the key and the masked address{% endif %}, when you asked to sign in, and whether you did. Deleted once they expire.</li>
   <li><strong>Passkeys</strong>: a public key for each one you add, its name, and when it was last used. Your device keeps the private key; we never see it, or your face or fingerprint.</li>
   <li><strong>Your library</strong>: the exercises and workouts you make or change.</li>
   <li><strong>Your training log</strong>: each workout you do, when you started and finished it, the time worked on each exercise, and the effort score if you give one.</li>
@@ -14,8 +20,8 @@
 <p>The app stores your workouts, pages you've opened and any finished workouts not yet sent, so it works without a connection. Signing out removes the saved pages.</p>
 <h2>Cookies</h2>
 <p>One cookie keeps you signed in, and one protects forms from forgery. There are no analytics or advertising cookies.</p>
-<h2>Claude and other apps</h2>
-<p>If you connect Claude, it reads and changes your library and log on your behalf, under Anthropic's terms. Nothing is shared with it until you approve the connection, and you can disconnect it at any time.</p>
+<h2>Claude, ChatGPT and other apps</h2>
+<p>If you connect Claude or ChatGPT, it reads and changes your library and log on your behalf, under Anthropic's or OpenAI's terms. Nothing is shared with it until you approve the connection, and you can disconnect it at any time.</p>
 {% if analytics.domain %}
 <h2>Visitor counts</h2>
 <p>We count visits with <strong>fivebar</strong>, which sets no cookies. For each page you open it receives the page, the page you came from, your browser, device type and country, and when you create an account. It keeps daily totals only, which can't be traced back to you; your IP address and browser details tell visitors apart for one day and are not kept. Addresses that hold a sign-in link or a record are counted without it. See <a href="https://fiveb.ar/privacy">fivebar's privacy policy</a>.</p>
@@ -23,4 +29,4 @@
 <h2>Who else sees it</h2>
 <p>Our hosting and email providers{% if analytics.domain %}, and fivebar for visitor counts,{% endif %} process data on our behalf. We don't sell it or share it with anyone else. Other accounts never see your library or log.</p>
 <h2>Your rights</h2>
-<p>You can ask for a copy of your data, or for your account and everything in it to be deleted.</p>
+<p>You can ask for a copy of your data, or for your account and everything in it to be deleted.{% if not keeps_email %} Because we don't keep your address, we can't email you, and we find your account by asking you to sign in.{% endif %}</p>
