@@ -38,7 +38,7 @@ jobs:
       - name: Run Lighthouse CI
         run: npx --yes @lhci/cli@0.15.1 autorun
       - if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: lighthouse
           path: .lighthouseci
