@@ -42,6 +42,7 @@
     down: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9l7 7 7-7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     cloud: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .6-8 6 6 0 0 0-11.4 1.6A3.3 3.3 0 0 0 7 18z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>',
   };
+  I.more = I.down.replace("<svg", '<svg class="more"');
 
   /* ---------- sound and screen ---------- */
 
@@ -175,7 +176,14 @@
   function summaryScreen(w) {
     const total = totalSeconds(buildTimeline(w));
     const used = [...new Set(w.items.flatMap((i) => i.types))];
-    const list = w.items.map((it, i) => `<li><i>${i + 1}</i><span>${esc(it.name)}${kitIcons[it.equipment] || ""}${it.movement === "static" ? " <small>static</small>" : ""}${it.sides ? " <small>each side</small>" : ""}<b>${it.types.map((t) => `<s data-css="background:${typeColour(t)}" title="${esc(typeName(t))}"></s>`).join("")}</b></span><em>${it.dur} s</em></li>`).join("");
+    // A row whose exercise has notes is a button that shows them underneath.
+    const list = w.items.map((it, i) => {
+      const notes = (it.description || "").trim();
+      const row = `<i>${i + 1}</i><span>${esc(it.name)}${kitIcons[it.equipment] || ""}${it.movement === "static" ? " <small>static</small>" : ""}${it.sides ? " <small>each side</small>" : ""}${notes ? I.more : ""}<b>${it.types.map((t) => `<s data-css="background:${typeColour(t)}" title="${esc(typeName(t))}"></s>`).join("")}</b></span><em>${it.dur} s</em>`;
+      if (!notes) return `<li>${row}</li>`;
+      const open = run.notes.has(i);
+      return `<li class="notes"><button class="srow" type="button" data-act="notes" data-i="${i}" aria-expanded="${open}" aria-controls="snote${i}">${row}</button><p class="snote" id="snote${i}"${open ? "" : " hidden"}>${esc(notes)}</p></li>`;
+    }).join("");
     return `<div class="scr s-done s-sum"><div class="main" data-css="justify-content:flex-start;gap:3.4cqw">
       <div class="hrow"><a class="backlink" href="#/">${I.left}Workouts</a>${tvButton()}</div>
       <div class="name" data-css="font-size:9cqw">${esc(w.name)}</div>
@@ -289,7 +297,9 @@
   /* ---------- workout lifecycle ---------- */
 
   function openWorkout(w) {
-    run = { w, uuid: uuid(), rating: null, saved: false };
+    // Notes left open stay open when a sync reopens the same workout.
+    const notes = run && run.w.id === w.id ? run.notes : new Set();
+    run = { w, uuid: uuid(), rating: null, saved: false, notes };
     run.timer = new Timer(w, {
       onStep: (idx, catchingUp) => { if (!catchingUp) beep(1320, 0.35); checkpoint(); },
       onCount: () => beep(880, 0.15),
@@ -379,6 +389,11 @@
     if (act === "close") return close();
     if (act === "discard" || act === "discard-no") { run.confirmDiscard = act === "discard"; return render(); }
     if (act === "discard-yes") { window.Store.discardSession(run.uuid).then(refreshPending); return close(); }
+    if (act === "notes") {
+      const i = +b.dataset.i;
+      if (!run.notes.delete(i)) run.notes.add(i);
+      return render();
+    }
     if (act === "rate") {
       const v = +b.dataset.v;
       run.rating = run.rating === v ? null : v;

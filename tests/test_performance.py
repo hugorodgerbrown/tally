@@ -13,7 +13,9 @@ from apps.pwa import conf
 # activity.css, about 56 KB) is the offline shell itself, not an extra.
 # 165 KB since RAS-45: the template's app.css grew by its shared front-page
 # and design-system components, which every Titan app's shell carries.
-PRECACHE_BUDGET_BYTES = 165_000
+# 170 KB since RAS-86: the workout screen shows each exercise's notes,
+# which took the phone app about 1.6 KB past 165 KB.
+PRECACHE_BUDGET_BYTES = 170_000
 
 
 def test_precached_shell_fits_the_budget() -> None:
