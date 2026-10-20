@@ -78,6 +78,7 @@ def test_workouts_payload(signed_in: Client, workout: Workout) -> None:
     assert w["items"][0] == {
         "exerciseId": str(workout.items.get().exercise.uuid),
         "name": "Split squat",
+        "description": "",
         "dur": 40,
         "sides": True,
         "equipment": "",

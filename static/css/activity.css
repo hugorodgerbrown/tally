@@ -111,8 +111,14 @@ html:has(> body.activity), body.activity { margin: 0; height: 100%; background: 
 #app .saved.ask { opacity: 1; font-weight: 600; }
 
 #app .slist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; font-size: 3.9cqw; }
-#app .slist li { display: flex; align-items: center; gap: 2.6cqw; padding: 1.7cqw 0; border-top: .3cqw solid rgba(255, 255, 255, .1); }
-#app .slist li > i { font-style: normal; font-variant-numeric: tabular-nums; opacity: .5; width: 3cqw; font-size: 3.3cqw; }
+#app .slist li, #app .slist .srow { display: flex; align-items: center; gap: 2.6cqw; padding: 1.7cqw 0; border-top: .3cqw solid rgba(255, 255, 255, .1); }
+#app .slist li.notes { display: block; padding: 0; }
+#app .slist .srow { width: 100%; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+#app .slist .srow:focus-visible { outline: .6cqw solid var(--done-hi); outline-offset: .4cqw; }
+#app .slist svg.more { width: 3.6cqw; height: 3.6cqw; flex: none; opacity: .5; transition: transform .2s; }
+#app .slist [aria-expanded="true"] svg.more { transform: rotate(180deg); opacity: .8; }
+#app .snote { margin: 0 0 2.2cqw 5.6cqw; font-size: 3.4cqw; line-height: 1.45; font-weight: 500; opacity: .75; white-space: pre-line; }
+#app .slist li > i, #app .slist .srow > i { font-style: normal; font-variant-numeric: tabular-nums; opacity: .5; width: 3cqw; font-size: 3.3cqw; }
 #app .slist li span { flex: 1; min-width: 0; display: flex; align-items: center; gap: 1.6cqw; font-weight: 600; }
 #app .slist small { font-size: 2.9cqw; opacity: .55; font-weight: 500; }
 #app .slist svg.eq { width: 4.4cqw; height: 4.4cqw; flex: none; opacity: .8; }
@@ -264,9 +270,12 @@ html:has(> body.activity), body.activity { margin: 0; height: 100%; background: 
     .bigtime { grid-column: 1; font-size: 11cqw; margin-block: 2.5cqw 0; gap: 0 2cqw; }
     .bigtime small { font-size: 3cqw; }
     .slist { grid-column: 2; grid-row: 2 / 4; font-size: 1.85cqw; align-self: center; max-height: 100%; min-height: 0; overflow-y: auto; }
-    .slist li { padding: 1cqw 0; gap: 1.2cqw; border-top-width: .12cqw; }
+    .slist li, .slist .srow { padding: 1cqw 0; gap: 1.2cqw; border-top-width: .12cqw; }
+    .slist li.notes { padding: 0; }
+    .slist svg.more { width: 1.6cqw; height: 1.6cqw; }
+    .snote { font-size: 1.4cqw; margin: 0 0 1cqw 2.8cqw; }
     .slist.long { display: grid; grid-template-rows: repeat(var(--rows), auto); grid-auto-flow: column; column-gap: 3cqw; font-size: 1.6cqw; }
-    .slist li > i { width: 1.6cqw; font-size: 1.5cqw; }
+    .slist li > i, .slist .srow > i { width: 1.6cqw; font-size: 1.5cqw; }
     .slist small { font-size: 1.3cqw; }
     .slist svg.eq { width: 2cqw; height: 2cqw; }
     .slist s, .sleg s { width: 1.1cqw; height: 1.1cqw; }
