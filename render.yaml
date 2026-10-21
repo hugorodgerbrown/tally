@@ -15,7 +15,12 @@ services:
       uv run --no-sync python manage.py collectstatic --noinput
     # Runs before each deploy goes live; a failed migration stops the deploy.
     preDeployCommand: uv run --no-sync python manage.py migrate --noinput
-    startCommand: uv run --no-sync gunicorn config.wsgi --bind 0.0.0.0:$PORT --access-logfile -
+    # The access log records each request's path, not its query string or
+    # referrer: the admin's user search puts a whole address in the URL.
+    startCommand: >-
+      uv run --no-sync gunicorn config.wsgi --bind 0.0.0.0:$PORT
+      --access-logfile -
+      --access-logformat '%(h)s %(t)s "%(m)s %(U)s %(H)s" %(s)s %(b)s %(L)s "%(a)s"'
     # Answers 200 while the process is up; no sign-in, no database query.
     # (/healthz also reads the database, for uptime monitors.)
     healthCheckPath: /livez

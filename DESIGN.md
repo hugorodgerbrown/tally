@@ -211,3 +211,28 @@ The rules behind it:
   the product side by side, so a link pasted in a chat looks like the
   page it opens. `bin/make-icons` draws a placeholder; replace it before
   launch.
+
+## 13. Error pages
+
+Every Titan app answers an error with the same card (`errors/_error_card.html`,
+copy in `apps/core/errors.py: ERROR_PAGES`), so a reader who hits one knows
+what happened and how to get back:
+
+- **The status, then what happened.** An eyebrow with the code ("Error
+  404"), a heading that says it in words ("Page not found"), and one line
+  on what to do. No jokes, no illustrations, no stack trace.
+- **One way out.** **Go to the front page**, and nothing else to choose
+  between. The header's link (Sign in, or Open the app) is still there.
+- **403, CSRF and 404 keep the website's frame** (`public_base.html`): the
+  site works, the reader only followed a bad link.
+- **400 and 500 stand alone** (`errors/standalone.html`): the same header
+  and footer, drawn without the request, so the page that reports a
+  failure can't fail the same way. Anything added to it must come from the
+  app's config, never the session or the database
+  (docs/decisions/the-500-page-renders-without-context.md).
+- **A client that isn't a browser gets no page**: JSON for the MCP
+  endpoint, OAuth and anything asking for JSON; one line of text for htmx.
+
+The card and each of its states are on the design page, and staff open any
+page whole, with its real status, at `/app/design/errors/<kind>/`; with
+`DEBUG` on, Django shows its own pages instead.

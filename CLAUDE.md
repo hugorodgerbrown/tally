@@ -11,8 +11,11 @@ it close to the template so `copier update --trust` stays a clean merge.
 ```
 config/          settings (one module, env-driven), urls, wsgi/asgi
 apps/core/       BaseModel, IdempotencyMiddleware + IdempotencyRecord,
+                 PrivatePagesMiddleware (signed-in pages never cached),
                  decorators (require_htmx, login_required_json), rate
-                 limits, safe_next, livez and healthz; analytics.py puts
+                 limits, safe_next, livez and healthz; errors.py is the
+                 error pages (400/403/404/500, CSRF), as JSON, text or
+                 HTML (DESIGN.md, "Error pages"); analytics.py puts
                  fivebar's tag on every page while FIVEBAR_DOMAIN is set,
                  and marks events (a sign-up) for static/js/analytics.js
 apps/accounts/   sign-up (/signup/) and sign-in by emailed link or code
@@ -39,8 +42,11 @@ apps/mcp/        the MCP endpoint (/mcp) and its tools; auth is mcp-auth.
                  privacy_policy, terms_of_service and help return the
                  public pages as Markdown (apps/public/pages.py);
                  resources.py + ui/ hold MCP App views (ui:// HTML a
-                 tool names with Tool(ui=...), docs/decisions/)
-templates/       base.html (the app, /app/), public_base.html, includes
+                 tool names with Tool(ui=...), docs/decisions/);
+                 events.py counts each tool call in fivebar as a server
+                 event while FIVEBAR_DOMAIN and FIVEBAR_TOKEN are set
+templates/       base.html (the app, /app/), public_base.html, includes,
+                 errors/ (the error card, its site and standalone pages)
 static/js/       plain JavaScript, classic scripts, no build step
 static/css/      tokens.css (Tally's tokens and fonts), app.css (template
                  components, the design system's tokens mapped to Tally's;
@@ -202,5 +208,5 @@ issue and its first commit is the template update, if there was one
    never logged. The one exception is a reviewer account's fixed code,
    which staff read in the admin (docs/accounts.md).
 7. Who may connect an MCP client (`MCP_AUTH["CAN_CONNECT"]` in
-   `config/settings.py`, now any active account) only widens in a PR that
+   `config/settings.py`, now any active account) only changes in a PR that
    says so.

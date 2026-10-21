@@ -66,4 +66,27 @@ describe('isStorable', () => {
   ])('refuses %s', (_, overrides) => {
     expect(core.isStorable(res(overrides))).toBe(false);
   });
+
+  it('keeps a no-store page the server marks for offline use', () => {
+    const headers = { 'Cache-Control': 'private, no-store', 'Offline-Copy': 'allowed' };
+    expect(core.isStorable(res({ headers }))).toBe(true);
+  });
+
+  it('still refuses a marked page that failed or redirected', () => {
+    const headers = { 'Cache-Control': 'private, no-store', 'Offline-Copy': 'allowed' };
+    expect(core.isStorable(res({ headers, redirected: true }))).toBe(false);
+    expect(core.isStorable(res({ headers, ok: false }))).toBe(false);
+  });
+});
+
+describe('isSignedOut', () => {
+  it.each([
+    ['a redirect', { redirected: true }, true],
+    ['a 401', { ok: false, status: 401 }, true],
+    ['a 403', { ok: false, status: 403 }, true],
+    ['a server error', { ok: false, status: 500 }, false],
+    ['a plain page', { status: 200 }, false],
+  ])('%s', (_, overrides, expected) => {
+    expect(core.isSignedOut(res(overrides))).toBe(expected);
+  });
 });

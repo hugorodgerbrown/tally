@@ -100,7 +100,7 @@
       form.dataset.cleared = '1';
       form.submit();
     };
-    // Sign out even if the cleanup fails: the server clears the HTTP cache too.
+    // Sign out even if the cleanup fails.
     // Forget the principal first: the worker checks it after caching a page
     // (sw_worker.js cachePage), so a copy stored mid-sign-out is removed.
     db.setMeta('principal', '').then(forgetPages).then(submit, submit);

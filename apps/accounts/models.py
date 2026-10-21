@@ -60,6 +60,15 @@ def kept_email(email: str) -> str:
     return normalise_email(email) if settings.ACCOUNTS_KEEP_EMAIL else ""
 
 
+def account_name(user: Any) -> str:
+    """Return how mcp-auth's consent page names ``user``: its masked address.
+
+    ``MCP_AUTH["ACCOUNT_NAME"]`` points here, so the page never shows the
+    key that is the username.
+    """
+    return str(user)
+
+
 class UserQuerySet(models.QuerySet["User"]):
     """Queries over accounts."""
 
@@ -102,6 +111,10 @@ class User(BaseModel, AbstractUser):
 
 class SignInRequestQuerySet(models.QuerySet["SignInRequest"]):
     """Queries over sign-in requests."""
+
+    def unused(self) -> SignInRequestQuerySet:
+        """Return requests not yet used or retired, expired or not."""
+        return self.filter(used_at__isnull=True)
 
     def live(self) -> SignInRequestQuerySet:
         """Return requests that are unused and unexpired."""
@@ -147,6 +160,14 @@ class SignInRequest(BaseModel):
         """Model metadata."""
 
         ordering = ["-created_at"]
+        constraints = [
+            # Only the newest email for an address works (sign_in.issue).
+            models.UniqueConstraint(
+                fields=["email_key"],
+                condition=models.Q(used_at__isnull=True),
+                name="one_unused_sign_in_per_address",
+            )
+        ]
 
     def to_string(self) -> str:
         """Return who it was for and whether it was used."""

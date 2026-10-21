@@ -1,0 +1,235 @@
+"""Tests for apps.core.errors: every error, in every shape it is sent."""
+
+import html
+import json
+from typing import Any
+from unittest import mock
+
+import pytest
+from django.db import connection
+from django.test import Client, RequestFactory
+from django.test.utils import CaptureQueriesContext
+from django.urls import reverse
+
+from apps.core import errors
+from tests.factories import UserFactory
+
+pytestmark = [pytest.mark.django_db, pytest.mark.urls("tests.core.error_urls")]
+
+JSON = {"Accept": "application/json"}
+HTMX = {"HX-Request": "true"}
+
+
+@pytest.fixture
+def anyone() -> Client:
+    """A browser that gets the error page rather than the exception."""
+    return Client(raise_request_exception=False)
+
+
+def page(response: Any) -> str:
+    """A response's body as text, entities decoded (the copy has apostrophes)."""
+    return html.unescape(response.content.decode())
+
+
+# --- The website's frame: 403, CSRF and 404 --------------------------------
+
+
+def test_a_missing_page_is_a_404_on_the_websites_frame(anyone: Client) -> None:
+    """The reader keeps the header, a way home and the footer."""
+    response = anyone.get("/no-such-page/")
+    assert response.status_code == 404
+    body = page(response)
+    assert "Page not found" in body
+    assert "Error 404" in body
+    assert "Go to the front page" in body
+    assert 'class="app-header"' in body
+    assert 'class="site-footer"' in body
+    assert "Sign in" in body
+
+
+def test_signed_in_the_404_keeps_the_way_into_the_app(anyone: Client, user: Any) -> None:
+    """The header still offers the app to someone signed in."""
+    anyone.force_login(user)
+    assert "Open the app" in page(anyone.get("/no-such-page/"))
+
+
+def test_a_raised_permission_denied_is_the_403_page(anyone: Client) -> None:
+    """PermissionDenied gets the 403 copy on the website's frame."""
+    response = anyone.get("/raise/403/")
+    assert response.status_code == 403
+    assert "You can't open this page" in page(response)
+    assert 'class="site-footer"' in page(response)
+
+
+def test_a_site_page_that_fails_falls_back_to_the_standalone_one(anyone: Client) -> None:
+    """If the frame itself breaks, the reader still gets a page, not a 500."""
+    with mock.patch("apps.core.errors.render", side_effect=RuntimeError("frame")):
+        response = anyone.get("/no-such-page/")
+    assert response.status_code == 404
+    assert "Page not found" in page(response)
+    assert 'name="robots" content="noindex"' in page(response)
+
+
+# --- Standalone: 400 and 500 -------------------------------------------------
+
+
+def test_a_500_is_the_standalone_page(anyone: Client, user: Any) -> None:
+    """The 500 has the header and footer, but nothing that needs the session."""
+    anyone.force_login(user)
+    response = anyone.get("/raise/500/")
+    assert response.status_code == 500
+    body = page(response)
+    assert "Something went wrong on our side" in body
+    assert "Error 500" in body
+    assert 'class="site-footer"' in body
+    assert "Open the app" not in body
+
+
+def test_the_500_reads_no_session_or_database(rf: RequestFactory) -> None:
+    """The handler alone: no query, and no ``request.user`` (this request has none)."""
+    request = rf.get("/raise/500/")
+    with CaptureQueriesContext(connection) as queries:
+        response = errors.server_error(request)
+    assert response.status_code == 500
+    assert "Something went wrong on our side" in page(response)
+    assert len(queries) == 0
+
+
+def test_a_suspicious_request_is_the_standalone_400(anyone: Client) -> None:
+    """SuspiciousOperation is a 400, drawn without the request."""
+    response = anyone.get("/raise/400/")
+    assert response.status_code == 400
+    assert "This request couldn't be read" in page(response)
+
+
+def test_a_disallowed_host_is_the_standalone_400(anyone: Client) -> None:
+    """A bad Host header is a 400 too, where building any absolute address would raise again."""
+    response = anyone.get("/", HTTP_HOST="evil.example")
+    assert response.status_code == 400
+    assert "This request couldn't be read" in page(response)
+
+
+def test_the_standalone_page_falls_back_to_plain_html(anyone: Client) -> None:
+    """When even the template fails (no static manifest), a literal page is sent."""
+    with mock.patch("apps.core.errors.render_to_string", side_effect=ValueError("manifest")):
+        response = anyone.get("/raise/500/")
+    assert response.status_code == 500
+    assert page(response) == errors.FALLBACK_HTML
+
+
+# --- JSON and htmx -----------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("path", "status", "slug"),
+    [
+        ("/no-such-page/", 404, "not_found"),
+        ("/raise/403/", 403, "forbidden"),
+        ("/raise/400/", 400, "bad_request"),
+        ("/raise/500/", 500, "server_error"),
+    ],
+)
+def test_a_client_that_wants_json_gets_json(
+    anyone: Client, path: str, status: int, slug: str
+) -> None:
+    """An API client learns what went wrong without parsing a page."""
+    response = anyone.get(path, headers=JSON)
+    assert response.status_code == status
+    assert response["Content-Type"] == "application/json"
+    assert json.loads(response.content) == {"error": slug, "status": status}
+
+
+@pytest.mark.parametrize("path", ["/.well-known/no-such-document", "/mcp/no-such-tool"])
+def test_mcp_and_oauth_paths_get_json_whatever_they_accept(anyone: Client, path: str) -> None:
+    """The MCP endpoint and the discovery documents always answer in JSON."""
+    response = anyone.get(path, headers={"Accept": "text/html,*/*"})
+    assert response.status_code == 404
+    assert json.loads(response.content)["error"] == "not_found"
+
+
+def test_a_failing_mcp_call_gets_a_json_500(anyone: Client) -> None:
+    """A 500 under /mcp is JSON, not the page."""
+    response = anyone.get("/mcp/raise/500/")
+    assert response.status_code == 500
+    assert json.loads(response.content) == {"error": "server_error", "status": 500}
+
+
+def test_a_browser_accepting_anything_gets_the_page(anyone: Client) -> None:
+    """``*/*`` accepts JSON and HTML alike, so it gets HTML."""
+    response = anyone.get("/no-such-page/", headers={"Accept": "*/*"})
+    assert response["Content-Type"].startswith("text/html")
+
+
+def test_htmx_gets_the_heading_as_plain_text(anyone: Client) -> None:
+    """An htmx request gets one line, since htmx doesn't swap an error."""
+    response = anyone.get("/no-such-page/", headers=HTMX)
+    assert response.status_code == 404
+    assert response["Content-Type"] == "text/plain; charset=utf-8"
+    assert page(response) == "Page not found"
+
+
+@pytest.mark.parametrize("headers", [{}, JSON, HTMX])
+def test_every_shape_varies_on_accept_and_htmx(anyone: Client, headers: dict[str, str]) -> None:
+    """One address answers in three shapes, so a cache must keep them apart."""
+    vary = anyone.get("/no-such-page/", headers=headers)["Vary"]
+    assert "Accept" in vary
+    assert "HX-Request" in vary
+
+
+# --- CSRF ---------------------------------------------------------------------
+
+
+def test_a_csrf_failure_is_the_expired_form_page(user: Any) -> None:
+    """A form posted with a stale token says how to recover."""
+    client = Client(enforce_csrf_checks=True)
+    client.force_login(user)
+    response = client.post(reverse("planner:exercise_new"), {"name": "Hello"})
+    assert response.status_code == 403
+    assert "This form has expired" in page(response)
+    assert response["X-CSRF-Failure"] == "1"
+
+
+def test_a_csrf_failure_is_marked_for_the_outbox_in_json(user: Any) -> None:
+    """The outbox keeps a write refused with X-CSRF-Failure, whatever the shape."""
+    client = Client(enforce_csrf_checks=True)
+    client.force_login(user)
+    response = client.post(
+        reverse("activity:api_sessions"), "{}", content_type="application/json", headers=JSON
+    )
+    assert response.status_code == 403
+    assert response["X-CSRF-Failure"] == "1"
+    assert json.loads(response.content) == {"error": "csrf_failed", "status": 403}
+
+
+# --- The staff preview -------------------------------------------------------
+
+
+@pytest.mark.parametrize("kind", list(errors.ERROR_PAGES))
+def test_staff_preview_every_page_with_its_real_status(client: Client, kind: str) -> None:
+    """With DEBUG on Django shows its own pages; this is how to see these."""
+    client.force_login(UserFactory.create(is_staff=True))
+    response = client.get(reverse("design:error_preview", args=[kind]))
+    assert response.status_code == errors.ERROR_PAGES[kind].status
+    assert errors.ERROR_PAGES[kind].heading in page(response)
+
+
+def test_the_preview_is_not_there_for_anyone_else(signed_in: Client) -> None:
+    """Anyone but staff gets the 404 page, not the preview."""
+    response = signed_in.get(reverse("design:error_preview", args=["500"]))
+    assert response.status_code == 404
+    assert "Page not found" in page(response)
+
+
+def test_an_unknown_preview_is_a_404(client: Client) -> None:
+    """Only the kinds in ERROR_PAGES have a preview."""
+    client.force_login(UserFactory.create(is_staff=True))
+    assert client.get(reverse("design:error_preview", args=["418"])).status_code == 404
+
+
+def test_the_design_page_shows_every_error_card(client: Client) -> None:
+    """Every state of the error card is on the design page (DESIGN.md, section 3)."""
+    client.force_login(UserFactory.create(is_staff=True))
+    body = page(client.get(reverse("design:index")))
+    for kind, error in errors.ERROR_PAGES.items():
+        assert error.heading in body
+        assert reverse("design:error_preview", args=[kind]) in body

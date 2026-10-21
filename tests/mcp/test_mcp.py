@@ -265,3 +265,14 @@ def test_endpoint_refuses_anonymous_calls(client: Client) -> None:
     )
     assert response.status_code == 401
     assert "resource_metadata" in response["WWW-Authenticate"]
+
+
+def test_the_openai_apps_challenge(client: Client, settings: Any) -> None:
+    """A 404 until OPENAI_APPS_CHALLENGE is set, then the token as bare text."""
+    settings.OPENAI_APPS_CHALLENGE = ""
+    assert client.get("/.well-known/openai-apps-challenge").status_code == 404
+    settings.OPENAI_APPS_CHALLENGE = "token-123"
+    response = client.get("/.well-known/openai-apps-challenge")
+    assert response.status_code == 200
+    assert response.content == b"token-123"
+    assert response["Content-Type"] == "text/plain; charset=utf-8"

@@ -1,0 +1,31 @@
+{% load site_footer static %}<!doctype html>
+{% comment %}
+400 and 500 (apps/core/errors.py), and the fallback when page.html fails.
+Rendered from a plain dict, without the request, so no context processor
+runs: no session, no request.user, no database. A 500 is often caused by
+one of those, and a 400 can be DisallowedHost, where anything that builds
+an absolute address raises again. Why:
+docs/decisions/the-500-page-renders-without-context.md.
+
+Context: page (an ErrorPage) and pwa (the app's identity, from its
+config). Read nothing else; there is nothing else. No analytics: the tag
+needs the request. If {% static %} raises (no manifest), the handler sends
+its literal fallback instead.
+{% endcomment %}
+<html lang="en-GB">
+  <head>
+    {% include "includes/_head.html" %}
+    <title>{{ page.heading }} · {{ pwa.name }}</title>
+    <meta name="robots" content="noindex">
+  </head>
+  <body>
+    {# public_base.html's header without the Sign in link: whether anyone is signed in is a session lookup. #}
+    <header class="app-header">
+      <a class="app-header__name" href="/"><img class="app-header__icon" src="{% static 'icons/icon-192.png' %}" alt="" width="28" height="28">{{ pwa.name }}</a>
+    </header>
+    <main class="app-main">
+      {% include "errors/_error_card.html" %}
+    </main>
+    {% site_footer %}
+  </body>
+</html>

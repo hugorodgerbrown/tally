@@ -76,6 +76,9 @@ SILENCED_SYSTEM_CHECKS = [
 # Visitor counts by fivebar: off unless set, to the domain the site was
 # added to fivebar under (titan sets it at go-live). See apps/core/analytics.py.
 FIVEBAR_DOMAIN: str = config("FIVEBAR_DOMAIN", default="")
+# A fivebar token made to send events and nothing else: with FIVEBAR_DOMAIN,
+# each MCP tool call is counted as a server event. See apps/mcp/events.py.
+FIVEBAR_TOKEN: str = config("FIVEBAR_TOKEN", default="")
 
 # Content Security Policy: everything from this origin, nothing inline.
 # There is no inline <script> anywhere; the launch-screen gate is a tiny
@@ -96,7 +99,7 @@ SECURE_CSP = {
     "form-action": [CSP.SELF],
     "frame-ancestors": [CSP.NONE],
 }
-CSRF_FAILURE_VIEW = "apps.core.views.csrf_failure"
+CSRF_FAILURE_VIEW = "apps.core.errors.csrf_failure"
 SECURE_REFERRER_POLICY = "same-origin"
 SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
 
@@ -132,6 +135,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     # After authentication: the replay fingerprint includes the user.
     "apps.core.idempotency.IdempotencyMiddleware",
+    # After authentication: signed-in pages are never cached.
+    "apps.core.private_pages.PrivatePagesMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -295,6 +300,8 @@ OAUTH2_PROVIDER = oauth2_settings(
 MCP_AUTH = {
     "SCOPE": "tally",
     "CAN_CONNECT": "mcp_auth.policy.active_user",
+    # The consent page's "Signed in as": the masked address, not the key.
+    "ACCOUNT_NAME": "apps.accounts.models.account_name",
     # ChatGPT's callbacks as well as Claude's and loopback.
     "REDIRECT_URI_PATTERNS": DEFAULT_REDIRECT_URI_PATTERNS + CHATGPT_REDIRECT_URI_PATTERNS,
     "CONSENT_FORM_ACTION": [
@@ -303,5 +310,8 @@ MCP_AUTH = {
         "https://platform.openai.com",
     ],
 }
+# The token OpenAI's platform issues to verify the domain before ChatGPT's
+# app directory lists the MCP server: off (a 404) unless set.
+OPENAI_APPS_CHALLENGE: str = config("OPENAI_APPS_CHALLENGE", default="")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
