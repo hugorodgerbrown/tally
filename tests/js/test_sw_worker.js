@@ -1,4 +1,4 @@
-// Tests for static/js/sw_worker.js: re-caching a page never outlives a sign-out.
+// Tests for static/js/sw_worker.js: a cached page never outlives a sign-out.
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import '../../static/js/idb.js';
@@ -9,6 +9,7 @@ import '../../static/js/sw_core.js';
 const { AppDB } = self;
 const stored = new Map();
 let onMessage;
+let onFetch;
 
 beforeAll(async () => {
   self.SW_CONFIG = {
@@ -24,6 +25,7 @@ beforeAll(async () => {
   const add = vi.spyOn(self, 'addEventListener');
   await import('../../static/js/sw_worker.js');
   onMessage = add.mock.calls.find(([type]) => type === 'message')[1];
+  onFetch = add.mock.calls.find(([type]) => type === 'fetch')[1];
   add.mockRestore();
 });
 
@@ -31,9 +33,11 @@ beforeEach(async () => {
   stored.clear();
   vi.stubGlobal('caches', {
     open: async () => ({
-      put: async (url, response) => stored.set(String(url), response),
-      delete: async (url) => stored.delete(String(url)),
+      put: async (url, response) => stored.set(String(url.url ?? url), response),
+      delete: async (url) => stored.delete(String(url.url ?? url)),
+      match: async (url) => stored.get(String(url.url ?? url)),
     }),
+    delete: async () => stored.clear(),
   });
   await AppDB.setMeta('principal', '7');
 });
@@ -74,5 +78,63 @@ describe('cache-page', () => {
     await AppDB.setMeta('principal', '');
     expect(await cachePage(async () => page())).toBe(false);
     expect(fetch).not.toHaveBeenCalled();
+  });
+});
+
+/** Navigate to /app/ through the worker's fetch handler and wait for it to finish. */
+async function visit(response) {
+  vi.stubGlobal('fetch', vi.fn(async () => response));
+  const work = [];
+  let reply;
+  const request = { url: `${self.location.origin}/app/`, method: 'GET', mode: 'navigate' };
+  onFetch({ request, respondWith: (promise) => (reply = promise), waitUntil: (promise) => work.push(promise) });
+  await reply;
+  await Promise.all(work);
+}
+
+describe('page fetch', () => {
+  const cachedUrl = () => `${self.location.origin}/app/`;
+  const otherUrl = () => `${self.location.origin}/app/other/`;
+
+  it.each([
+    ['sent on to sign-in', { redirected: true }],
+    ['refused', { ok: false, status: 403 }],
+  ])('forgets every cached page and the principal when a page is %s', async (_, overrides) => {
+    stored.set(cachedUrl(), page());
+    stored.set(otherUrl(), page());
+    await visit({ ...page(), ...overrides });
+    expect(stored.size).toBe(0);
+    expect(await AppDB.getMeta('principal')).toBe('');
+  });
+
+  it('still forgets the pages when a slow sign-out arrives after the cached copy', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout'] });
+    try {
+      stored.set(cachedUrl(), page());
+      let answer;
+      vi.stubGlobal('fetch', vi.fn(() => new Promise((resolve) => (answer = resolve))));
+      const events = [];
+      let reply;
+      const request = { url: cachedUrl(), method: 'GET', mode: 'navigate' };
+      onFetch({
+        request,
+        respondWith: (promise) => (reply = promise.then((r) => (events.push('replied'), r))),
+        waitUntil: (promise) => (events.push('waitUntil'), (reply.cleanup = promise)),
+      });
+      await vi.advanceTimersByTimeAsync(4000);
+      expect(await reply).toBe(stored.get(cachedUrl()));
+      answer({ ...page(), redirected: true });
+      await reply.cleanup;
+      expect(events).toEqual(['waitUntil', 'replied']);
+      expect(stored.size).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps the cached copy through a server error', async () => {
+    stored.set(cachedUrl(), page());
+    await visit({ ...page(), ok: false, status: 500 });
+    expect(stored.has(cachedUrl())).toBe(true);
   });
 });

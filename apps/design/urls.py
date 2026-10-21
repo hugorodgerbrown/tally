@@ -8,4 +8,5 @@ app_name = "design"
 
 urlpatterns = [
     path("design/", views.design, name="index"),
+    path("design/errors/<str:kind>/", views.error_preview, name="error_preview"),
 ]

@@ -6,6 +6,7 @@ What is on by default, and what checks it.
 | --- | --- | --- |
 | HTTPS redirect, HSTS, secure cookies (when `DJANGO_DEBUG=0`) | `config/settings.py` | `tox -e checks` (`check --deploy --fail-level WARNING`) |
 | CSP: same-origin only (plus `https://fiveb.ar` for scripts and connections while `FIVEBAR_DOMAIN` is set), no inline script or style, no eval | `SECURE_CSP` | `tests/test_security.py`, `tests/core/test_analytics.py` |
+| MCP tool calls counted in fivebar with a send-only token, off the request path; only the tool's name, the outcome, the app's name and a keyed hash of the user's id leave the app | `apps/mcp/events.py` | `tests/mcp/test_events.py` |
 | Clickjacking, sniffing, referrer, COOP headers | settings + middleware | `tests/test_security.py` |
 | CSRF on every form and outbox write (token read at send time) | Django + `outbox.js` | `tests/core/test_views.py` |
 | No passwords: sign-in by single-use emailed link or code, or a passkey | `apps/accounts/` | `tests/accounts/` |
@@ -13,7 +14,7 @@ What is on by default, and what checks it.
 | Rate limits on sign-in emails, codes and passkey challenges | `apps/core/ratelimit.py` | `tests/accounts/test_views.py`, `test_passkeys.py` |
 | Passkeys require user verification; challenges are single-use | `apps/accounts/passkeys.py` | `tests/accounts/test_passkeys.py`, `tests/e2e/test_passkey.py` |
 | Post-sign-in redirects stay on this site | `apps/core/redirects.py` | `tests/core/test_redirects.py` |
-| Signing out drops cached pages on the device | `pwa.js` + `Clear-Site-Data` | `tests/accounts/test_views.py` |
+| Signing out drops cached pages on the device | `pwa.js`; signed-in pages sent `no-store` (`apps/core/private_pages.py`) | `tests/accounts/test_views.py`, `tests/core/test_private_pages.py` |
 | Each keyed write runs at most once, per user, per body | `apps/core/idempotency.py` | `tests/core/test_idempotency.py` |
 | Signed-out writes get 401, never a redirect | `login_required_json` | `tests/activity/test_api.py` |
 | One account never sees or changes another's exercises, workouts or sessions | `for_user` querysets, `signed_in_user` | `tests/planner/`, `tests/activity/test_api.py`, `tests/mcp/test_tools.py` |

@@ -1,0 +1,7 @@
+{# The error card (DESIGN.md, "Error pages"): the status, what happened in one heading and one line, and the way home. Drawn by errors/page.html, errors/standalone.html and the design page; the copy is apps/core/errors.py: ERROR_PAGES. #}
+<section class="card stack">
+  <p class="eyebrow">Error {{ page.status }}</p>
+  <h1>{{ page.heading }}</h1>
+  <p>{{ page.body }}</p>
+  <a class="button button--block" href="/">Go to the front page</a>
+</section>

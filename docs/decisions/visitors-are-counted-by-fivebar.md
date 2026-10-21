@@ -48,3 +48,32 @@ package and no server code; its API can add a site.
 - Error responses are counted as ordinary pages; Safari needs
   `data-status` on the tag to tell them apart, which the template doesn't
   set.
+
+## MCP tool calls (2026-10-16, RAS-53)
+
+An MCP client calls from its own servers, so the tag never sees the MCP
+endpoint. fivebar's server events (https://fiveb.ar/docs/server-events)
+count it instead: `apps/mcp/events.py` sends one event per `tools/call`.
+
+- Named after the tool under `/mcp/`, `/mcp/add_note` (RAS-54), so it
+  lands in Top pages beside the site's pages but can't be taken for one,
+  with `props.outcome` `ok` or `error` (a `ToolError`). An unknown tool
+  name or bad arguments send nothing.
+- Off unless `FIVEBAR_TOKEN` is set as well as `FIVEBAR_DOMAIN`: a token
+  made for the one site with **Send events** and not **Read stats**, so a
+  leaked one reads nothing. It is made by hand; titan doesn't mint it.
+- Sent from two daemon threads with a 2-second timeout, never on the
+  request: a slow or failing fivebar is logged and dropped, and the call
+  answers as fast as before. Not a django-tasks job, which would write a
+  row per call in production and run inline in development. Not a
+  `ThreadPoolExecutor` either (RAS-55): Python joins its threads at exit
+  once they have drained the queue, so during an outage a stopping
+  worker waited out every queued send. Events still queued at exit are
+  dropped.
+- `id` is a keyed hash of the user's id (`salted_hmac` with the app's
+  secret), so fivebar tells accounts apart without ever holding one.
+  `client` is the connected OAuth app's name, lower-cased, so Claude's
+  calls sit under AI Assistants. No IP or user agent: they would place the
+  client's servers, not the person. No arguments, results or anything the
+  person wrote.
+- Calls count towards fivebar's billable pageviews, like pages.

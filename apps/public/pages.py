@@ -16,7 +16,7 @@ from django.conf import settings
 from django.template.loader import render_to_string
 from django.urls import reverse
 
-from apps.core.analytics import SCRIPT
+from apps.core.analytics import SCRIPT, counts_mcp
 from apps.public.connector import mcp_url
 from apps.pwa.context_processors import identity
 
@@ -43,7 +43,12 @@ def page_as_markdown(name: str) -> dict[str, str]:
     # No request here, so no context processors: give the bodies what they read.
     context = {
         "pwa": identity(),
-        "analytics": {"domain": settings.FIVEBAR_DOMAIN, "script": SCRIPT, "path": ""},
+        "analytics": {
+            "domain": settings.FIVEBAR_DOMAIN,
+            "script": SCRIPT,
+            "path": "",
+            "counts_mcp": counts_mcp(),
+        },
         "mcp_url": mcp_url(),
         "keeps_email": settings.ACCOUNTS_KEEP_EMAIL,
     }

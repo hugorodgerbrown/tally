@@ -65,8 +65,10 @@ back in.
   copy, a navigation gets `/app/offline/`.
 - **Never cached**: anything outside `SCOPE` (`/app/`) except static
   files, so public pages, sign-in, admin, OAuth and MCP; anything in
-  `NEVER_CACHE`; anything non-GET; other origins; `no-store` responses;
-  redirects.
+  `NEVER_CACHE`; anything non-GET; other origins; `no-store` responses
+  (except signed-in app pages, which the server marks `Offline-Copy:
+  allowed`: they are `no-store` only to keep them out of the browser's own
+  cache); redirects.
 - **Versions**: cache names carry a hash of the worker's config (and of the
   files themselves under `DEBUG`). A deploy that changes any precached
   file installs a new worker, which takes over at once and deletes the old
