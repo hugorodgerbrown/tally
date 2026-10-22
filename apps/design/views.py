@@ -9,10 +9,10 @@ import logging
 
 from django.contrib.auth.decorators import login_required
 from django.http import Http404, HttpRequest, HttpResponse
-from django.shortcuts import render
 from django.views.decorators.http import require_GET
 
 from apps.core import errors
+from apps.core.shortcuts import render
 from apps.design import stylesheet
 
 logger = logging.getLogger(__name__)

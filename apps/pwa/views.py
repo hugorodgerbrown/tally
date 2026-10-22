@@ -14,12 +14,12 @@ import json
 from django.conf import settings
 from django.contrib.staticfiles import finders
 from django.http import HttpRequest, HttpResponse, JsonResponse
-from django.shortcuts import render
 from django.templatetags.static import static
 from django.urls import reverse
 from django.views.decorators.cache import cache_control
 from django.views.decorators.http import require_GET
 
+from apps.core.shortcuts import render
 from apps.pwa import conf
 
 

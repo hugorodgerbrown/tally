@@ -44,10 +44,10 @@ def test_no_tag_while_off(client: Client) -> None:
     "url_name", ["public:home", "public:privacy", "activity:app", "planner:workouts"]
 )
 def test_every_page_has_the_tag_once(signed_in: Client, settings: Any, url_name: str) -> None:
-    """Public and app pages alike: one async tag, with the site's domain."""
+    """Public and app pages alike: one async tag, with the site's domain and status."""
     settings.FIVEBAR_DOMAIN = DOMAIN
     html = signed_in.get(reverse(url_name)).content.decode()
-    tag = f'<script async data-domain="{DOMAIN}" src="{SCRIPT}"></script>'
+    tag = f'<script async data-domain="{DOMAIN}" data-status="200" src="{SCRIPT}"></script>'
     assert html.count(SCRIPT) == 1
     assert tag in html
     assert "js/analytics.js" in html
@@ -71,7 +71,23 @@ def test_counted_path() -> None:
     request = factory.get("/signin/")
     request.resolver_match = resolve("/signin/")
     assert counted_path(request) == ""
-    assert counted_path(factory.get("/nowhere/")) == ""
+    assert counted_path(factory.get("/nowhere/")) == "/:unmatched/"
+
+
+def test_counted_path_without_a_resolved_route() -> None:
+    """An error before resolution looks the route up; an unmatched address keeps one segment."""
+    factory = RequestFactory()
+    assert counted_path(factory.get("/signin/link/abc/")) == "/signin/link/:token/"
+    assert counted_path(factory.get("/signin/")) == ""
+    assert counted_path(factory.get("/signin/link/abc/extra")) == "/signin/:unmatched/"
+
+
+def test_an_unmatched_first_segment_is_sent_only_when_a_route_begins_with_it() -> None:
+    """A token that lost its prefix is the first segment, so an unknown one is never sent."""
+    factory = RequestFactory()
+    assert counted_path(factory.get("/secret-token/extra")) == "/:unmatched/"
+    assert counted_path(factory.get("/secret-token/")) == "/:unmatched/"
+    assert counted_path(factory.get("/signin/nowhere/")) == "/signin/:unmatched/"
 
 
 def test_context_has_no_path_while_off(settings: Any) -> None:

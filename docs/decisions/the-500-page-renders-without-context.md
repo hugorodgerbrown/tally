@@ -36,8 +36,11 @@ the client accepts JSON but not HTML) and plain text to htmx, and varies on
 
 ## Consequences
 
-- The 500 page has no signed-in state and no analytics. Anything added to it
-  must come from a plain dict.
+- The 500 page has no signed-in state. Anything added to it must come from
+  a plain dict. fivebar's tag is the one exception that reads the request
+  (2026-10-22, RAS-90): `analytics(request)` reads only settings and
+  `request.resolver_match`, never the session, the user or the host, so it
+  can't fail the way the page's cause did.
 - The standalone page copies `public_base.html`'s header by hand. Change
   both together.
 - The CSRF failure keeps `X-CSRF-Failure: 1` in every shape, so the outbox

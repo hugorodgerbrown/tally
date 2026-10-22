@@ -94,6 +94,9 @@ queryset, a factory in `tests/factories.py`, and tests. Use `uuid`, never
 
 - Full pages return whole documents; fragments live under `partials/` and
   are `@require_htmx`.
+- Render pages with `apps.core.shortcuts.render`, not Django's: it puts the
+  response's status in the context as `http_status`, which fivebar's tag
+  sends as `data-status` so Safari's 4xx and 5xx pages count as errors.
 - No inline `<script>`, `style=` or `on*=` in templates: the CSP blocks
   them and `tests/test_security.py` fails the build. A style that comes
   from data (a type's colour, a bar's width) goes in `data-css="..."`,

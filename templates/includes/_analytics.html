@@ -1,3 +1,3 @@
-{% load static %}{# fivebar's tag, on every page while FIVEBAR_DOMAIN is set (apps/core/analytics.py). Keep async; never bundle or copy the script. analytics.js sends the events the server marks. #}
-{% if analytics.domain %}<script async data-domain="{{ analytics.domain }}"{% if analytics.path %} data-path="{{ analytics.path }}"{% endif %} src="{{ analytics.script }}"></script>
+{% load static %}{# fivebar's tag, on every page while FIVEBAR_DOMAIN is set (apps/core/analytics.py). Keep async; never bundle or copy the script. analytics.js sends the events the server marks. data-status is the response's status, http_status, which apps.core.shortcuts.render puts on every page: Safari reports none itself, and fivebar counts a page of 400 or more as an error (https://fiveb.ar/docs/error-pages). #}
+{% if analytics.domain %}<script async data-domain="{{ analytics.domain }}"{% if analytics.path %} data-path="{{ analytics.path }}"{% endif %}{% if http_status %} data-status="{{ http_status }}"{% endif %} src="{{ analytics.script }}"></script>
 <script src="{% static 'js/analytics.js' %}" defer></script>{% endif %}
