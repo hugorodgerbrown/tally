@@ -44,10 +44,10 @@ def test_no_tag_while_off(client: Client) -> None:
     "url_name", ["public:home", "public:privacy", "activity:app", "planner:workouts"]
 )
 def test_every_page_has_the_tag_once(signed_in: Client, settings: Any, url_name: str) -> None:
-    """Public and app pages alike: one async tag, with the site's domain."""
+    """Public and app pages alike: one async tag, with the site's domain and status."""
     settings.FIVEBAR_DOMAIN = DOMAIN
     html = signed_in.get(reverse(url_name)).content.decode()
-    tag = f'<script async data-domain="{DOMAIN}" src="{SCRIPT}"></script>'
+    tag = f'<script async data-domain="{DOMAIN}" data-status="200" src="{SCRIPT}"></script>'
     assert html.count(SCRIPT) == 1
     assert tag in html
     assert "js/analytics.js" in html
