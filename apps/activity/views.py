@@ -15,12 +15,12 @@ from typing import Any
 
 from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse
-from django.shortcuts import render
 from django.utils import timezone
 from django.views.decorators.http import require_GET
 
 from apps.activity import report as rpt
 from apps.core.decorators import signed_in_user
+from apps.core.shortcuts import render
 from apps.library.models import Exercise, ExerciseType, Movement, MuscleGroup
 from apps.planner.templatetags.planner import duration
 

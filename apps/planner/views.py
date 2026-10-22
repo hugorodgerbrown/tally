@@ -14,10 +14,11 @@ from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Count, Max, Prefetch, Q, QuerySet
 from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest, JsonResponse
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import get_object_or_404, redirect
 from django.views.decorators.http import require_POST
 
 from apps.core.decorators import signed_in_user
+from apps.core.shortcuts import render
 from apps.library import timeline
 from apps.library.equipment import equipment_json
 from apps.library.models import (
