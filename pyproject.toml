@@ -29,7 +29,7 @@ test = [
 lint = [
     # Exact pin, bumped in step with .pre-commit-config.yaml so the hook and
     # CI never disagree.
-    "ruff==0.16.10",
+    "ruff==0.17.1",
 ]
 types = [
     "django-stubs>=6.0.2,<7",
@@ -38,14 +38,14 @@ types = [
     {include-group = "e2e"},
 ]
 e2e = [
-    "playwright>=1.62.0,<1.64",
-    "pytest-playwright>=0.7,<0.10",
+    "playwright>=1.64.0,<1.65",
+    "pytest-playwright>=0.10.0,<0.11",
     {include-group = "test"},
 ]
 dev = [
-    "pre-commit>=4.6.1,<5",
-    "tox>=4.52.1,<5",
-    "tox-uv>=1.0,<2",
+    "pre-commit>=4.7.0,<5",
+    "tox>=4.67.1,<5",
+    "tox-uv>=1.37.0,<2",
     {include-group = "test"},
     {include-group = "lint"},
     {include-group = "types"},
