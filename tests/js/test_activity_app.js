@@ -1,5 +1,6 @@
-// Tests for static/js/activity_app.js: the workout screen's exercise notes, and focus kept across a redraw.
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+// Tests for static/js/activity_app.js: exercise notes on the workout, paused and rest
+// screens, and focus kept across a redraw.
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 const WORKOUT = '11111111-1111-4111-8111-111111111111';
 const item = (name, description) => ({
@@ -85,6 +86,55 @@ describe('exercise notes on the workout screen', () => {
   it('does not start the workout when a row is tapped', () => {
     row('Hip hinge').querySelector('button.srow').click();
     expect(document.querySelector('.s-sum')).not.toBeNull();
+  });
+});
+
+describe('exercise notes while the workout runs', () => {
+  const act = (name) => document.querySelector(`[data-act="${name}"]`).click();
+  const tap = () => document.querySelector('.scr').click();
+  const note = () => document.querySelector('.xnote');
+
+  beforeAll(() => {
+    act('start');
+    tap(); // paused on Get ready
+  });
+
+  // End the run and reopen the workout, so the next tests start from its summary.
+  afterAll(async () => {
+    act('end');
+    await new Promise((resolve) => setTimeout(resolve)); // let the finish save settle
+    act('close');
+    location.hash = `#/w/${WORKOUT}`;
+    await vi.waitFor(() => expect(document.querySelector('.s-sum')).not.toBeNull());
+  });
+
+  it('shows the named exercise\'s notes in full when paused', () => {
+    expect(document.querySelector('.s-paused .name').textContent).toBe('Hip hinge');
+    expect(note().textContent).toBe('Push your hips back.\nKeep a flat back.');
+    act('skip'); // paused on Hip hinge's work
+    expect(document.querySelector('.s-paused .xnote').textContent).toBe('Push your hips back.\nKeep a flat back.');
+  });
+
+  it('shows nothing extra when the next exercise has no notes', () => {
+    act('skip'); // paused on the rest before Wall slide
+    expect(document.querySelector('.s-paused .name').textContent).toBe('Wall slide');
+    expect(note()).toBeNull();
+    act('resume');
+    expect(document.querySelector('.s-rest .upnext')).not.toBeNull();
+    expect(note()).toBeNull();
+  });
+
+  it('shows the next exercise\'s notes, as text, in the Up next card when resting', () => {
+    tap();
+    act('skip'); // Wall slide's work
+    act('skip'); // the rest before Toe lift
+    act('resume');
+    const card = document.querySelector('.s-rest .upnext');
+    expect(card.querySelector('.name').textContent).toBe('Toe lift');
+    expect(card.querySelector('.xnote').textContent).toBe('<b>lift</b>');
+    expect(card.querySelector('b')).toBeNull();
+    tap(); // pausing in the rest shows the same exercise's notes
+    expect(document.querySelector('.s-paused .xnote').textContent).toBe('<b>lift</b>');
   });
 });
 

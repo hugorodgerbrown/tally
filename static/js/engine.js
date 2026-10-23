@@ -41,6 +41,7 @@
     const upIdx = st.type === "work" ? idx : nextWork(t, idx + 1);
     const up = t[upIdx];
     m.name = w.items[up.ex].name;
+    m.notes = (w.items[up.ex].description || "").trim();
     m.side = up.side;
     m.si = up.si;
     m.sn = up.sn;

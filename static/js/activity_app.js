@@ -240,10 +240,12 @@
     const next = `<div class="next"><span class="nl">Next</span><span class="nn">${esc(m.next.name)}</span><span class="nd">${m.next.dur ? m.next.dur + " s" : ""}</span></div>`;
     const fin = m.rem <= 3 && m.rem > 0 && !m.paused ? " final" : "";
     const fill = `<div class="fill" data-css="height:${m.pct.toFixed(2)}%"></div>`;
+    // The notes of the exercise the screen names: paused, in full; resting, cut short.
+    const notes = m.notes ? `<p class="xnote">${esc(m.notes)}</p>` : "";
 
     if (m.paused) {
       return `<div class="scr s-paused">${top}
-        <div class="main"><div class="eb">Paused</div><div class="name">${esc(m.name)}</div>${chip}<div class="lclock"><div class="clock sm">${c}</div></div></div>
+        <div class="main"><div class="eb">Paused</div><div class="name">${esc(m.name)}</div>${chip}${notes}<div class="lclock"><div class="clock sm">${c}</div></div></div>
         <div class="pctl"><button class="resume" type="button" data-act="resume" aria-label="Resume">${I.play}</button>
         <div class="prow"><button class="pbtn" type="button" data-act="back">${I.back}Back</button><button class="pbtn" type="button" data-act="skip">${I.skip}Skip</button><button class="pbtn end" type="button" data-act="end">${I.end}End</button></div></div></div>`;
     }
@@ -253,7 +255,7 @@
       return `<div class="scr s-${m.phase}${fin}">${fill}${top}
         <div class="main" data-css="gap:4cqw"><div class="eb">${head}</div><div class="${cc}">${c}</div></div>
         <div class="upnext"><span class="nl eb">${lead}</span>
-          <div class="name">${esc(m.name)}</div><div class="d">${m.updur} s${m.side ? " · " + m.side.toLowerCase() + " side first" : ""}</div></div></div>`;
+          <div class="name">${esc(m.name)}</div><div class="d">${m.updur} s${m.side ? " · " + m.side.toLowerCase() + " side first" : ""}</div>${notes}</div></div>`;
     }
     const eb = { work: "Work", ready: "Get ready", switch: "Switch sides" }[m.phase];
     const hint = o.hint ? `<div class="hint">${tv ? "<kbd>Space</kbd> pauses · <kbd>←</kbd> <kbd>→</kbd> back and skip" : "Tap anywhere to pause"}</div>` : "";
