@@ -13,7 +13,8 @@ config/          settings (one module, env-driven), urls, wsgi/asgi
 apps/core/       BaseModel, IdempotencyMiddleware + IdempotencyRecord,
                  PrivatePagesMiddleware (signed-in pages never cached),
                  decorators (require_htmx, login_required_json), rate
-                 limits, safe_next, livez and healthz; errors.py is the
+                 limits, safe_next, livez, healthz and
+                 /.well-known/security.txt; errors.py is the
                  error pages (400/403/404/500, CSRF), as JSON, text or
                  HTML (DESIGN.md, "Error pages"); analytics.py puts
                  fivebar's tag on every page while FIVEBAR_DOMAIN is set,
