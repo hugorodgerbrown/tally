@@ -1,4 +1,4 @@
-// Tests for static/js/activity_app.js: the workout screen's exercise notes.
+// Tests for static/js/activity_app.js: the workout screen's exercise notes, and focus kept across a redraw.
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 const WORKOUT = '11111111-1111-4111-8111-111111111111';
@@ -69,8 +69,40 @@ describe('exercise notes on the workout screen', () => {
     expect(notes.textContent).toBe('<b>lift</b>');
   });
 
+  it('keeps the list where it was scrolled when a row opens', () => {
+    document.querySelector('.s-sum .main').scrollTop = 120;
+    row('Hip hinge').querySelector('button.srow').click();
+    expect(row('Hip hinge').querySelector('.snote').hidden).toBe(false);
+    expect(document.querySelector('.s-sum .main').scrollTop).toBe(120);
+  });
+
+  it('keeps the focus on the tapped row', () => {
+    row('Toe lift').querySelector('button.srow').focus();
+    row('Toe lift').querySelector('button.srow').click();
+    expect(document.activeElement).toBe(row('Toe lift').querySelector('button.srow'));
+  });
+
   it('does not start the workout when a row is tapped', () => {
     row('Hip hinge').querySelector('button.srow').click();
     expect(document.querySelector('.s-sum')).not.toBeNull();
+  });
+});
+
+describe('focus on the finish screen', () => {
+  it('stays on the rating that was chosen', async () => {
+    document.querySelector('[data-act="start"]').click();
+    await vi.waitFor(() => expect(document.querySelector('.s-sum')).toBeNull());
+    // Twenty seconds in, so there is time worked to save and rate.
+    const later = Date.now() + 20000;
+    vi.spyOn(Date, 'now').mockReturnValue(later);
+    document.querySelector('.scr').click(); // a tap anywhere pauses
+    await vi.waitFor(() => expect(document.querySelector('[data-act="end"]')).not.toBeNull());
+    document.querySelector('[data-act="end"]').click();
+    await vi.waitFor(() => expect(document.querySelector('[data-act="rate"]')).not.toBeNull());
+    document.querySelector('[data-act="rate"][data-v="8"]').focus();
+    document.querySelector('[data-act="rate"][data-v="8"]').click();
+    expect(document.activeElement).toBe(document.querySelector('[data-act="rate"][data-v="8"]'));
+    expect(document.activeElement.getAttribute('aria-pressed')).toBe('true');
+    vi.restoreAllMocks();
   });
 });

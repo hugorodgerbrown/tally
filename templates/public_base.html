@@ -27,7 +27,7 @@
         <a class="app-header__link" href="{% url 'accounts:sign_in' %}">Sign in</a>
       {% endif %}
     </header>
-    <main class="app-main">
+    <main class="app-main{% block main_class %}{% endblock %}">
       {% block content %}{% endblock %}
     </main>
     {% site_footer %}

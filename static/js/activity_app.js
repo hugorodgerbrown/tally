@@ -267,8 +267,27 @@
 
   let pendingCount = 0;
   let lastHtml = "";
+  // Repainting the same screen (a tap that opens notes, a sync) keeps its
+  // lists where they were scrolled and the focus on the button that had it.
+  const SCROLLERS = ".main, .slist";
   function paint(html) {
-    if (html !== lastHtml) { root.innerHTML = html; lastHtml = html; }
+    if (html === lastHtml) return;
+    const was = root.querySelector(".scr");
+    const scrolled = [...root.querySelectorAll(SCROLLERS)].map((el) => el.scrollTop);
+    // The focused button is found again by its data-act and whatever picks
+    // it out among its kind (data-i for a row, data-v for a rating).
+    const had = root.contains(document.activeElement) ? document.activeElement.dataset : {};
+    const focusAt = had.act && ["act", "i", "v"].filter((k) => had[k]).map((k) => `[data-${k}="${had[k]}"]`).join("");
+    root.innerHTML = html;
+    lastHtml = html;
+    const now = root.querySelector(".scr");
+    if (!was || !now || was.className !== now.className) return;
+    // Style it now rather than on styles.js's next pass: data-css changes
+    // the layout, and the scroll positions are only right against the final one.
+    if (window.Styles) window.Styles.apply(root);
+    root.querySelectorAll(SCROLLERS).forEach((el, n) => { if (scrolled[n]) el.scrollTop = scrolled[n]; });
+    const back = focusAt && root.querySelector(focusAt);
+    if (back) back.focus({ preventScroll: true });
   }
 
   function render() {
