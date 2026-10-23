@@ -69,6 +69,19 @@ describe('exercise notes on the workout screen', () => {
     expect(notes.textContent).toBe('<b>lift</b>');
   });
 
+  it('keeps the list where it was scrolled when a row opens', () => {
+    document.querySelector('.s-sum .main').scrollTop = 120;
+    row('Hip hinge').querySelector('button.srow').click();
+    expect(row('Hip hinge').querySelector('.snote').hidden).toBe(false);
+    expect(document.querySelector('.s-sum .main').scrollTop).toBe(120);
+  });
+
+  it('keeps the focus on the tapped row', () => {
+    row('Toe lift').querySelector('button.srow').focus();
+    row('Toe lift').querySelector('button.srow').click();
+    expect(document.activeElement).toBe(row('Toe lift').querySelector('button.srow'));
+  });
+
   it('does not start the workout when a row is tapped', () => {
     row('Hip hinge').querySelector('button.srow').click();
     expect(document.querySelector('.s-sum')).not.toBeNull();
