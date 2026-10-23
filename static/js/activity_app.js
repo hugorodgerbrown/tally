@@ -274,8 +274,10 @@
     if (html === lastHtml) return;
     const was = root.querySelector(".scr");
     const scrolled = [...root.querySelectorAll(SCROLLERS)].map((el) => el.scrollTop);
+    // The focused button is found again by its data-act and whatever picks
+    // it out among its kind (data-i for a row, data-v for a rating).
     const had = root.contains(document.activeElement) ? document.activeElement.dataset : {};
-    const focusAt = had.act && `[data-act="${had.act}"]` + (had.i ? `[data-i="${had.i}"]` : "");
+    const focusAt = had.act && ["act", "i", "v"].filter((k) => had[k]).map((k) => `[data-${k}="${had[k]}"]`).join("");
     root.innerHTML = html;
     lastHtml = html;
     const now = root.querySelector(".scr");
