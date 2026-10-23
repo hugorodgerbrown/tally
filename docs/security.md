@@ -7,6 +7,7 @@ What is on by default, and what checks it.
 | HTTPS redirect, HSTS, secure cookies (when `DJANGO_DEBUG=0`) | `config/settings.py` | `tox -e checks` (`check --deploy --fail-level WARNING`) |
 | CSP: same-origin only (plus `https://fiveb.ar` for scripts and connections while `FIVEBAR_DOMAIN` is set), no inline script or style, no eval | `SECURE_CSP` | `tests/test_security.py`, `tests/core/test_analytics.py` |
 | MCP tool calls counted in fivebar with a send-only token, off the request path; only the tool's name, the outcome, the app's name and a keyed hash of the user's id leave the app | `apps/mcp/events.py` | `tests/mcp/test_events.py` |
+| `/.well-known/security.txt` (RFC 9116): reports go to `SECURITY_CONTACT` (`mailto:sec@ultraniche.ai` by default); `Expires` rolls 180 days ahead | `apps/core/views.py` | `tests/core/test_views.py` |
 | Clickjacking, sniffing, referrer, COOP headers | settings + middleware | `tests/test_security.py` |
 | CSRF on every form and outbox write (token read at send time) | Django + `outbox.js` | `tests/core/test_views.py` |
 | No passwords: sign-in by single-use emailed link or code, or a passkey | `apps/accounts/` | `tests/accounts/` |

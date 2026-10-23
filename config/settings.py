@@ -47,6 +47,10 @@ SITE_URL: str = config(
     else "http://localhost:8000",
 ).rstrip("/")
 
+# Where security.txt (/.well-known/security.txt, RFC 9116) sends
+# vulnerability reports: a mailto: or https: URI.
+SECURITY_CONTACT: str = config("SECURITY_CONTACT", default="mailto:sec@ultraniche.ai")
+
 # The deployed commit, shown in the service worker's cache names so every
 # deploy gets fresh caches. Render sets RENDER_GIT_COMMIT on each build.
 APP_VERSION: str = config("RENDER_GIT_COMMIT", default="dev")[:12]

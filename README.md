@@ -103,8 +103,9 @@ By hand instead:
 3. Set the email relay on the web service: `EMAIL_HOST`, `EMAIL_PORT`,
    `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` and `DEFAULT_FROM_EMAIL`.
    Without them nobody can sign in.
-4. On a custom domain, set `SITE_URL` (links in emails, and the passkey
-   origin) and add the host to `DJANGO_ALLOWED_HOSTS`.
+4. On a custom domain, set `SITE_URL` (links in emails, the passkey
+   origin, and security.txt's `Canonical`) and add the host to
+   `DJANGO_ALLOWED_HOSTS`.
 5. The build runs `collectstatic`; each deploy runs `migrate` first;
    `/livez` is Render's health check (the process is up); `/healthz`
    also reads the database, for an uptime monitor.
