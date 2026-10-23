@@ -67,6 +67,12 @@ html:has(> body.activity), body.activity { margin: 0; height: 100%; background: 
 #app .upnext { display: flex; flex-direction: column; gap: 2.4cqw; background: color-mix(in srgb, currentColor 9%, transparent); border-radius: 5cqw; padding: 5cqw; }
 #app .upnext .name { font-size: 8.5cqw; }
 #app .upnext .d { font-size: 4.2cqw; font-weight: 600; opacity: .8; }
+/* An exercise's notes: in full when paused, a few lines in the Up next card. */
+#app .xnote { margin: 0; font-size: 4cqw; line-height: 1.45; font-weight: 500; opacity: .8; white-space: pre-line; max-width: 34em; }
+#app .s-paused .xnote { margin-top: 1cqw; }
+/* Long notes scroll inside the paused screen, above the controls; safe keeps the top reachable. */
+#app .s-paused .main { overflow-y: auto; justify-content: safe center; }
+#app .upnext .xnote { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; line-clamp: 4; overflow: hidden; }
 
 /* Paused */
 #app .s-paused .clock { opacity: .35; }
@@ -204,6 +210,7 @@ html:has(> body.activity), body.activity { margin: 0; height: 100%; background: 
     .upnext { padding: 2.4cqw; border-radius: 2.4cqw; gap: 1cqw; }
     .upnext .name { font-size: 4.2cqw; }
     .upnext .d { font-size: 2cqw; }
+    .xnote { font-size: 1.9cqw; }
     .main { gap: 1.4cqw !important; }
     .pctl { flex-direction: row; justify-content: space-between; gap: 4cqw; padding-bottom: 0; }
     .resume { width: 12cqw; height: 12cqw; flex: none; }
@@ -212,7 +219,7 @@ html:has(> body.activity), body.activity { margin: 0; height: 100%; background: 
     .pbtn { font-size: 1.8cqw; padding: 1.8cqw 0 1.4cqw; border-radius: 2cqw; gap: .7cqw; }
     .pbtn svg { width: 3cqw; height: 3cqw; }
   }
-  #app .s-work .main, #app .s-ready .main, #app .s-switch .main, #app .s-paused .main { display: grid; grid-template-columns: 1fr auto; align-content: center; column-gap: 4cqw; }
+  #app .s-work .main, #app .s-ready .main, #app .s-switch .main, #app .s-paused .main { display: grid; grid-template-columns: 1fr auto; align-content: safe center; column-gap: 4cqw; }
   #app .s-work .main > :not(.lclock), #app .s-ready .main > :not(.lclock), #app .s-switch .main > :not(.lclock), #app .s-paused .main > :not(.lclock) { grid-column: 1; justify-self: start; }
   #app .lclock { grid-column: 2; grid-row: 1 / span 4; align-self: center; }
   /* Rest and round break: the countdown on the left, what's next on the right. */
@@ -251,6 +258,7 @@ html:has(> body.activity), body.activity { margin: 0; height: 100%; background: 
     .upnext { padding: 3cqw; border-radius: 3cqw; gap: 1.2cqw; }
     .upnext .name { font-size: 5.6cqw; }
     .upnext .d { font-size: 2.6cqw; }
+    .xnote { font-size: 2.4cqw; }
     .main { gap: 1.8cqw !important; }
     .resume { width: 13cqw; height: 13cqw; }
     .resume svg { width: 5.5cqw; height: 5.5cqw; }

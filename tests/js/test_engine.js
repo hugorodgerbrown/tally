@@ -160,6 +160,14 @@ describe("model", () => {
     assert.equal(E.model(w, t, leftIdx, 20).next.name, "Right side");
   });
 
+  it("carries the notes of the exercise it names", () => {
+    const nw = workout([item("Squat", 30, { description: "  Sit back.  " }), item("Lunge", 20)], { rounds: 2 });
+    const nt = E.buildTimeline(nw);
+    assert.equal(E.model(nw, nt, 0, 5).notes, "Sit back.");
+    assert.equal(E.model(nw, nt, nt.findIndex((s) => s.type === "rest"), 5).notes, "");
+    assert.equal(E.model(nw, nt, nt.findIndex((s) => s.type === "round"), 5).notes, "Sit back.");
+  });
+
   it("shows Finish after the last interval", () => {
     const m = E.model(w, t, t.length - 1, 10);
     assert.equal(m.next.name, "Finish");
