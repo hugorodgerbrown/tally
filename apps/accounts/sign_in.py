@@ -199,6 +199,18 @@ def account_exists(email: str) -> bool:
     )
 
 
+def adopt_account(email: str) -> Any | None:
+    """Return the account ``email`` had in an older form, restored now, if there is one.
+
+    ``createsuperuser`` asks before it makes an account, so it promotes the
+    account sign-in would adopt rather than making a second that strands it.
+    """
+    request = SignInRequest(
+        email_key=email_key(email), masked_email=mask_email(email), email=kept_email(email)
+    )
+    return _adopt_account(request)
+
+
 def user_for(request: SignInRequest) -> Any | None:
     """Return the account for a redeemed request, creating it on first sign-in.
 
