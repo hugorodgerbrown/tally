@@ -8,6 +8,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.core import mail
 from django.core.cache import cache
+from django.core.mail import EmailMultiAlternatives
 from django.test import Client
 from django.urls import reverse
 
@@ -56,8 +57,12 @@ def test_sign_up_emails_a_link_and_code_worded_for_a_new_account(client: Client)
     assert response["Location"] == CODE
     message = mail.outbox[-1]
     assert message.to == ["new@example.com"]
-    assert "sign-up code" in message.subject
-    assert "Finish creating your" in str(message.body)
+    assert "verification code" in message.subject
+    assert "Or create your account with this link:" in str(message.body)
+    assert isinstance(message, EmailMultiAlternatives)
+    content, _ = message.alternatives[0]
+    html = str(content)
+    assert "Create your account with this code" in html
     assert "Create account" in client.get(CODE).content.decode()
     assert not get_user_model().objects.for_email("new@example.com").exists()
 
@@ -90,7 +95,8 @@ def test_sign_up_for_an_existing_account_sends_the_sign_in_email(client: Client)
     UserFactory.create(email="known@example.com")
     response = client.post(SIGN_UP, {"email": "known@example.com"})
     assert response["Location"] == CODE
-    assert "sign-in code" in mail.outbox[-1].subject
+    assert "verification code" in mail.outbox[-1].subject
+    assert "Or sign in with this link:" in str(mail.outbox[-1].body)
     assert "Sign in" in client.get(CODE).content.decode()
 
 

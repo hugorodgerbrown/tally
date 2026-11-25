@@ -124,7 +124,7 @@ def script_and_template_files() -> list[Path]:
     files = sorted((BASE / "static" / "js").rglob("*.js"))
     files += sorted((BASE / "templates").rglob("*.html"))
     files += sorted((BASE / "apps").glob("*/templates/**/*.html"))
-    return [path for path in files if "email" not in path.parts]
+    return [path for path in files if "emails" not in path.parts]
 
 
 @pytest.mark.parametrize("path", script_and_template_files(), ids=lambda p: p.name)
