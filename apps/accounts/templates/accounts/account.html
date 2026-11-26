@@ -50,6 +50,12 @@
     <h2>Claude</h2>
     <p>Add Tally to Claude as a connector, at <strong>{{ request.scheme }}://{{ request.get_host }}/mcp</strong>, and Claude can read your library and log, and add or change exercises and workouts.</p>
     <p><a href="{% url 'oauth2_provider:connected-apps' %}">Connected apps</a></p>
+  </section>
+  <section class="card stack">
+    <h2>Delete your account</h2>
+    <p>This deletes your account and everything in it, straight away. There are no backups, so it can't be undone.</p>
+    <p><a class="button button--secondary" href="{% url 'accounts:account_delete' %}">Delete my account</a></p>
+  </section>
   {# The app has no footer, so its links are here (DESIGN.md). #}
   <section class="card stack">
     <h2>About {{ pwa.name }}</h2>

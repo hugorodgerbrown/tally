@@ -40,8 +40,13 @@ def template_files() -> list[Path]:
 
 @pytest.mark.parametrize("path", template_files(), ids=lambda p: p.name)
 def test_templates_have_no_inline_script_or_style(path: Path) -> None:
-    """The CSP forbids inline code, so a template that has some is broken in production."""
+    """The CSP forbids inline code, so a template that has some is broken in production.
+
+    Email templates may have inline styles: mail clients ignore stylesheets,
+    and no CSP applies in a mailbox. They still have no script.
+    """
     source = path.read_text()
     assert not re.search(r"<script(?![^>]*\bsrc=)[^>]*>", source), "inline <script>"
-    assert not re.search(r"\sstyle=", source), "inline style attribute"
+    if "emails" not in path.parts:
+        assert not re.search(r"\sstyle=", source), "inline style attribute"
     assert not re.search(r"\son[a-z]+=", source), "inline event handler"

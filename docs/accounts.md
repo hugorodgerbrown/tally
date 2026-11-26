@@ -28,6 +28,7 @@ device PIN). From then on they sign in with the passkey, or by email.
 | `apps/accounts/sign_in.py` | Issue a request; redeem its link or code once; find or create the account |
 | `apps/accounts/passkeys.py` | WebAuthn options and verification (py_webauthn) |
 | `apps/accounts/views.py` | The sign-up, sign-in, code, link, welcome, sign-out, account and passkey endpoints |
+| `apps/accounts/deletion.py` | `delete_account()`: the account and everything it owns, in one transaction |
 | `apps/accounts/tasks.py` | `send_sign_in_email`, enqueued by the view (`django.tasks`) |
 | `apps/accounts/models.py` | `User`, `SignInRequest`, `Passkey`, `ReviewerAccount`; `email_key()` and `mask_email()` |
 | `apps/accounts/checks.py` | Fails the system checks (so `migrate`, so a deploy) without `ACCOUNTS_EMAIL_KEY` |
@@ -181,3 +182,30 @@ browser's cache; app pages also carry `Offline-Copy: allowed`, which lets the
 service worker keep its own copy. Don't send `Clear-Site-Data: "cache"`: Chrome walks its whole
 disk cache before following the redirect, which held sign-out for ~25 s. Unsent outbox rows stay on the device and are
 sent only if the same user signs back in.
+
+## Deleting an account
+
+The account page ends with **Delete my account**. It opens
+`/app/account/delete/`, which says what goes and that there are no backups,
+and asks once more; the POST deletes straight away, signs out and lands on
+the public `/account/deleted/`. The form is marked `data-sign-out`, so
+`pwa.js` drops the device's saved pages first, as signing out does.
+
+`apps/accounts/deletion.py: delete_account(user)` does the work in one
+transaction:
+
+- every row with a `CASCADE` foreign key to the user goes with it: passkeys,
+  the app's own records and, with MCP, the OAuth access and refresh tokens
+  and grants, so a connected app such as Claude loses access at once;
+- the account's sign-in requests, matched by the address's key;
+- the outbox's stored replies (`IdempotencyRecord`), which can hold what the
+  account wrote, matched by its pk;
+- anything an app's hooks in `ACCOUNTS_DELETE_HOOKS` remove. A hook is a
+  dotted path to a callable that takes the user and runs before it goes.
+  Use one only for data the cascade can't reach (rows keyed by a hash of
+  the account, say). Give a new model a `CASCADE` foreign key to the user
+  instead where you can.
+
+If a hook raises, nothing is deleted. Titan apps keep no backups, so
+deletion is final, and the privacy notice says so. Why:
+[decisions/people-delete-their-own-account-for-good.md](decisions/people-delete-their-own-account-for-good.md).

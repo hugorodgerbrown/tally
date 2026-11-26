@@ -22,11 +22,20 @@ What is on by default, and what checks it.
 | Fragments refuse non-htmx requests | `require_htmx` | `tests/core/test_decorators.py` |
 | Python security lint (bandit rules) | ruff `S` | `tox -e lint` |
 | Static analysis: Django, Python, JS, security-audit packs | semgrep | `tox -e sast` (CI and weekly) |
-| Known CVEs in runtime Python deps and npm packages | pip-audit, npm audit | `tox -e audit` (CI and weekly) |
+| Known CVEs in runtime Python deps and npm packages | pip-audit, npm audit (`bin/npm-audit`) | `tox -e audit` (CI and weekly) |
 | Secrets in commits | gitleaks | pre-commit and CI |
 | Dependency updates | Dependabot (uv, npm, actions) | weekly PRs |
 | MCP: OAuth 2.1, PKCE, audience-bound tokens; any active account may connect, to its own data | `mcp-auth` (`active_user`) | `tests/mcp/test_mcp.py` (the shared contract) |
 | MCP App views: self-contained, no network, data drawn as text only | `apps/mcp/resources.py`, `apps/mcp/ui/` | `tests/mcp/test_mcp.py`, `tests/js/mcp/` |
+
+## npm advisories
+
+`tox -e audit` fails on any high or critical npm advisory. `npm audit` can't
+set one aside, so `bin/npm-audit` runs it and skips only the advisories in
+its `EXCEPTIONS`, each named by GHSA id with why it can't reach production
+and when it was added. The npm packages are test tooling (vitest, jsdom):
+the app ships plain JavaScript with no build step. Add an exception only
+when no fixed release exists, and remove it in the PR that takes the fix.
 
 ## Invariants
 
